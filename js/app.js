@@ -17,6 +17,7 @@
   let moversMode = 'active';
   let weeklyMode = 'clusters';
   let weeklyRenderId = 0;
+  let eventSort = 'impact';
   /** @type {string} */
   let view = 'events';
 
@@ -42,6 +43,28 @@
   const navAccount = document.getElementById('navAccount');
   let authState = { session: null, user: null, role: 'free', plan: null };
   let accountMode = 'signin';
+
+  function eventClusterScore(group) {
+    const ratings = (group.articles || []).map(article => article.rating ?? article.score);
+    const articleScore = window.ClustrUtil.exponentialMeanRating(ratings);
+    const storedScore = Number(group.stance_score ?? group.cluster_score ?? group.impact_score);
+    return articleScore ?? (Number.isFinite(storedScore) ? storedScore : 0);
+  }
+
+  function sortEventClusters(groups) {
+    return (groups || []).map((group, index) => ({ group, index })).sort((a, b) => {
+      const aScore = eventClusterScore(a.group), bScore = eventClusterScore(b.group);
+      let order = 0;
+      if (eventSort === 'size') {
+        const aCount = Number(a.group.count) || (a.group.articles || []).length;
+        const bCount = Number(b.group.count) || (b.group.articles || []).length;
+        order = bCount - aCount || Math.abs(bScore) - Math.abs(aScore);
+      } else if (eventSort === 'positive') order = bScore - aScore;
+      else if (eventSort === 'negative') order = aScore - bScore;
+      else order = Math.abs(bScore) - Math.abs(aScore);
+      return order || a.index - b.index;
+    }).map(row => row.group);
+  }
 
   /**
    * Update header meta + enable/disable publish arrows.
@@ -437,7 +460,7 @@
     setMeta();
     refreshMovers();
 
-    await R.renderEvents(currentGroups, currentGroups);
+    await R.renderEvents(sortEventClusters(currentGroups), currentGroups);
 
     if (typeof R.renderCountryPanel === 'function') {
       R.renderCountryPanel(currentGroups, country => {
@@ -580,6 +603,16 @@
   }
 
   if (navEvents) navEvents.addEventListener('click', () => setNav('events'));
+  document.querySelectorAll('[data-event-sort]').forEach(button => button.addEventListener('click', async () => {
+    eventSort = button.getAttribute('data-event-sort') || 'impact';
+    document.querySelectorAll('[data-event-sort]').forEach(item => {
+      const active = item === button;
+      item.classList.toggle('is-active', active);
+      item.setAttribute('aria-pressed', String(active));
+    });
+    const R = window.ClustrRender;
+    if (R) await R.renderEvents(sortEventClusters(currentGroups), currentGroups);
+  }));
   if (navMap) navMap.addEventListener('click', () => setNav('map'));
   if (navWeekly) navWeekly.addEventListener('click', () => setNav('weekly'));
   if (navAccount) navAccount.addEventListener('click', () => setNav('account'));

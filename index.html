@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=event-sort-1" />
 </head>
 <body>
   <!-- CRT overlay (visible only when data-theme=crt) -->
@@ -185,6 +185,15 @@
 
       <!-- Events -->
       <div id="eventsView">
+        <div class="events-sort-bar">
+          <span class="events-sort-label">Sort by</span>
+          <div class="events-sort-segmented" role="group" aria-label="Sort clusters">
+            <button type="button" class="md-btn md-btn--tonal" data-event-sort="size" title="Largest clusters first">Size</button>
+            <button type="button" class="md-btn md-btn--tonal" data-event-sort="positive" title="Most positive scores first">Positive</button>
+            <button type="button" class="md-btn md-btn--tonal" data-event-sort="negative" title="Most negative scores first">Negative</button>
+            <button type="button" class="md-btn md-btn--tonal is-active" data-event-sort="impact" title="Largest absolute scores first, regardless of sign" aria-pressed="true">Impact</button>
+          </div>
+        </div>
         <section id="moversStrip" class="movers-strip md-card" aria-label="Session movers">
           <div class="movers-head">
             <h2 class="movers-title">Session movers</h2>
@@ -271,6 +280,6 @@
   <script src="js/mindmap.js?v=repo-exact"></script>
   <script src="js/render.js?v=expo-3x"></script>
   <script src="js/signal.js?v=repo-exact"></script>
-  <script src="js/app.js?v=expo-3x"></script>
+  <script src="js/app.js?v=event-sort-1"></script>
 </body>
 </html>

@@ -1543,6 +1543,31 @@ html.boot-lock body {
 }
 
 /* ========== Clusters ========== */
+.events-sort-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 14px;
+}
+.events-sort-label {
+  color: var(--text-meta);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.events-sort-segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+@media (max-width: 520px) {
+  .events-sort-bar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+}
 .events-list {
   display: flex;
   flex-direction: column;
