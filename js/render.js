@@ -13,6 +13,14 @@
     return `<span class="article-rating article-rating--${tone}" aria-label="Article rating ${value}" title="Directional stock impact rating">Rating <strong>${value}</strong></span>`;
   }
 
+  function clusterScoreHtml(group) {
+    const score = Number(group && group.cluster_score);
+    if (!Number.isInteger(score) || score < -10 || score > 10) return '';
+    const tone = score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral';
+    const value = `${score > 0 ? '+' : ''}${score}/10`;
+    return `<span class="cluster-score cluster-score--${tone}" title="Exponential aggregate of article ratings">Cluster <strong>${value}</strong></span>`;
+  }
+
   /**
    * Average % since publish for a stock list (uses priceAtPublish vs live).
    * @param {Array<Object>} list
@@ -936,6 +944,7 @@
       <div class="cluster-main">
       <div class="cluster-top">
         <h2 class="cluster-name">${util.escapeHtml(group.name || 'Cluster')}</h2>
+        ${clusterScoreHtml(group)}
         <div class="stance-mount">${stanceHtml(group, null)}</div>
       </div>
 

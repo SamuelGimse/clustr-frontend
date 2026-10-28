@@ -1552,6 +1552,28 @@ html.boot-lock body {
   flex: 1 1 auto;
   min-width: 0;
 }
+.cluster-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.cluster-score--positive {
+  color: var(--up);
+  border-color: color-mix(in srgb, var(--up) 45%, var(--border));
+}
+.cluster-score--negative {
+  color: var(--down);
+  border-color: color-mix(in srgb, var(--down) 45%, var(--border));
+}
+.cluster-score--neutral {
+  color: var(--text-meta);
+}
 .cluster-reason {
   margin: 0 0 8px;
   color: var(--text);
