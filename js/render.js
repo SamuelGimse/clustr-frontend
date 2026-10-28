@@ -20,7 +20,7 @@
 
   function clusterScoreHtml(group) {
     const score = groupRating(group);
-    if (!Number.isFinite(score) || score < -10 || score > 10) return '';
+    if (!Number.isFinite(score) || score < -10 || score > 10) return `<div class="cluster-score cluster-score--neutral cluster-score--missing" role="status" aria-label="Cluster rating unavailable"><span class="cluster-score-value">—</span><span class="cluster-score-label">NO SCORES</span></div>`;
     const tone = score >= 2 ? 'positive' : score <= -2 ? 'negative' : 'neutral';
     const value = `${score > 0 ? '+' : ''}${Math.round(score)}`;
     const intensity = score === 0 ? '0%' : `${(100 * Math.pow(3, Math.abs(score) - 10)).toFixed(2)}%`;
@@ -30,7 +30,7 @@
 
   function articleRatingStripHtml(articles) {
     const rated = (articles || []).filter(article => Number.isInteger(Number(article.rating ?? article.score)) && Number(article.rating ?? article.score) >= -10 && Number(article.rating ?? article.score) <= 10).slice(0, 6);
-    if (!rated.length) return '';
+    if (!rated.length) return `<div class="cluster-news-ratings cluster-news-ratings--missing" role="status"><span class="cluster-news-ratings-label">ARTICLE SCORES</span><span class="cluster-news-rating-missing">No ratings in this publish</span></div>`;
     const badges = rated.map(article => {
       const rating = Number(article.rating ?? article.score);
       const tone = rating > 0 ? 'positive' : rating < 0 ? 'negative' : 'neutral';

@@ -1694,6 +1694,10 @@ html.boot-lock body {
 .cluster-news-rating--negative { color:var(--down); border-color:color-mix(in srgb,var(--down) 45%,var(--border)); }
 .cluster-news-rating--neutral { color:var(--text-meta); }
 .cluster-news-rating-more { color:var(--text-meta); font:11px var(--font-mono); }
+.cluster-score--missing { color:var(--text-meta); border-style:dashed; }
+.cluster-score--missing .cluster-score-meter { display:none; }
+.cluster-news-ratings--missing { min-height:22px; }
+.cluster-news-rating-missing { color:var(--text-meta); font:11px var(--font-mono); }
 .cluster-score-meter {
   display: grid;
   grid-template-columns: 1fr 1fr;
