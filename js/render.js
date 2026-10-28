@@ -694,6 +694,20 @@
   function collectMovers(groups) {
     const map = new Map();
     for (const g of groups || []) {
+      for (const m of g.session_movers || []) {
+        const sym = U().normalizeSymbol(m.symbol);
+        if (!sym) continue;
+        if (!map.has(sym)) {
+          map.set(sym, {
+            symbol: sym,
+            name: m.name || sym,
+            changePercent: m.changePercent,
+            side: m.side || '',
+            clusterRelevance: null,
+            clusters: []
+          });
+        }
+      }
       const push = (m, sideHint) => {
         const sym = U().normalizeSymbol(m.symbol);
         if (!sym) return;
