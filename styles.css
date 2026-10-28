@@ -749,6 +749,22 @@ html[data-theme="crt"] .crt-overlay::after {
 .publish-chart { display:block; width:100%; max-height:290px; margin:12px 0 0; }
 @media(max-width:700px) { .account-page { padding:8px; } .account-shell { padding:22px 18px; } }
 
+#adminView.account-page:not(.hidden) { display:block; min-height:calc(100vh - 120px); padding:18px 0 28px; }
+#adminView .account-shell { width:100%; max-width:none; padding:22px clamp(16px,2.5vw,34px); }
+#adminView .admin-plan { margin:16px 0 0; padding:16px; }
+.admin-publish-head { display:grid; grid-template-columns:minmax(260px,1fr) auto auto; align-items:center; gap:12px 20px; }
+.admin-publish-head h2 { margin:0 0 4px; }
+.admin-publish-head p { margin:0; }
+.admin-publish-head .account-plan-note { grid-column:1 / -1; margin:0; }
+.admin-monitor-grid { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr); gap:16px; margin-top:16px; }
+.admin-monitor-panel { min-width:0; padding:14px; border:1px solid var(--md-outline,#29384a); border-radius:12px; background:color-mix(in srgb,var(--md-surface-container,#111a25) 75%,#050a10); }
+.admin-monitor-panel h3 { margin:0; }
+.admin-monitor-panel .publish-chart { height:260px !important; max-height:none; margin:8px 0 0; }
+.admin-monitor-panel .account-plan-note { margin:8px 0 0; }
+.admin-monitor-panel .publish-console { height:300px; min-height:0; max-height:calc(100vh - 310px); margin:8px 0 0; }
+@media(max-width:900px) { .admin-monitor-grid { grid-template-columns:1fr; } .admin-monitor-panel .publish-console { height:250px; max-height:40vh; } }
+@media(max-width:700px) { #adminView.account-page { padding:8px 0 20px; } #adminView .account-shell { padding:20px 14px; } .admin-publish-head { grid-template-columns:1fr 1fr; } .admin-publish-head > div,.admin-publish-head .account-plan-note { grid-column:1 / -1; } }
+
 html[data-theme="crt"] .brand,
 html[data-theme="crt"] .mobile-brand,
 html[data-theme="crt"] .cluster-name {
