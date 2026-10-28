@@ -16,11 +16,11 @@
   function clusterScoreHtml(group) {
     const score = Number(group && group.cluster_score);
     if (!Number.isFinite(score) || score < -10 || score > 10) return '';
-    const tone = score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral';
-    const value = `${score > 0 ? '+' : ''}${Number.isInteger(score) ? score : score.toFixed(1)}`;
-    const marker = `${((score + 10) / 20) * 100}%`;
-    const label = score > 0 ? '▲ POS' : score < 0 ? '▼ NEG' : '• NEU';
-    return `<div class="cluster-score cluster-score--${tone}" title="Average article rating: ${value}/10" aria-label="Cluster rating ${value} out of 10, ${label}"><strong class="cluster-score-value">${value}</strong><span class="cluster-score-label">${label}</span><span class="cluster-score-scale"><i style="left:${marker}"></i></span></div>`;
+    const tone = score >= 2 ? 'positive' : score <= -2 ? 'negative' : 'neutral';
+    const value = `${score > 0 ? '+' : ''}${Math.round(score)}`;
+    const intensity = score === 0 ? '0%' : `${(100 * Math.pow(2, Math.abs(score) / 2) / 32).toFixed(1)}%`;
+    const label = score >= 2 ? '▲ POS' : score <= -2 ? '▼ NEG' : '● NEU';
+    return `<div class="cluster-score cluster-score--${tone}" title="Average article rating: ${value}/10" role="img" aria-label="Cluster rating ${value} out of 10, ${label}"><span class="cluster-score-value">${value}</span><span class="cluster-score-label">${label}</span><span class="cluster-score-meter" aria-hidden="true"><i style="--w:${score < 0 ? intensity : '0%'}"></i><i style="--w:${score > 0 ? intensity : '0%'}"></i></span></div>`;
   }
 
   /**
