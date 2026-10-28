@@ -46,6 +46,7 @@
     catch { save(null); return { session:null,user:null,role:'free',plan:null }; }
   }
   async function signIn(email,password) { save(await request('/auth/v1/token?grant_type=password','POST',{email,password})); return restore(); }
+  function signInWithGoogle() { const redirect=cfg().AUTH_REDIRECT_URL || root.location.origin+root.location.pathname; root.location.assign(endpoint('/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(redirect))); }
   async function signUp(email,password) {
     const redirect=cfg().AUTH_REDIRECT_URL || root.location.origin+root.location.pathname;
     const result=await request('/auth/v1/signup?redirect_to='+encodeURIComponent(redirect),'POST',{email,password}), value=result.session||result;
@@ -57,5 +58,5 @@
   async function updatePassword(password) { const s=session||read(); if(!s?.access_token) throw new Error('Open the password reset link from your email first.'); await request('/auth/v1/user','PUT',{password},s.access_token); root.localStorage.removeItem('clustr-auth-recovery'); }
   async function signOut() { const s=session||read(); try { if(s?.access_token) await request('/auth/v1/logout','POST',null,s.access_token); } finally { save(null); } }
   async function callBilling(path) { let s=session||read(); if(s&&Number(s.expires_at)<Math.floor(Date.now()/1000)+60) s=await refresh(s); if(!s?.access_token) throw new Error('Sign in first.'); const result=await request(`/functions/v1/${path}`,'POST',{app:'clustr'},s.access_token); if(!result.url) throw new Error('Billing could not be opened.'); root.location.assign(result.url); }
-  root.ClustrAuth={restore,signIn,signUp,resendConfirmation,resetPassword,updatePassword,signOut,checkout:()=>callBilling('create-checkout-session'),portal:()=>callBilling('create-portal-session'),accessToken:()=>{const s=session||read();return s&&s.access_token||'';}};
+  root.ClustrAuth={restore,signIn,signInWithGoogle,signUp,resendConfirmation,resetPassword,updatePassword,signOut,checkout:()=>callBilling('create-checkout-session'),portal:()=>callBilling('create-portal-session'),accessToken:()=>{const s=session||read();return s&&s.access_token||'';}};
 })(window);
