@@ -205,6 +205,9 @@
     const name = String(clusterName || '').trim();
     if (!name) return [];
 
+    const local = localStanceHistory(name);
+    if (local.some(row => row.stanceScore != null)) return local;
+
     try {
       const q =
         'cluster_stance_history?cluster_name=eq.' +
@@ -288,6 +291,7 @@
       }
       rows.push({
         stance: String(match.stance || 'watch').toLowerCase(),
+        stanceScore: Number.isFinite(Number(match.stance_score ?? match.cluster_score)) ? Number(match.stance_score ?? match.cluster_score) : null,
         confidence: String(match.confidence || '').toLowerCase(),
         horizon: String(match.time_horizon || '').toLowerCase(),
         date: p.created_at || '',

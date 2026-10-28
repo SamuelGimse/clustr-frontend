@@ -75,10 +75,12 @@
    * @returns {number}
    */
   function stanceScore(stance) {
+    const numeric = Number(stance);
+    if (Number.isFinite(numeric) && numeric >= -10 && numeric <= 10) return numeric;
     const s = String(stance || 'watch').toLowerCase();
-    if (s === 'constructive') return 1;
-    if (s === 'cautious') return 0;
-    return 0.5;
+    if (s === 'constructive') return 5;
+    if (s === 'cautious') return -5;
+    return 0;
   }
 
   /**
@@ -252,7 +254,7 @@
     const labels = dateLabels.concat(['Live']);
 
     // Stance only on publish columns (null on Live)
-    const stanceData = rows.map(r => stanceScore(r.stance)).concat([null]);
+    const stanceData = rows.map(r => stanceScore(r.stance_score ?? r.cluster_score ?? r.stance)).concat([null]);
 
     // Price series shifted +1: index 0 null; index i+1 = return measured from publish i
     const retData = [null];
@@ -281,9 +283,9 @@
 
     const pointColors = rows
       .map(r => {
-        const s = String(r.stance || '').toLowerCase();
-        if (s === 'constructive') return up;
-        if (s === 'cautious') return down;
+        const s = stanceScore(r.stance_score ?? r.cluster_score ?? r.stance);
+        if (s > 0) return up;
+        if (s < 0) return down;
         return meta;
       })
       .concat(['transparent']);
@@ -296,7 +298,7 @@
           {
             label: 'Stance',
             data: stanceData,
-            yAxisID: 'yStance',
+          yAxisID: 'yStance',
             borderColor: meta,
             backgroundColor: 'transparent',
             pointBackgroundColor: pointColors,
@@ -343,7 +345,8 @@
                 if (i == null) return '';
                 const lines = [];
                 if (i < rows.length && rows[i]) {
-                  lines.push('Stance: ' + (rows[i].stance || '—'));
+                  const score = rows[i].stance_score ?? rows[i].cluster_score;
+                  lines.push('Stance: ' + (score == null ? (rows[i].stance || '—') : `${Number(score) > 0 ? '+' : ''}${score}/10`));
                 }
                 // Price is one step ahead: at index i shows outcome of rows[i-1]
                 const src = i >= 1 ? rows[i - 1] : null;
@@ -371,15 +374,13 @@
           yStance: {
             type: 'linear',
             position: 'left',
-            min: -0.05,
-            max: 1.05,
+            min: -10,
+            max: 10,
             ticks: {
               color: meta,
+              stepSize: 5,
               callback(v) {
-                if (v >= 0.9) return 'C+';
-                if (v <= 0.1) return 'C−';
-                if (Math.abs(v - 0.5) < 0.05) return '0';
-                return '';
+                return `${v > 0 ? '+' : ''}${v}`;
               }
             },
             grid: { color: border }
@@ -540,7 +541,9 @@
    */
   function stanceHtml(group, _sectorAvg) {
     const util = U();
-    const stance = String(group.stance || 'watch').toLowerCase();
+    const score = Number(group.stance_score ?? group.cluster_score);
+    const hasScore = Number.isInteger(score) && score >= -10 && score <= 10;
+    const stance = hasScore ? (score > 0 ? 'constructive' : score < 0 ? 'cautious' : 'watch') : String(group.stance || 'watch').toLowerCase();
     const horizon = String(group.time_horizon || '').toLowerCase();
     const confidence = String(group.confidence || '').toLowerCase();
 
@@ -572,8 +575,8 @@
             <path d="M12 7v5l3 2"/>
           </svg>
         </button>
-        <div class="stance stance-${util.escapeHtml(stance)}">
-          <div class="stance-title">${util.escapeHtml(stanceText)}</div>
+      <div class="stance stance-${util.escapeHtml(stance)}">
+          <div class="stance-title">${hasScore ? `Stance ${score > 0 ? '+' : ''}${score}/10 · ` : ''}${util.escapeHtml(stanceText.split(' — ')[0])}</div>
           <div class="stance-sub">${util.escapeHtml(
             [horizonText, confidenceText].filter(Boolean).join(' · ')
           )}</div>
