@@ -15,10 +15,12 @@
 
   function clusterScoreHtml(group) {
     const score = Number(group && group.cluster_score);
-    if (!Number.isInteger(score) || score < -10 || score > 10) return '';
+    if (!Number.isFinite(score) || score < -10 || score > 10) return '';
     const tone = score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral';
-    const value = `${score > 0 ? '+' : ''}${score}/10`;
-    return `<span class="cluster-score cluster-score--${tone}" title="Exponential aggregate of article ratings">Cluster <strong>${value}</strong></span>`;
+    const value = `${score > 0 ? '+' : ''}${Number.isInteger(score) ? score : score.toFixed(1)}`;
+    const marker = `${((score + 10) / 20) * 100}%`;
+    const label = score > 0 ? '▲ POS' : score < 0 ? '▼ NEG' : '• NEU';
+    return `<div class="cluster-score cluster-score--${tone}" title="Average article rating: ${value}/10" aria-label="Cluster rating ${value} out of 10, ${label}"><strong class="cluster-score-value">${value}</strong><span class="cluster-score-label">${label}</span><span class="cluster-score-scale"><i style="left:${marker}"></i></span></div>`;
   }
 
   /**
@@ -542,7 +544,7 @@
   function stanceHtml(group, _sectorAvg) {
     const util = U();
     const score = Number(group.stance_score ?? group.cluster_score);
-    const hasScore = Number.isInteger(score) && score >= -10 && score <= 10;
+    const hasScore = Number.isFinite(score) && score >= -10 && score <= 10;
     const stance = hasScore ? (score > 0 ? 'constructive' : score < 0 ? 'cautious' : 'watch') : String(group.stance || 'watch').toLowerCase();
     const horizon = String(group.time_horizon || '').toLowerCase();
     const confidence = String(group.confidence || '').toLowerCase();
@@ -576,7 +578,7 @@
           </svg>
         </button>
       <div class="stance stance-${util.escapeHtml(stance)}">
-          <div class="stance-title">${hasScore ? `Stance ${score > 0 ? '+' : ''}${score}/10 · ` : ''}${util.escapeHtml(stanceText.split(' — ')[0])}</div>
+          <div class="stance-title">${hasScore ? `Stance ${score > 0 ? '+' : ''}${Number.isInteger(score) ? score : score.toFixed(1)}/10 · ` : ''}${util.escapeHtml(stanceText.split(' — ')[0])}</div>
           <div class="stance-sub">${util.escapeHtml(
             [horizonText, confidenceText].filter(Boolean).join(' · ')
           )}</div>

@@ -1553,26 +1553,59 @@ html.boot-lock body {
   min-width: 0;
 }
 .cluster-score {
-  display: inline-flex;
+  display: flex;
+  flex: 0 0 74px;
+  width: 74px;
+  height: 62px;
+  flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 4px 9px;
+  justify-content: center;
+  gap: 2px;
+  padding: 5px 7px 6px;
   border: 1px solid var(--border);
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 650;
+  border-radius: 10px;
+  background: var(--panel-2);
   white-space: nowrap;
 }
 .cluster-score--positive {
   color: var(--up);
   border-color: color-mix(in srgb, var(--up) 45%, var(--border));
+  background: color-mix(in srgb, var(--up) 5%, var(--panel-2));
 }
 .cluster-score--negative {
   color: var(--down);
   border-color: color-mix(in srgb, var(--down) 45%, var(--border));
+  background: color-mix(in srgb, var(--down) 5%, var(--panel-2));
 }
 .cluster-score--neutral {
   color: var(--text-meta);
+}
+.cluster-score-value {
+  font-size: 21px;
+  line-height: 1;
+  font-weight: 800;
+}
+.cluster-score-label {
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .08em;
+}
+.cluster-score-scale {
+  position: relative;
+  width: 100%;
+  height: 3px;
+  margin-top: 3px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--down), var(--border) 50%, var(--up));
+}
+.cluster-score-scale i {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--text);
+  transform: translateX(-50%);
 }
 .cluster-reason {
   margin: 0 0 8px;
