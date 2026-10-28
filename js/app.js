@@ -204,8 +204,8 @@
   }
 
   function weeklyScore(group) {
-    const ratings = (group.articles || []).map(a => Number(a.rating ?? a.score)).filter(n => Number.isFinite(n) && n >= -10 && n <= 10 && n !== 0);
-    if (ratings.length) return ratings.reduce((a, b) => a + b, 0) / ratings.length;
+    const articleScore = window.ClustrUtil.exponentialMeanRating((group.articles || []).map(a => a.rating ?? a.score));
+    if (articleScore != null) return articleScore;
     const value = Number(group.stance_score ?? group.cluster_score ?? group.impact_score);
     return Number.isFinite(value) && value >= -10 && value <= 10 && value !== 0 ? value : null;
   }
@@ -271,7 +271,7 @@
     const clusters = [...byCluster.values()].map(item => {
       const articleRatings = [...item.stories.values()].map(a => a.rating).filter(n => Number.isFinite(n) && n >= -10 && n <= 10 && n !== 0);
       const scores = articleRatings.length ? articleRatings : item.scoreValues;
-      return { ...item, score: scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : null };
+      return { ...item, score: window.ClustrUtil.exponentialMeanRating(scores) };
     })
       .sort((a,b) => b.days.size-a.days.size || Math.abs(b.score||0)-Math.abs(a.score||0));
     const days = new Map();
@@ -295,7 +295,7 @@
       const changes = clusters.filter(c => c.days.size > 1).map(c => {
         const rows = [...c.items].sort((a,b)=>a.day.localeCompare(b.day));
         const firstDay = rows[0].day, lastDay = rows[rows.length - 1].day;
-        const mean = entries => { const scores = entries.map(row => weeklyScore(row.group)).filter(score => score != null); return scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : null; };
+        const mean = entries => window.ClustrUtil.exponentialMeanRating(entries.map(row => weeklyScore(row.group)));
         const first = mean(rows.filter(row => row.day === firstDay)), last = mean(rows.filter(row => row.day === lastDay));
         return { ...c, change: first == null || last == null ? null : last-first };
       }).filter(c=>c.change!=null).sort((a,b)=>Math.abs(b.change)-Math.abs(a.change)).slice(0,12);
@@ -309,10 +309,10 @@
   function weeklyTrendChart(days) {
     if (!days.length) return '<div class="weekly-empty">No trend data for this week.</div>';
     const W=900,H=270,L=44,R=20,T=24,B=42,x=i=>days.length<2?W/2:L+i*(W-L-R)/(days.length-1),y=v=>T+(10-v)*(H-T-B)/20;
-    const avg=d=>d.scores.length?d.scores.reduce((a,b)=>a+b,0)/d.scores.length:0;
+    const avg=d=>window.ClustrUtil.exponentialMeanRating(d.scores) ?? 0;
     const max=Math.max(1,...days.map(d=>d.clusters));
     const line=days.map((d,i)=>`${i?'L':'M'}${x(i)},${y(avg(d))}`).join(' ');
-    return `<div class="weekly-trend-panel"><div class="weekly-chart-legend"><span><i class="weekly-key-score"></i>Daily article score average</span><span><i class="weekly-key-volume"></i>Cluster releases</span></div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weekly article scores and cluster activity">${[-10,-5,0,5,10].map(v=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" class="weekly-grid"/><text x="4" y="${y(v)+4}" class="weekly-axis">${v>0?'+':''}${v}</text>`).join('')}${days.map((d,i)=>`<rect x="${x(i)-10}" y="${H-B-d.clusters/max*56}" width="20" height="${d.clusters/max*56}" rx="4" class="weekly-volume"><title>${d.clusters} cluster releases</title></rect>`).join('')}<path d="${line}" fill="none" class="weekly-score-line"/>${days.map((d,i)=>`<circle cx="${x(i)}" cy="${y(avg(d))}" r="4" class="weekly-score-dot"><title>${d.scores.length?avg(d).toFixed(1):'No ratings'} · ${d.stories.size} rated articles</title></circle><text x="${x(i)}" y="${H-12}" text-anchor="middle" class="weekly-axis">${d.day.slice(5)}</text>`).join('')}</svg><p class="weekly-footnote">Zero-rated articles are excluded from averages. Trend movement compares each cluster’s first and latest weekly score.</p></div>`;
+    return `<div class="weekly-trend-panel"><div class="weekly-chart-legend"><span><i class="weekly-key-score"></i>Daily article impact score</span><span><i class="weekly-key-volume"></i>Cluster releases</span></div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weekly article impact scores and cluster activity">${[-10,-5,0,5,10].map(v=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" class="weekly-grid"/><text x="4" y="${y(v)+4}" class="weekly-axis">${v>0?'+':''}${v}</text>`).join('')}${days.map((d,i)=>`<rect x="${x(i)-10}" y="${H-B-d.clusters/max*56}" width="20" height="${d.clusters/max*56}" rx="4" class="weekly-volume"><title>${d.clusters} cluster releases</title></rect>`).join('')}<path d="${line}" fill="none" class="weekly-score-line"/>${days.map((d,i)=>`<circle cx="${x(i)}" cy="${y(avg(d))}" r="4" class="weekly-score-dot"><title>${d.scores.length?avg(d).toFixed(1):'No ratings'} · ${d.stories.size} rated articles</title></circle><text x="${x(i)}" y="${H-12}" text-anchor="middle" class="weekly-axis">${d.day.slice(5)}</text>`).join('')}</svg><p class="weekly-footnote">Each rating point represents 3× directional impact. Zero-rated articles are excluded. Trend movement compares each cluster’s first and latest weekly impact score.</p></div>`;
   }
 
   function weeklyClusterCard(item, showChange) {

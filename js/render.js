@@ -10,17 +10,22 @@
     if (!Number.isInteger(rating) || rating < -10 || rating > 10) return '';
     const tone = rating > 0 ? 'positive' : rating < 0 ? 'negative' : 'neutral';
     const value = `${rating > 0 ? '+' : ''}${rating}`;
-    return `<span class="article-rating article-rating--${tone}" aria-label="Article rating ${value}" title="Directional stock impact rating">Rating <strong>${value}</strong></span>`;
+    return `<span class="article-rating article-rating--${tone}" aria-label="Article rating ${value}" title="Each rating point represents 3× directional impact">Rating <strong>${value}</strong></span>`;
+  }
+
+  function groupRating(group) {
+    const ratings = (group && group.articles || []).map(article => article.rating ?? article.score);
+    return U().exponentialMeanRating(ratings) ?? Number(group && (group.stance_score ?? group.cluster_score));
   }
 
   function clusterScoreHtml(group) {
-    const score = Number(group && group.cluster_score);
+    const score = groupRating(group);
     if (!Number.isFinite(score) || score < -10 || score > 10) return '';
     const tone = score >= 2 ? 'positive' : score <= -2 ? 'negative' : 'neutral';
     const value = `${score > 0 ? '+' : ''}${Math.round(score)}`;
-    const intensity = score === 0 ? '0%' : `${(100 * Math.pow(2, Math.abs(score) / 2) / 32).toFixed(1)}%`;
+    const intensity = score === 0 ? '0%' : `${(100 * Math.pow(3, Math.abs(score) - 10)).toFixed(2)}%`;
     const label = score >= 2 ? '▲ POS' : score <= -2 ? '▼ NEG' : '● NEU';
-    return `<div class="cluster-score cluster-score--${tone}" title="Average article rating: ${value}" role="img" aria-label="Cluster rating ${value}, ${label}"><span class="cluster-score-value">${value}</span><span class="cluster-score-label">${label}</span><span class="cluster-score-meter" aria-hidden="true"><i style="--w:${score < 0 ? intensity : '0%'}"></i><i style="--w:${score > 0 ? intensity : '0%'}"></i></span></div>`;
+    return `<div class="cluster-score cluster-score--${tone}" title="Exponential mean article rating; each point is 3× impact: ${value}" role="img" aria-label="Cluster rating ${value}, ${label}"><span class="cluster-score-value">${value}</span><span class="cluster-score-label">${label}</span><span class="cluster-score-meter" aria-hidden="true"><i style="--w:${score < 0 ? intensity : '0%'}"></i><i style="--w:${score > 0 ? intensity : '0%'}"></i></span></div>`;
   }
 
   /**
@@ -543,7 +548,7 @@
    */
   function stanceHtml(group, _sectorAvg) {
     const util = U();
-    const score = Number(group.stance_score ?? group.cluster_score);
+    const score = groupRating(group);
     const hasScore = Number.isFinite(score) && score >= -10 && score <= 10;
     const stance = hasScore ? (score > 0 ? 'constructive' : score < 0 ? 'cautious' : 'watch') : String(group.stance || 'watch').toLowerCase();
     const horizon = String(group.time_horizon || '').toLowerCase();

@@ -292,7 +292,7 @@
       }
       rows.push({
         stance: String(match.stance || 'watch').toLowerCase(),
-        stanceScore: Number.isFinite(Number(match.stance_score ?? match.cluster_score)) ? Number(match.stance_score ?? match.cluster_score) : null,
+        stanceScore: window.ClustrUtil.exponentialMeanRating((match.articles || []).map(article => article.rating ?? article.score)) ?? (Number.isFinite(Number(match.stance_score ?? match.cluster_score)) ? Number(match.stance_score ?? match.cluster_score) : null),
         confidence: String(match.confidence || '').toLowerCase(),
         horizon: String(match.time_horizon || '').toLowerCase(),
         date: p.created_at || '',

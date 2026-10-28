@@ -24,6 +24,15 @@ function formatMoney(value, digits = 2) {
   return Number(value).toFixed(digits);
 }
 
+function exponentialMeanRating(values) {
+  const ratings = (values || []).map(Number).filter(value => Number.isFinite(value) && value >= -10 && value <= 10 && value !== 0);
+  if (!ratings.length) return null;
+  const impact = ratings.reduce((sum, value) => sum + Math.sign(value) * Math.pow(3, Math.abs(value)), 0) / ratings.length;
+  if (Math.abs(impact) < 1e-12) return 0;
+  const score = Math.sign(impact) * Math.log(Math.abs(impact)) / Math.log(3);
+  return Math.max(-10, Math.min(10, Number(score.toFixed(1))));
+}
+
 function deltaSincePublish(publishPrice, livePrice) {
   if (publishPrice == null || livePrice == null || Number(publishPrice) === 0) {
     return null;
@@ -89,6 +98,7 @@ window.ClustrUtil = {
   normalizeSymbol,
   formatPct,
   formatMoney,
+  exponentialMeanRating,
   deltaSincePublish,
   toneClass,
   escapeHtml,
