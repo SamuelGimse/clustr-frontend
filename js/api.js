@@ -26,7 +26,7 @@
     const res = await fetch(`${url}/rest/v1/${path}`, {
       headers: {
         apikey: key,
-        Authorization: `Bearer ${key}`,
+        Authorization: `Bearer ${window.ClustrAuth?.accessToken() || key}`,
         Accept: 'application/json'
       }
     });
@@ -43,7 +43,7 @@
    */
   async function fetchPublishes(limit = 30) {
     return rest(
-      `publishes?select=id,title,notes,market,created_at,groups_json&notes=like.PULSE%20pipeline*&order=id.desc&limit=${encodeURIComponent(String(Math.min(limit, 100)))}`
+      `clustr_publishes?select=id,title,notes,market,created_at,groups_json&notes=like.PULSE%20pipeline*&order=id.desc&limit=${encodeURIComponent(String(Math.min(limit, 100)))}`
     );
   }
 
@@ -206,6 +206,7 @@
     if (!name) return [];
 
     const local = localStanceHistory(name);
+    if (window.ClustrAuth?.accessToken()) return local;
     if (local.some(row => row.stanceScore != null)) return local;
 
     try {

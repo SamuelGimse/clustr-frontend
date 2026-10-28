@@ -31,6 +31,7 @@
   const signalView = document.getElementById('signalView');
   const mindView = document.getElementById('mindView');
   const weeklyView = document.getElementById('weeklyView');
+  const accountView = document.getElementById('accountView');
 
   const navEvents = document.getElementById('navEvents');
   const navMap = document.getElementById('navMap');
@@ -38,6 +39,9 @@
   const navSignal = document.getElementById('navSignal');
   const navMind = document.getElementById('navMind');
   const navWeekly = document.getElementById('navWeekly');
+  const navAccount = document.getElementById('navAccount');
+  let authState = { session: null, user: null, role: 'free', plan: null };
+  let accountMode = 'signin';
 
   /**
    * Update header meta + enable/disable publish arrows.
@@ -93,7 +97,7 @@
     const R = window.ClustrRender;
     const MapApi = window.ClustrMap;
 
-    [navEvents, navMap, navDays, navSignal, navMind, navWeekly].forEach(b => {
+    [navEvents, navMap, navDays, navSignal, navMind, navWeekly, navAccount].forEach(b => {
       if (b) {
         b.classList.remove('is-active');
         b.setAttribute('aria-current', 'false');
@@ -106,6 +110,7 @@
     if (signalView) signalView.classList.add('hidden');
     if (mindView) mindView.classList.add('hidden');
     if (weeklyView) weeklyView.classList.add('hidden');
+    if (accountView) accountView.classList.add('hidden');
 
     if (which === 'events') {
       if (navEvents) {
@@ -173,6 +178,13 @@
       }
       if (weeklyView) weeklyView.classList.remove('hidden');
       renderWeekly();
+    } else if (which === 'account') {
+      if (navAccount) {
+        navAccount.classList.add('is-active');
+        navAccount.setAttribute('aria-current', 'page');
+      }
+      if (accountView) accountView.classList.remove('hidden');
+      renderAccount();
     } else if (which === 'days') {
       if (navDays) {
         navDays.classList.add('is-active');
@@ -219,6 +231,12 @@
       return at >= start.getTime() && at <= end.getTime();
     });
     range.textContent = `${start.toLocaleDateString()} – ${end.toLocaleDateString()} · rolling 7 days · ${inWeek.length} publishes`;
+    if (authState.role !== 'pro') {
+      summary.innerHTML = '<div class="weekly-locked"><b>Pro</b><span>Weekly history is part of the paid plan.</span></div>';
+      chart.innerHTML = '';
+      list.innerHTML = '<div class="weekly-empty">Upgrade to Pro in Account to unlock weekly clusters and trends.</div>';
+      return;
+    }
     summary.innerHTML = '<div class="weekly-empty">Loading the last seven days…</div>';
     const data = await Promise.all(inWeek.map(async pub => {
       const key = String(pub.id);
@@ -301,6 +319,29 @@
     const score = item.score == null ? '—' : `${item.score > 0 ? '+' : ''}${item.score.toFixed(1)}`;
     const change = showChange && item.change != null ? `<span class="weekly-change ${item.change>0?'up':item.change<0?'down':''}">${item.change>0?'+':''}${item.change.toFixed(1)}</span>` : '';
     return `<article class="weekly-cluster"><div class="weekly-cluster-score ${item.score>0?'up':item.score<0?'down':''}">${score}</div><div class="weekly-cluster-main"><h3>${window.ClustrUtil.escapeHtml(item.name)}</h3><p>${item.stories.size} unique articles · ${item.days.size} days · ${item.market}</p><div class="weekly-tickers">${[...item.tickers].slice(0,10).map(t=>`<span>${window.ClustrUtil.escapeHtml(t)}</span>`).join('')}</div></div>${change}</article>`;
+  }
+
+  function renderAccount(message = '') {
+    const title = document.getElementById('accountTitle');
+    const note = document.getElementById('accountMessage');
+    const content = document.getElementById('accountContent');
+    if (!title || !content) return;
+    note.textContent = message;
+    if (!authState.user) {
+      title.textContent = accountMode === 'signup' ? 'Create your free account' : 'Sign in to Clustr';
+      content.innerHTML = `<form id="accountForm" class="account-form"><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" minlength="8" autocomplete="${accountMode === 'signup' ? 'new-password' : 'current-password'}" required></label><button class="account-primary" type="submit">${accountMode === 'signup' ? 'Create free account' : 'Sign in'}</button></form><div class="account-actions"><button type="button" data-account-action="switch">${accountMode === 'signup' ? 'Already have an account? Sign in' : 'Create a free account'}</button>${accountMode === 'signin' ? '<button type="button" data-account-action="reset">Reset password</button>' : ''}</div><p class="account-plan-note">Free includes the previous trading day. Pro unlocks live clusters and full history.</p>`;
+      return;
+    }
+    if (authState.recovery) {
+      title.textContent = 'Set a new password';
+      content.innerHTML = `<p>${window.ClustrUtil.escapeHtml(authState.user.email || '')}</p><form id="passwordForm" class="account-form"><label>New password<input name="password" type="password" minlength="8" autocomplete="new-password" required></label><button class="account-primary" type="submit">Update password</button></form>`;
+      return;
+    }
+    title.textContent = 'Your Clustr account';
+    content.innerHTML = `<div class="account-profile"><span>${window.ClustrUtil.escapeHtml(authState.user.email || '')}</span><span class="account-plan-badge">${authState.role === 'pro' ? 'PRO · ACTIVE' : 'FREE'}</span></div>` +
+      (authState.role === 'pro' ? `<section class="account-plan"><h2>Pro is active</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p>${authState.plan?.current_period_end ? `<p class="account-plan-note">Current period ends ${new Date(authState.plan.current_period_end).toLocaleDateString()}.</p>` : ''}<button class="account-secondary" type="button" data-account-action="portal">Manage subscription</button></section>` :
+      `<section class="account-plan"><h2>Free plan</h2><p>Access the previous trading day’s clusters for free.</p><h3>Pro · 99 kr/month</h3><p>Unlock current clusters, weekly cluster history, trends, and the full archive.</p><button class="account-primary" type="button" data-account-action="checkout">Continue to secure checkout</button>${authState.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage billing</button>' : ''}</section>`) +
+      '<button class="account-secondary" type="button" data-account-action="logout">Sign out</button>';
   }
 
   /**
@@ -507,6 +548,13 @@
   async function init() {
     try {
       const bootP = runBoot();
+      authState = await window.ClustrAuth.restore();
+      if (!authState.user) {
+        await bootP;
+        await endBoot();
+        setNav('account');
+        return;
+      }
       // Load data while the sequence runs so enter feels instant
       const dataP = window.ClustrApi.fetchPublishes(100);
       await bootP;
@@ -521,7 +569,8 @@
 
       await paintCurrent();
       warmGroupsCache(14);
-      setNav('events');
+      if (location.hash === '#/account' || new URLSearchParams(location.search).has('checkout')) setNav('account');
+      else setNav('events');
     } catch (err) {
       console.error(err);
       await endBoot();
@@ -532,9 +581,47 @@
   if (navEvents) navEvents.addEventListener('click', () => setNav('events'));
   if (navMap) navMap.addEventListener('click', () => setNav('map'));
   if (navWeekly) navWeekly.addEventListener('click', () => setNav('weekly'));
+  if (navAccount) navAccount.addEventListener('click', () => setNav('account'));
   if (navMind) navMind.addEventListener('click', () => setNav('mind'));
   if (navDays) navDays.addEventListener('click', () => setNav('days'));
   if (navSignal) navSignal.addEventListener('click', () => setNav('signal'));
+
+  document.addEventListener('click', async event => {
+    const button = event.target.closest('[data-account-action]');
+    if (!button) return;
+    const action = button.getAttribute('data-account-action');
+    try {
+      if (action === 'switch') { accountMode = accountMode === 'signup' ? 'signin' : 'signup'; renderAccount(); }
+      if (action === 'reset') {
+        const email = document.querySelector('#accountForm [name="email"]')?.value.trim();
+        if (!email) { renderAccount('Enter your email first.'); return; }
+        await window.ClustrAuth.resetPassword(email); renderAccount('Password reset email sent. Check your inbox.');
+      }
+      if (action === 'checkout') await window.ClustrAuth.checkout();
+      if (action === 'portal') await window.ClustrAuth.portal();
+      if (action === 'logout') { await window.ClustrAuth.signOut(); window.location.reload(); }
+    } catch (err) { renderAccount(err.message || 'Could not complete that action.'); }
+  });
+
+  document.addEventListener('submit', async event => {
+    const form = event.target;
+    if (form.id === 'accountForm') {
+      event.preventDefault();
+      const fields = new FormData(form), email = String(fields.get('email') || '').trim(), password = String(fields.get('password') || '');
+      try {
+        if (accountMode === 'signup') {
+          const result = await window.ClustrAuth.signUp(email, password);
+          if (result.needsConfirmation) { renderAccount('Check your email to confirm the account, then sign in.'); return; }
+        } else await window.ClustrAuth.signIn(email, password);
+        window.location.reload();
+      } catch (err) { renderAccount(err.message || 'Could not sign in.'); }
+    }
+    if (form.id === 'passwordForm') {
+      event.preventDefault();
+      try { await window.ClustrAuth.updatePassword(String(new FormData(form).get('password') || '')); window.location.reload(); }
+      catch (err) { renderAccount(err.message || 'Could not update password.'); }
+    }
+  });
 
   document.querySelectorAll('[data-weekly-mode]').forEach(btn => {
     btn.addEventListener('click', () => {

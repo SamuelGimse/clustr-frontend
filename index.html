@@ -98,6 +98,10 @@
           </svg>
           <span class="nav-rail-label">Weekly</span>
         </button>
+        <button type="button" id="navAccount" class="nav-rail-btn" title="Account and subscription" aria-label="Account and subscription">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+          <span class="nav-rail-label">Account</span>
+        </button>
         <button type="button" id="navMind" class="nav-rail-btn" title="Cluster map" aria-label="Cluster mind map" hidden>
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
             <circle cx="12" cy="12" r="3"/><circle cx="5" cy="7" r="2.5"/><circle cx="19" cy="8" r="2.5"/>
@@ -263,6 +267,9 @@
         <div id="weeklyChart" class="weekly-chart"></div>
         <div id="weeklyList" class="weekly-list"></div>
       </section>
+      <section id="accountView" class="hidden account-page" aria-label="Account and subscription">
+        <div class="account-shell"><div class="account-eyebrow">CLUSTR / ACCOUNT</div><h1 id="accountTitle">Free account</h1><p id="accountMessage" class="account-message" role="status"></p><div id="accountContent"></div></div>
+      </section>
     </main>
   </div>
 
@@ -271,12 +278,13 @@
   <script src="js/config.js?v=repo-exact"></script>
   <script src="js/util.js?v=repo-exact"></script>
   <script src="js/quotes.js?v=repo-exact"></script>
-  <script src="js/api.js?v=weekly-1"></script>
+  <script src="js/auth.js?v=account-1"></script>
+  <script src="js/api.js?v=account-1"></script>
   <script src="js/themes.js?v=repo-exact"></script>
   <script src="js/map.js?v=repo-exact"></script>
   <script src="js/mindmap.js?v=repo-exact"></script>
   <script src="js/render.js?v=repo-exact"></script>
   <script src="js/signal.js?v=repo-exact"></script>
-  <script src="js/app.js?v=weekly-1"></script>
+  <script src="js/app.js?v=account-1"></script>
 </body>
 </html>
