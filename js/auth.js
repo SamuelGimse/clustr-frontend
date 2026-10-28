@@ -15,6 +15,12 @@
   async function subscription(user, token) {
     if (!user || !token) return { role: 'free', plan: null };
     try {
+      const admin = await root.fetch(endpoint('/rest/v1/rpc/clustr_user_is_admin'), {
+        method: 'POST',
+        headers: { ...headers(token), Accept: 'application/json' },
+        body: '{}'
+      });
+      if (admin.ok && await admin.json()) return { role: 'admin', plan: null };
       const path = `/rest/v1/clustr_subscriptions?select=status,current_period_end,cancel_at_period_end,stripe_customer_id&user_id=eq.${encodeURIComponent(user.id)}&limit=1`;
       const res = await root.fetch(endpoint(path), { headers: { ...headers(token), Accept: 'application/json' } });
       if (!res.ok) return { role: 'free', plan: null };

@@ -231,7 +231,7 @@
       return at >= start.getTime() && at <= end.getTime();
     });
     range.textContent = `${start.toLocaleDateString()} – ${end.toLocaleDateString()} · rolling 7 days · ${inWeek.length} publishes`;
-    if (authState.role !== 'pro') {
+    if (!['pro', 'admin'].includes(authState.role)) {
       summary.innerHTML = '<div class="weekly-locked"><b>Pro</b><span>Weekly history is part of the paid plan.</span></div>';
       chart.innerHTML = '';
       list.innerHTML = '<div class="weekly-empty">Upgrade to Pro in Account to unlock weekly clusters and trends.</div>';
@@ -338,8 +338,8 @@
       return;
     }
     title.textContent = 'Your Clustr account';
-    content.innerHTML = `<div class="account-profile"><span>${window.ClustrUtil.escapeHtml(authState.user.email || '')}</span><span class="account-plan-badge">${authState.role === 'pro' ? 'PRO · ACTIVE' : 'FREE'}</span></div>` +
-      (authState.role === 'pro' ? `<section class="account-plan"><h2>Pro is active</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p>${authState.plan?.current_period_end ? `<p class="account-plan-note">Current period ends ${new Date(authState.plan.current_period_end).toLocaleDateString()}.</p>` : ''}<button class="account-secondary" type="button" data-account-action="portal">Manage subscription</button></section>` :
+    content.innerHTML = `<div class="account-profile"><span>${window.ClustrUtil.escapeHtml(authState.user.email || '')}</span><span class="account-plan-badge">${authState.role === 'admin' ? 'ADMIN' : authState.role === 'pro' ? 'PRO · ACTIVE' : 'FREE'}</span></div>` +
+      (authState.role === 'admin' ? `<section class="account-plan"><h2>Admin access is active</h2><p>Full Clustr access, including current clusters, weekly trends, and the complete publish history.</p></section>` : authState.role === 'pro' ? `<section class="account-plan"><h2>Pro is active</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p>${authState.plan?.current_period_end ? `<p class="account-plan-note">Current period ends ${new Date(authState.plan.current_period_end).toLocaleDateString()}.</p>` : ''}<button class="account-secondary" type="button" data-account-action="portal">Manage subscription</button></section>` :
       `<section class="account-plan"><h2>Free plan</h2><p>Access the previous trading day’s clusters for free.</p><h3>Pro · 99 kr/month</h3><p>Unlock current clusters, weekly cluster history, trends, and the full archive.</p><button class="account-primary" type="button" data-account-action="checkout">Continue to secure checkout</button>${authState.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage billing</button>' : ''}</section>`) +
       '<button class="account-secondary" type="button" data-account-action="logout">Sign out</button>';
   }
