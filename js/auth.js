@@ -47,14 +47,15 @@
   }
   async function signIn(email,password) { save(await request('/auth/v1/token?grant_type=password','POST',{email,password})); return restore(); }
   async function signUp(email,password) {
-    const redirect=root.location.origin+root.location.pathname;
+    const redirect=cfg().AUTH_REDIRECT_URL || root.location.origin+root.location.pathname;
     const result=await request('/auth/v1/signup?redirect_to='+encodeURIComponent(redirect),'POST',{email,password}), value=result.session||result;
     if(value.access_token){save(value);return restore();}
     return { needsConfirmation:true,user:result.user||null };
   }
-  async function resetPassword(email) { await request('/auth/v1/recover?redirect_to='+encodeURIComponent(root.location.origin+root.location.pathname),'POST',{email}); }
+  async function resendConfirmation(email) { const redirect=cfg().AUTH_REDIRECT_URL || root.location.origin+root.location.pathname; await request('/auth/v1/resend?redirect_to='+encodeURIComponent(redirect),'POST',{type:'signup',email}); }
+  async function resetPassword(email) { const redirect=cfg().AUTH_REDIRECT_URL || root.location.origin+root.location.pathname; await request('/auth/v1/recover?redirect_to='+encodeURIComponent(redirect),'POST',{email}); }
   async function updatePassword(password) { const s=session||read(); if(!s?.access_token) throw new Error('Open the password reset link from your email first.'); await request('/auth/v1/user','PUT',{password},s.access_token); root.localStorage.removeItem('clustr-auth-recovery'); }
   async function signOut() { const s=session||read(); try { if(s?.access_token) await request('/auth/v1/logout','POST',null,s.access_token); } finally { save(null); } }
   async function callBilling(path) { let s=session||read(); if(s&&Number(s.expires_at)<Math.floor(Date.now()/1000)+60) s=await refresh(s); if(!s?.access_token) throw new Error('Sign in first.'); const result=await request(`/functions/v1/${path}`,'POST',{app:'clustr'},s.access_token); if(!result.url) throw new Error('Billing could not be opened.'); root.location.assign(result.url); }
-  root.ClustrAuth={restore,signIn,signUp,resetPassword,updatePassword,signOut,checkout:()=>callBilling('create-checkout-session'),portal:()=>callBilling('create-portal-session'),accessToken:()=>{const s=session||read();return s&&s.access_token||'';}};
+  root.ClustrAuth={restore,signIn,signUp,resendConfirmation,resetPassword,updatePassword,signOut,checkout:()=>callBilling('create-checkout-session'),portal:()=>callBilling('create-portal-session'),accessToken:()=>{const s=session||read();return s&&s.access_token||'';}};
 })(window);
