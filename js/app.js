@@ -553,6 +553,7 @@
         await bootP;
         await endBoot();
         setNav('account');
+        if (authState.authError) renderAccount(authState.authError);
         return;
       }
       // Load data while the sequence runs so enter feels instant
@@ -592,7 +593,7 @@
     const action = button.getAttribute('data-account-action');
     try {
       if (action === 'switch') { accountMode = accountMode === 'signup' ? 'signin' : 'signup'; renderAccount(); }
-      if (action === 'google') window.ClustrAuth.signInWithGoogle();
+      if (action === 'google') await window.ClustrAuth.signInWithGoogle();
       if (action === 'reset') {
         const email = document.querySelector('#accountForm [name="email"]')?.value.trim();
         if (!email) { renderAccount('Enter your email first.'); return; }

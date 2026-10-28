@@ -2,6 +2,7 @@
   const cfg = () => root.ClustrConfig || {};
   const key = 'clustr-auth-session-v1';
   let session = null;
+  let oauthClient = null;
   const headers = token => ({ apikey: cfg().SUPABASE_ANON_KEY, ...(token ? { Authorization: `Bearer ${token}` } : {}), 'Content-Type': 'application/json' });
   const endpoint = path => String(cfg().SUPABASE_URL || '').replace(/\/$/, '') + path;
   const read = () => { try { return JSON.parse(root.localStorage.getItem(key) || 'null'); } catch { return null; } };
@@ -11,6 +12,15 @@
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.msg || data.message || data.error_description || data.error || `Request failed (${res.status})`);
     return data;
+  }
+  function getOAuthClient() {
+    if (!oauthClient && root.supabase?.createClient) {
+      oauthClient = root.supabase.createClient(cfg().SUPABASE_URL, cfg().SUPABASE_ANON_KEY, {
+        auth: { flowType: 'pkce', storageKey: key, persistSession: true, autoRefreshToken: false, detectSessionInUrl: false }
+      });
+    }
+    if (!oauthClient) throw new Error('Google sign-in could not initialize. Reload Clustr and try again.');
+    return oauthClient;
   }
   async function subscription(user, token) {
     if (!user || !token) return { role: 'free', plan: null };
@@ -33,6 +43,24 @@
     const next = await request('/auth/v1/token?grant_type=refresh_token','POST',{refresh_token:value.refresh_token}); save(next); return next;
   }
   async function restore() {
+    const callbackUrl = new URL(root.location.href);
+    const code = callbackUrl.searchParams.get('code');
+    if (code) {
+      try {
+        const { data, error } = await getOAuthClient().auth.exchangeCodeForSession(code);
+        if (error) throw error;
+        save(data.session);
+        callbackUrl.searchParams.delete('code');
+        callbackUrl.hash = '#/account';
+        root.history.replaceState(null, '', callbackUrl.pathname + callbackUrl.search + callbackUrl.hash);
+      } catch (error) {
+        save(null);
+        callbackUrl.searchParams.delete('code');
+        callbackUrl.hash = '#/account';
+        root.history.replaceState(null, '', callbackUrl.pathname + callbackUrl.search + callbackUrl.hash);
+        return { session: null, user: null, role: 'free', plan: null, authError: error.message || 'Google sign-in could not be completed.' };
+      }
+    }
     const fragment = new URLSearchParams((root.location.hash || '').slice(1));
     if (fragment.has('access_token') && fragment.has('refresh_token')) {
       save({ access_token:fragment.get('access_token'), refresh_token:fragment.get('refresh_token'), expires_in:fragment.get('expires_in') });
@@ -46,7 +74,7 @@
     catch { save(null); return { session:null,user:null,role:'free',plan:null }; }
   }
   async function signIn(email,password) { save(await request('/auth/v1/token?grant_type=password','POST',{email,password})); return restore(); }
-  function signInWithGoogle() { const redirect=cfg().AUTH_REDIRECT_URL || root.location.origin+root.location.pathname; root.location.assign(endpoint('/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(redirect))); }
+  async function signInWithGoogle() { const redirect=cfg().AUTH_REDIRECT_URL || root.location.origin+root.location.pathname; const { error } = await getOAuthClient().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirect } }); if (error) throw error; }
   async function signUp(email,password) {
     const redirect=cfg().AUTH_REDIRECT_URL || root.location.origin+root.location.pathname;
     const result=await request('/auth/v1/signup?redirect_to='+encodeURIComponent(redirect),'POST',{email,password}), value=result.session||result;
