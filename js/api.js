@@ -47,6 +47,14 @@
     );
   }
 
+  async function fetchAiSummaries(fromDate, markets = []) {
+    const allowed = [...new Set(markets.map(m => String(m).toUpperCase()).filter(m => m === 'US' || m === 'NO'))];
+    if (!allowed.length) return [];
+    const params = new URLSearchParams({ select: 'kind,market,summary_date,cluster_name,summary,model', summary_date: `gte.${fromDate}`, order: 'summary_date.desc', limit: '300' });
+    params.set('market', allowed.length === 1 ? `eq.${allowed[0]}` : `in.(${allowed.join(',')})`);
+    return rest(`clustr_ai_summaries?${params.toString()}`);
+  }
+
   /**
    * Normalize a relational cluster row into the shape the render layer expects.
    * @param {object} row
@@ -306,6 +314,7 @@
 
   window.ClustrApi = {
     fetchPublishes,
+    fetchAiSummaries,
     fetchClustersForPublish,
     loadGroupsForPublish,
     groupsFromPublish,

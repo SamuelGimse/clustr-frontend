@@ -255,6 +255,7 @@
     const requestId = ++weeklyRenderId;
     const range = document.getElementById('weeklyRange');
     const summary = document.getElementById('weeklySummary');
+    const aiSummary = document.getElementById('weeklyAiSummary');
     const chart = document.getElementById('weeklyChart');
     const list = document.getElementById('weeklyList');
     if (!range || !summary || !chart || !list) return;
@@ -267,6 +268,7 @@
     range.textContent = `${start.toLocaleDateString()} – ${end.toLocaleDateString()} · rolling 7 days · ${inWeek.length} publishes`;
     if (!['pro', 'admin'].includes(authState.role)) {
       summary.innerHTML = '<div class="weekly-locked"><b>Pro</b><span>Weekly history is part of the paid plan.</span></div>';
+      if (aiSummary) aiSummary.innerHTML = '';
       chart.innerHTML = '';
       list.innerHTML = '<div class="weekly-empty">Upgrade to Pro in Account to unlock weekly clusters and trends.</div>';
       return;
@@ -280,7 +282,24 @@
       }
       return { publish: pub, groups: groupsCache[key] || [] };
     }));
+    let savedSummaries = [];
+    try {
+      const markets = [...new Set(inWeek.map(pub => String(pub.market || 'US').toUpperCase()))];
+      savedSummaries = await window.ClustrApi.fetchAiSummaries(start.toISOString().slice(0, 10), markets);
+    } catch (err) { console.warn('Ollama summaries unavailable:', err.message); }
     if (requestId !== weeklyRenderId || view !== 'weekly') return;
+    const latestDaily = new Map();
+    const weeklySummaryByCluster = new Map();
+    for (const row of savedSummaries) {
+      if (row.kind === 'daily') {
+        const current = latestDaily.get(row.market);
+        if (!current || row.summary_date > current.summary_date) latestDaily.set(row.market, row);
+      } else if (row.kind === 'weekly_cluster') {
+        const key = `${row.market}:${String(row.cluster_name || '').trim().toLocaleLowerCase()}`;
+        if (!weeklySummaryByCluster.has(key)) weeklySummaryByCluster.set(key, row.summary);
+      }
+    }
+    if (aiSummary) aiSummary.innerHTML = [...latestDaily.values()].map(row => `<section class="weekly-ai-digest"><h2>Ollama daily digest · ${window.ClustrUtil.escapeHtml(row.market)} · ${window.ClustrUtil.escapeHtml(row.summary_date)}</h2><p>${window.ClustrUtil.escapeHtml(row.summary)}</p><small>Generated with ${window.ClustrUtil.escapeHtml(row.model || 'local Ollama')}</small></section>`).join('');
     const byCluster = new Map();
     for (const { publish, groups } of data) {
       const day = new Date(publish.created_at).toLocaleDateString('en-CA');
@@ -305,7 +324,8 @@
     const clusters = [...byCluster.values()].map(item => {
       const articleRatings = [...item.stories.values()].map(a => a.rating).filter(n => Number.isFinite(n) && n >= -10 && n <= 10 && n !== 0);
       const scores = articleRatings.length ? articleRatings : item.scoreValues;
-      return { ...item, score: window.ClustrUtil.exponentialMeanRating(scores) };
+      const summaryKey = `${item.market}:${item.name.trim().toLocaleLowerCase()}`;
+      return { ...item, score: window.ClustrUtil.exponentialMeanRating(scores), summary: weeklySummaryByCluster.get(summaryKey) || '' };
     })
       .sort((a,b) => b.days.size-a.days.size || Math.abs(b.score||0)-Math.abs(a.score||0));
     const days = new Map();
@@ -352,7 +372,8 @@
   function weeklyClusterCard(item, showChange) {
     const score = item.score == null ? '—' : `${item.score > 0 ? '+' : ''}${item.score.toFixed(1)}`;
     const change = showChange && item.change != null ? `<span class="weekly-change ${item.change>0?'up':item.change<0?'down':''}">${item.change>0?'+':''}${item.change.toFixed(1)}</span>` : '';
-    return `<article class="weekly-cluster"><div class="weekly-cluster-score ${item.score>0?'up':item.score<0?'down':''}">${score}</div><div class="weekly-cluster-main"><h3>${window.ClustrUtil.escapeHtml(item.name)}</h3><p>${item.stories.size} unique articles · ${item.days.size} days · ${item.market}</p><div class="weekly-tickers">${[...item.tickers].slice(0,10).map(t=>`<span>${window.ClustrUtil.escapeHtml(t)}</span>`).join('')}</div></div>${change}</article>`;
+    const summary = item.summary ? `<p class="weekly-cluster-summary">${window.ClustrUtil.escapeHtml(item.summary)}</p>` : '';
+    return `<article class="weekly-cluster"><div class="weekly-cluster-score ${item.score>0?'up':item.score<0?'down':''}">${score}</div><div class="weekly-cluster-main"><h3>${window.ClustrUtil.escapeHtml(item.name)}</h3><p>${item.stories.size} unique articles · ${item.days.size} days · ${item.market}</p>${summary}<div class="weekly-tickers">${[...item.tickers].slice(0,10).map(t=>`<span>${window.ClustrUtil.escapeHtml(t)}</span>`).join('')}</div></div>${change}</article>`;
   }
 
   function renderAccount(message = '') {
