@@ -45,6 +45,7 @@
   const navAdmin = document.getElementById('navAdmin');
   let authState = { session: null, user: null, role: 'free', plan: null };
   let accountMode = 'signin';
+  let publishChart = null;
 
   function eventClusterScore(group) {
     const ratings = (group.articles || []).map(article => article.rating ?? article.score);
@@ -394,6 +395,33 @@
     output.scrollTop = output.scrollHeight;
   }
 
+  function updatePublishChart(progress) {
+    if (!progress) return;
+    const canvas = document.getElementById('publishChart');
+    const text = document.getElementById('publishProgressText');
+    const filterTotal = Number(progress.filterTotal) || 20;
+    const chartValues = [
+      Number(progress.fetchedArticles) || 0,
+      Math.max(Number(progress.filterProcessed) || 0, Number(progress.filterActive) || 0),
+      Number(progress.relevant) || 0,
+      Number(progress.clusters) || 0,
+      Number(progress.stocksMapped) || 0
+    ];
+    if (text) text.textContent = `Fetched ${chartValues[0]} · filtering ${chartValues[1]}/${filterTotal} · relevant ${chartValues[2]} · clusters ${chartValues[3]} · stocks mapped ${chartValues[4]}/${Number(progress.stockMapTotal) || 0}`;
+    if (!canvas || !window.Chart) return;
+    const labels = ['Fetched articles', 'Filtering progress', 'Relevant', 'Clusters', 'Stock maps complete'];
+    if (!publishChart) {
+      publishChart = new window.Chart(canvas, {
+        type: 'bar',
+        data: { labels, datasets: [{ data: chartValues, backgroundColor: ['#51d5b1','#74a7ff','#39c889','#8e81ff','#f4b86b'], borderRadius: 6, borderSkipped: false }] },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: true, animation: { duration: 180 }, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0, color: '#a8b6c8' }, grid: { color: 'rgba(150,170,195,.12)' } }, y: { ticks: { color: '#d6e0ee' }, grid: { display: false } } } }
+      });
+      return;
+    }
+    publishChart.data.datasets[0].data = chartValues;
+    publishChart.update();
+  }
+
   /**
    * Jump to events view and scroll to a cluster card.
    * @param {string} name
@@ -684,8 +712,9 @@
         button.disabled = true;
         button.textContent = 'Starting full publish…';
         appendPublishConsole([], true);
+        updatePublishChart({ fetchedArticles: 0, filterProcessed: 0, filterTotal: 20, relevant: 0, clusters: 0, stocksMapped: 0, stockMapTotal: 0 });
         try {
-          const result = await window.ClustrAuth.runPublish(market, stage => renderAdmin(stage), lines => appendPublishConsole(lines));
+          const result = await window.ClustrAuth.runPublish(market, (stage, job) => { renderAdmin(stage); updatePublishChart(job?.progress); }, lines => appendPublishConsole(lines));
           await refreshPublishes();
           renderAdmin(`Publish saved · ${result.market} · ${result.counts?.clusters ?? result.count} clusters · ${result.counts?.relevant ?? 0} scored stories · ID ${result.publishId}.`);
         } finally { button.disabled = false; }

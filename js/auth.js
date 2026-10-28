@@ -111,13 +111,13 @@
     const deadline=Date.now()+30*60*1000;
     let cursor=0;
     while(job.status==='running') {
-      if(onStage) onStage(job.stage||'Publish is running…');
+      if(onStage) onStage(job.stage||'Publish is running…',job);
       await new Promise(resolve=>root.setTimeout(resolve,2000));
       if(Date.now()>deadline) throw new Error('Publish is still running. Reopen Account and check the backend status before starting another one.');
       response=await root.fetch(`${base}/api/admin/publish/${encodeURIComponent(jobId)}?after=${cursor}`,{headers:{Authorization:`Bearer ${current.access_token}`}});
       job=await response.json().catch(()=>({}));
       if(!response.ok) throw new Error(job.error||`Could not read publish status (${response.status}).`);
-      if(onStage) onStage(job.stage||'Publish is running…');
+      if(onStage) onStage(job.stage||'Publish is running…',job);
       if(onLogs&&Array.isArray(job.logs)&&job.logs.length) onLogs(job.logs);
       cursor=Number(job.logCount)||cursor;
     }
