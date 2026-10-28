@@ -93,5 +93,29 @@
   async function updatePassword(password) { const s=session||read(); if(!s?.access_token) throw new Error('Open the password reset link from your email first.'); await request('/auth/v1/user','PUT',{password},s.access_token); root.localStorage.removeItem('clustr-auth-recovery'); }
   async function signOut() { const s=session||read(); try { if(s?.access_token) await request('/auth/v1/logout','POST',null,s.access_token); } finally { save(null); } }
   async function callBilling(path) { let s=session||read(); if(s&&Number(s.expires_at)<Math.floor(Date.now()/1000)+60) s=await refresh(s); if(!s?.access_token) throw new Error('Sign in first.'); const result=await request(`/functions/v1/${path}`,'POST',{app:'clustr'},s.access_token); if(!result.url) throw new Error('Billing could not be opened.'); root.location.assign(result.url); }
-  root.ClustrAuth={restore,signIn,signInWithGoogle,signUp,resendConfirmation,resetPassword,updatePassword,signOut,checkout:()=>callBilling('create-checkout-session'),portal:()=>callBilling('create-portal-session'),accessToken:()=>{const s=session||read();return s&&s.access_token||'';}};
+  async function runPublish(market, onStage) {
+    let current=session||read();
+    if(current&&Number(current.expires_at)<Math.floor(Date.now()/1000)+60) current=await refresh(current);
+    if(!current?.access_token) throw new Error('Sign in again before starting a publish.');
+    const base=String(cfg().PUBLISH_API_URL||'').replace(/\/$/,'');
+    if(!base) throw new Error('Publish service is not configured.');
+    const headers={Authorization:`Bearer ${current.access_token}`,'Content-Type':'application/json'};
+    let response;
+    try { response=await root.fetch(`${base}/api/admin/publish`,{method:'POST',headers,body:JSON.stringify({market})}); }
+    catch { throw new Error('Could not reach the publish service. Start clustr-backend on this PC with npm start, then retry.'); }
+    let job=await response.json().catch(()=>({}));
+    if(!response.ok) throw new Error(job.error||`Publish could not start (${response.status}).`);
+    const deadline=Date.now()+30*60*1000;
+    while(job.status==='running') {
+      if(onStage) onStage(job.stage||'Publish is running…');
+      await new Promise(resolve=>root.setTimeout(resolve,2000));
+      if(Date.now()>deadline) throw new Error('Publish is still running. Reopen Account and check the backend status before starting another one.');
+      response=await root.fetch(`${base}/api/admin/publish/${encodeURIComponent(job.jobId)}`,{headers:{Authorization:`Bearer ${current.access_token}`}});
+      job=await response.json().catch(()=>({}));
+      if(!response.ok) throw new Error(job.error||`Could not read publish status (${response.status}).`);
+    }
+    if(job.status==='failed') throw new Error(job.error||'Full publish failed.');
+    return job.result||job;
+  }
+  root.ClustrAuth={restore,signIn,signInWithGoogle,signUp,resendConfirmation,resetPassword,updatePassword,signOut,checkout:()=>callBilling('create-checkout-session'),portal:()=>callBilling('create-portal-session'),runPublish,accessToken:()=>{const s=session||read();return s&&s.access_token||'';}};
 })(window);

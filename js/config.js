@@ -9,6 +9,7 @@
  */
 const SUPABASE_URL = 'https://yrykmwjcarytyroofiar.supabase.co';
 const AUTH_REDIRECT_URL = 'https://samuelgimse.github.io/clustr-frontend/';
+const PUBLISH_API_URL = 'http://127.0.0.1:3001';
 
 /**
  * Supabase anon / publishable key (safe for browser).
@@ -177,6 +178,7 @@ window.ClustrConfig = {
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
   AUTH_REDIRECT_URL,
+  PUBLISH_API_URL,
   QUOTE_API_URL,
   BOOT_LINES,
   COUNTRY_COORDS,

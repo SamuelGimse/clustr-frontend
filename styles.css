@@ -742,6 +742,9 @@ html[data-theme="crt"] .crt-overlay::after {
 .account-plan-badge { padding:5px 9px; border-radius:8px; color:#53d49a; border:1px solid currentColor; font-size:11px; font-weight:800; }
 .account-plan { margin:18px 0; padding:18px; border:1px solid var(--md-outline,#29384a); border-radius:14px; }
 .account-plan h2 { margin:0 0 10px; }
+.account-publish-market { display:grid; gap:7px; max-width:260px; margin:16px 0; color:var(--md-on-surface-variant,#aab7c8); font-size:13px; }
+.account-publish-market select { min-height:42px; padding:8px 11px; border:1px solid var(--md-outline,#334155); border-radius:10px; color:var(--md-on-surface,#f4f7fb); background:rgba(4,10,18,.65); font:inherit; }
+.account-primary:disabled { opacity:.65; cursor:wait; }
 @media(max-width:700px) { .account-page { padding:8px; } .account-shell { padding:22px 18px; } }
 
 html[data-theme="crt"] .brand,

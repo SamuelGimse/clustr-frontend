@@ -362,7 +362,7 @@
     }
     title.textContent = 'Your Clustr account';
     content.innerHTML = `<div class="account-profile"><span>${window.ClustrUtil.escapeHtml(authState.user.email || '')}</span><span class="account-plan-badge">${authState.role === 'admin' ? 'ADMIN' : authState.role === 'pro' ? 'PRO · ACTIVE' : 'FREE'}</span></div>` +
-      (authState.role === 'admin' ? `<section class="account-plan"><h2>Admin access is active</h2><p>Full Clustr access, including current clusters, weekly trends, and the complete publish history.</p></section>` : authState.role === 'pro' ? `<section class="account-plan"><h2>Pro is active</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p>${authState.plan?.current_period_end ? `<p class="account-plan-note">Current period ends ${new Date(authState.plan.current_period_end).toLocaleDateString()}.</p>` : ''}<button class="account-secondary" type="button" data-account-action="portal">Manage subscription</button></section>` :
+      (authState.role === 'admin' ? `<section class="account-plan"><h2>Admin access is active</h2><p>Full Clustr access, including current clusters, weekly trends, and the complete publish history.</p><label class="account-publish-market">Publish market<select id="publishMarket"><option value="US">United States</option><option value="NO">Norway</option></select></label><button class="account-primary" type="button" data-account-action="publish">Run full publish</button><p class="account-plan-note">Fetches news and movers, scores and clusters stories, maps stocks, snapshots prices, and saves a new publish.</p></section>` : authState.role === 'pro' ? `<section class="account-plan"><h2>Pro is active</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p>${authState.plan?.current_period_end ? `<p class="account-plan-note">Current period ends ${new Date(authState.plan.current_period_end).toLocaleDateString()}.</p>` : ''}<button class="account-secondary" type="button" data-account-action="portal">Manage subscription</button></section>` :
       `<section class="account-plan"><h2>Free plan</h2><p>Access the previous trading day’s clusters for free.</p><h3>Pro · 99 kr/month</h3><p>Unlock current clusters, weekly cluster history, trends, and the full archive.</p><button class="account-primary" type="button" data-account-action="checkout">Continue to secure checkout</button>${authState.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage billing</button>' : ''}</section>`) +
       '<button class="account-secondary" type="button" data-account-action="logout">Sign out</button>';
   }
@@ -639,6 +639,16 @@
       }
       if (action === 'checkout') await window.ClustrAuth.checkout();
       if (action === 'portal') await window.ClustrAuth.portal();
+      if (action === 'publish') {
+        if (authState.role !== 'admin') throw new Error('Administrator access is required.');
+        const market = document.getElementById('publishMarket')?.value || 'US';
+        button.disabled = true;
+        button.textContent = 'Starting full publish…';
+        try {
+          const result = await window.ClustrAuth.runPublish(market, stage => { note.textContent = stage; });
+          renderAccount(`Publish saved (${result.market} · ${result.counts?.clusters ?? result.count} clusters · ${result.counts?.relevant ?? 0} scored stories). ID ${result.publishId}.`);
+        } finally { button.disabled = false; }
+      }
       if (action === 'logout') { await window.ClustrAuth.signOut(); window.location.reload(); }
     } catch (err) { renderAccount(err.message || 'Could not complete that action.'); }
   });
