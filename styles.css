@@ -6,19 +6,19 @@
 /* ========== Design tokens (M3-ish) ========== */
 :root,
 [data-theme="dark"] {
-  --md-sys-color-surface: #0a0a0a;
-  --md-sys-color-surface-container: #111111;
-  --md-sys-color-surface-container-high: #161616;
-  --md-sys-color-surface-container-highest: #1c1c1c;
-  --md-sys-color-on-surface: #eeeeee;
-  --md-sys-color-on-surface-variant: #888888;
-  --md-sys-color-primary: #f97316;
-  --md-sys-color-on-primary: #1a0a00;
-  --md-sys-color-primary-container: #3d1f0a;
-  --md-sys-color-outline: #2a2a2a;
-  --md-sys-color-outline-variant: #333333;
-  --md-sys-color-up: #4ade80;
-  --md-sys-color-down: #f87171;
+  --md-sys-color-surface: #12131a;
+  --md-sys-color-surface-container: #191c26;
+  --md-sys-color-surface-container-high: #202435;
+  --md-sys-color-surface-container-highest: #272c3e;
+  --md-sys-color-on-surface: #d8e2f7;
+  --md-sys-color-on-surface-variant: #6277a8;
+  --md-sys-color-primary: #78a8ff;
+  --md-sys-color-on-primary: #111827;
+  --md-sys-color-primary-container: #202d49;
+  --md-sys-color-outline: #2c3348;
+  --md-sys-color-outline-variant: #38415a;
+  --md-sys-color-up: #45dc91;
+  --md-sys-color-down: #ff7378;
   --md-sys-elevation-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
   --md-sys-elevation-2: 0 2px 6px rgba(0, 0, 0, 0.4);
   --md-sys-shape-sm: 8px;
@@ -1608,6 +1608,84 @@ html.boot-lock body {
 }
 .cluster-score-meter i:last-child::after {
   left: 0;
+}
+
+html[data-theme="dark"] body {
+  background: var(--bg);
+  color: var(--text);
+  letter-spacing: 0.005em;
+}
+html[data-theme="dark"] .nav-rail {
+  background: #151821;
+  border-color: var(--border);
+}
+html[data-theme="dark"] .nav-rail-btn.is-active {
+  background: #202d49;
+  color: var(--accent);
+}
+html[data-theme="dark"] .top-app-bar {
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+html[data-theme="dark"] .brand,
+html[data-theme="dark"] .cluster-name {
+  color: #dce7ff;
+}
+html[data-theme="dark"] .md-card,
+html[data-theme="dark"] .cluster-card {
+  background: var(--panel);
+  border-color: var(--border);
+}
+html[data-theme="dark"] .cluster-card {
+  padding: 18px;
+}
+html[data-theme="dark"] .md-btn--icon,
+html[data-theme="dark"] .md-btn--tonal,
+html[data-theme="dark"] .md-select,
+html[data-theme="dark"] .md-chip {
+  background-color: var(--panel-2);
+  border-color: var(--border);
+}
+html[data-theme="dark"] .md-btn--tonal:hover,
+html[data-theme="dark"] .md-btn--tonal.is-active,
+html[data-theme="dark"] .md-btn--icon:hover:not(:disabled) {
+  background-color: var(--md-sys-color-primary-container);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+html[data-theme="dark"] .movers-title,
+html[data-theme="dark"] .price-bar-title {
+  color: #dce7ff;
+  font-weight: 600;
+}
+html[data-theme="dark"] .price-bar,
+html[data-theme="dark"] .stance-history-panel {
+  background: var(--panel-2);
+}
+html[data-theme="dark"] .price-bar {
+  padding: 16px;
+}
+html[data-theme="dark"] .price-value {
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 650;
+}
+html[data-theme="dark"] .md-chart {
+  background: var(--panel);
+}
+html[data-theme="dark"] .article-grid > * {
+  background: #151a24;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+}
+html[data-theme="dark"] .article-title a {
+  color: var(--text);
+}
+html[data-theme="dark"] .article-title a:hover {
+  color: var(--accent);
+}
+html[data-theme="dark"] :focus-visible {
+  outline-color: var(--accent);
 }
 .cluster-reason {
   margin: 0 0 8px;
