@@ -102,7 +102,7 @@
     const headers={Authorization:`Bearer ${current.access_token}`,'Content-Type':'application/json'};
     let response;
     try { response=await root.fetch(`${base}/api/admin/publish`,{method:'POST',headers,body:JSON.stringify({market})}); }
-    catch { throw new Error('Could not reach the publish service. Start clustr-backend on this PC with npm start, then retry.'); }
+    catch { throw new Error('Could not reach the publish service. Start the backend on this PC with npm start and allow local network access in your browser if prompted.'); }
     let job=await response.json().catch(()=>({}));
     if(!response.ok) throw new Error(job.error||`Publish could not start (${response.status}).`);
     const deadline=Date.now()+30*60*1000;
