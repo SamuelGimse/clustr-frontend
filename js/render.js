@@ -9,7 +9,7 @@
     const rating = Number(article && article.rating);
     if (!Number.isInteger(rating) || rating < -10 || rating > 10) return '';
     const tone = rating > 0 ? 'positive' : rating < 0 ? 'negative' : 'neutral';
-    const value = `${rating > 0 ? '+' : ''}${rating}/10`;
+    const value = `${rating > 0 ? '+' : ''}${rating}`;
     return `<span class="article-rating article-rating--${tone}" aria-label="Article rating ${value}" title="Directional stock impact rating">Rating <strong>${value}</strong></span>`;
   }
 
@@ -20,7 +20,7 @@
     const value = `${score > 0 ? '+' : ''}${Math.round(score)}`;
     const intensity = score === 0 ? '0%' : `${(100 * Math.pow(2, Math.abs(score) / 2) / 32).toFixed(1)}%`;
     const label = score >= 2 ? '▲ POS' : score <= -2 ? '▼ NEG' : '● NEU';
-    return `<div class="cluster-score cluster-score--${tone}" title="Average article rating: ${value}/10" role="img" aria-label="Cluster rating ${value} out of 10, ${label}"><span class="cluster-score-value">${value}</span><span class="cluster-score-label">${label}</span><span class="cluster-score-meter" aria-hidden="true"><i style="--w:${score < 0 ? intensity : '0%'}"></i><i style="--w:${score > 0 ? intensity : '0%'}"></i></span></div>`;
+    return `<div class="cluster-score cluster-score--${tone}" title="Average article rating: ${value}" role="img" aria-label="Cluster rating ${value}, ${label}"><span class="cluster-score-value">${value}</span><span class="cluster-score-label">${label}</span><span class="cluster-score-meter" aria-hidden="true"><i style="--w:${score < 0 ? intensity : '0%'}"></i><i style="--w:${score > 0 ? intensity : '0%'}"></i></span></div>`;
   }
 
   /**
@@ -348,7 +348,7 @@
                 const lines = [];
                 if (i < rows.length && rows[i]) {
                   const score = rows[i].stance_score ?? rows[i].cluster_score;
-                  lines.push('Stance: ' + (score == null ? (rows[i].stance || '—') : `${Number(score) > 0 ? '+' : ''}${score}/10`));
+                  lines.push('Stance: ' + (score == null ? (rows[i].stance || '—') : `${Number(score) > 0 ? '+' : ''}${score}`));
                 }
                 // Price is one step ahead: at index i shows outcome of rows[i-1]
                 const src = i >= 1 ? rows[i - 1] : null;
@@ -578,7 +578,7 @@
           </svg>
         </button>
       <div class="stance stance-${util.escapeHtml(stance)}">
-          <div class="stance-title">${hasScore ? `Stance ${score > 0 ? '+' : ''}${Number.isInteger(score) ? score : score.toFixed(1)}/10 · ` : ''}${util.escapeHtml(stanceText.split(' — ')[0])}</div>
+          <div class="stance-title">${hasScore ? `Stance ${score > 0 ? '+' : ''}${Number.isInteger(score) ? score : score.toFixed(1)} · ` : ''}${util.escapeHtml(stanceText.split(' — ')[0])}</div>
           <div class="stance-sub">${util.escapeHtml(
             [horizonText, confidenceText].filter(Boolean).join(' · ')
           )}</div>
