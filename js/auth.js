@@ -44,6 +44,13 @@
   }
   async function restore() {
     const callbackUrl = new URL(root.location.href);
+    const callbackError = callbackUrl.searchParams.get('error_description') || callbackUrl.searchParams.get('error');
+    if (callbackError) {
+      ['error', 'error_description', 'error_code', 'code'].forEach(name => callbackUrl.searchParams.delete(name));
+      callbackUrl.hash = '#/account';
+      root.history.replaceState(null, '', callbackUrl.pathname + callbackUrl.search + callbackUrl.hash);
+      return { session: null, user: null, role: 'free', plan: null, authError: callbackError };
+    }
     const code = callbackUrl.searchParams.get('code');
     if (code) {
       try {
@@ -71,7 +78,7 @@
     if (current && Number(current.expires_at)<Math.floor(Date.now()/1000)+60) { try { current=await refresh(current); } catch { save(null); current=null; } }
     if (!current || !current.access_token) return { session:null,user:null,role:'free',plan:null };
     try { const user=await request('/auth/v1/user','GET',null,current.access_token), access=await subscription(user,current.access_token); session=current; return { session:current,user,...access,recovery:root.localStorage.getItem('clustr-auth-recovery')==='1' }; }
-    catch { save(null); return { session:null,user:null,role:'free',plan:null }; }
+    catch (error) { save(null); return { session:null,user:null,role:'free',plan:null,authError:error.message || 'Could not restore your sign-in session.' }; }
   }
   async function signIn(email,password) { save(await request('/auth/v1/token?grant_type=password','POST',{email,password})); return restore(); }
   async function signInWithGoogle() { const redirect=cfg().AUTH_REDIRECT_URL || root.location.origin+root.location.pathname; const { error } = await getOAuthClient().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirect } }); if (error) throw error; }
