@@ -95,6 +95,10 @@
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
           <span class="nav-rail-label">Account</span>
         </button>
+        <button type="button" id="navAdmin" class="nav-rail-btn hidden" title="Admin tools" aria-label="Admin tools">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 4 6v5c0 5 3.4 8.2 8 10 4.6-1.8 8-5 8-10V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+          <span class="nav-rail-label">Admin</span>
+        </button>
         <button style="display: none" type="button" id="navSignal" class="nav-rail-btn" title="Signal track" aria-label="Signal track">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
             <path d="M4 19V5M4 19h16"/>
@@ -264,22 +268,25 @@
       <section id="accountView" class="hidden account-page" aria-label="Account and subscription">
         <div class="account-shell"><div class="account-eyebrow">CLUSTR / ACCOUNT</div><h1 id="accountTitle">Free account</h1><p id="accountMessage" class="account-message" role="status"></p><div id="accountContent"></div></div>
       </section>
+      <section id="adminView" class="hidden account-page" aria-label="Admin tools">
+        <div class="account-shell"><div class="account-eyebrow">CLUSTR / ADMIN</div><h1>Admin tools</h1><p id="adminMessage" class="account-message" role="status"></p><section class="account-plan"><h2>Full publish</h2><p>Fetch news and movers, score articles, group related stories, map stocks, snapshot prices, and save a new publish.</p><label class="account-publish-market">Market<select id="publishMarket"><option value="US">United States</option><option value="NO">Norway</option></select></label><button class="account-primary" type="button" data-account-action="publish">Run full publish</button><p class="account-plan-note">The backend on this PC must be running. One publish can run at a time.</p></section></div>
+      </section>
     </main>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js?v=auth-redirect-1"></script>
+  <script src="js/config.js?v=admin-publish-2"></script>
   <script src="js/util.js?v=expo-3x"></script>
   <script src="js/quotes.js?v=repo-exact"></script>
-  <script src="js/auth.js?v=google-pkce-2"></script>
+  <script src="js/auth.js?v=admin-publish-2"></script>
   <script src="js/api.js?v=expo-3x"></script>
   <script src="js/themes.js?v=repo-exact"></script>
   <script src="js/map.js?v=repo-exact"></script>
   <script src="js/mindmap.js?v=repo-exact"></script>
   <script src="js/render.js?v=expo-3x"></script>
   <script src="js/signal.js?v=repo-exact"></script>
-  <script src="js/app.js?v=event-sort-1"></script>
+  <script src="js/app.js?v=admin-publish-2"></script>
 </body>
 </html>

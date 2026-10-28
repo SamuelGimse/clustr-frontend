@@ -33,6 +33,7 @@
   const mindView = document.getElementById('mindView');
   const weeklyView = document.getElementById('weeklyView');
   const accountView = document.getElementById('accountView');
+  const adminView = document.getElementById('adminView');
 
   const navEvents = document.getElementById('navEvents');
   const navMap = document.getElementById('navMap');
@@ -41,6 +42,7 @@
   const navMind = document.getElementById('navMind');
   const navWeekly = document.getElementById('navWeekly');
   const navAccount = document.getElementById('navAccount');
+  const navAdmin = document.getElementById('navAdmin');
   let authState = { session: null, user: null, role: 'free', plan: null };
   let accountMode = 'signin';
 
@@ -112,15 +114,16 @@
 
   /**
    * Switch primary view.
-   * @param {'events'|'map'|'days'|'signal'|'mind'} which
+   * @param {'events'|'map'|'days'|'signal'|'mind'|'admin'} which
    * @returns {void}
    */
   function setNav(which) {
+    if (which === 'admin' && authState.role !== 'admin') which = 'account';
     view = which;
     const R = window.ClustrRender;
     const MapApi = window.ClustrMap;
 
-    [navEvents, navMap, navDays, navSignal, navMind, navWeekly, navAccount].forEach(b => {
+    [navEvents, navMap, navDays, navSignal, navMind, navWeekly, navAccount, navAdmin].forEach(b => {
       if (b) {
         b.classList.remove('is-active');
         b.setAttribute('aria-current', 'false');
@@ -134,6 +137,7 @@
     if (mindView) mindView.classList.add('hidden');
     if (weeklyView) weeklyView.classList.add('hidden');
     if (accountView) accountView.classList.add('hidden');
+    if (adminView) adminView.classList.add('hidden');
 
     if (which === 'events') {
       if (navEvents) {
@@ -208,6 +212,12 @@
       }
       if (accountView) accountView.classList.remove('hidden');
       renderAccount();
+    } else if (which === 'admin') {
+      if (navAdmin) {
+        navAdmin.classList.add('is-active');
+        navAdmin.setAttribute('aria-current', 'page');
+      }
+      if (adminView) adminView.classList.remove('hidden');
     } else if (which === 'days') {
       if (navDays) {
         navDays.classList.add('is-active');
@@ -362,9 +372,14 @@
     }
     title.textContent = 'Your Clustr account';
     content.innerHTML = `<div class="account-profile"><span>${window.ClustrUtil.escapeHtml(authState.user.email || '')}</span><span class="account-plan-badge">${authState.role === 'admin' ? 'ADMIN' : authState.role === 'pro' ? 'PRO · ACTIVE' : 'FREE'}</span></div>` +
-      (authState.role === 'admin' ? `<section class="account-plan"><h2>Admin access is active</h2><p>Full Clustr access, including current clusters, weekly trends, and the complete publish history.</p><label class="account-publish-market">Publish market<select id="publishMarket"><option value="US">United States</option><option value="NO">Norway</option></select></label><button class="account-primary" type="button" data-account-action="publish">Run full publish</button><p class="account-plan-note">Fetches news and movers, scores and clusters stories, maps stocks, snapshots prices, and saves a new publish.</p></section>` : authState.role === 'pro' ? `<section class="account-plan"><h2>Pro is active</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p>${authState.plan?.current_period_end ? `<p class="account-plan-note">Current period ends ${new Date(authState.plan.current_period_end).toLocaleDateString()}.</p>` : ''}<button class="account-secondary" type="button" data-account-action="portal">Manage subscription</button></section>` :
+      (authState.role === 'admin' ? `<section class="account-plan"><h2>Admin access is active</h2><p>Full Clustr access, including current clusters, weekly trends, and the complete publish history.</p></section>` : authState.role === 'pro' ? `<section class="account-plan"><h2>Pro is active</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p>${authState.plan?.current_period_end ? `<p class="account-plan-note">Current period ends ${new Date(authState.plan.current_period_end).toLocaleDateString()}.</p>` : ''}<button class="account-secondary" type="button" data-account-action="portal">Manage subscription</button></section>` :
       `<section class="account-plan"><h2>Free plan</h2><p>Access the previous trading day’s clusters for free.</p><h3>Pro · 99 kr/month</h3><p>Unlock current clusters, weekly cluster history, trends, and the full archive.</p><button class="account-primary" type="button" data-account-action="checkout">Continue to secure checkout</button>${authState.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage billing</button>' : ''}</section>`) +
       '<button class="account-secondary" type="button" data-account-action="logout">Sign out</button>';
+  }
+
+  function renderAdmin(message = '') {
+    const note = document.getElementById('adminMessage');
+    if (note) note.textContent = message;
   }
 
   /**
@@ -494,6 +509,15 @@
     }
   }
 
+  async function refreshPublishes() {
+    publishes = await window.ClustrApi.fetchPublishes(100);
+    publishIndex = 0;
+    if (publishes.length) {
+      await paintCurrent();
+      warmGroupsCache(14);
+    } else if (status) status.textContent = 'No publishes yet';
+  }
+
   const INTRO_HEADLINES = [
     { t: 'US strikes risk Strait of Hormuz', tag: 'Geopolitics' },
     { t: 'Fed holds rates — markets reprice', tag: 'Macro' },
@@ -572,6 +596,7 @@
     try {
       const bootP = runBoot();
       authState = await window.ClustrAuth.restore();
+      if (navAdmin) navAdmin.classList.toggle('hidden', authState.role !== 'admin');
       if (!authState.user) {
         await bootP;
         await endBoot();
@@ -593,7 +618,8 @@
 
       await paintCurrent();
       warmGroupsCache(14);
-      if (location.hash === '#/account' || new URLSearchParams(location.search).has('checkout')) setNav('account');
+      if (location.hash === '#/admin' && authState.role === 'admin') setNav('admin');
+      else if (location.hash === '#/account' || new URLSearchParams(location.search).has('checkout')) setNav('account');
       else setNav('events');
     } catch (err) {
       console.error(err);
@@ -616,6 +642,7 @@
   if (navMap) navMap.addEventListener('click', () => setNav('map'));
   if (navWeekly) navWeekly.addEventListener('click', () => setNav('weekly'));
   if (navAccount) navAccount.addEventListener('click', () => setNav('account'));
+  if (navAdmin) navAdmin.addEventListener('click', () => setNav('admin'));
   if (navMind) navMind.addEventListener('click', () => setNav('mind'));
   if (navDays) navDays.addEventListener('click', () => setNav('days'));
   if (navSignal) navSignal.addEventListener('click', () => setNav('signal'));
@@ -645,12 +672,16 @@
         button.disabled = true;
         button.textContent = 'Starting full publish…';
         try {
-          const result = await window.ClustrAuth.runPublish(market, stage => { note.textContent = stage; });
-          renderAccount(`Publish saved (${result.market} · ${result.counts?.clusters ?? result.count} clusters · ${result.counts?.relevant ?? 0} scored stories). ID ${result.publishId}.`);
+          const result = await window.ClustrAuth.runPublish(market, stage => renderAdmin(stage));
+          await refreshPublishes();
+          renderAdmin(`Publish saved · ${result.market} · ${result.counts?.clusters ?? result.count} clusters · ${result.counts?.relevant ?? 0} scored stories · ID ${result.publishId}.`);
         } finally { button.disabled = false; }
       }
       if (action === 'logout') { await window.ClustrAuth.signOut(); window.location.reload(); }
-    } catch (err) { renderAccount(err.message || 'Could not complete that action.'); }
+    } catch (err) {
+      if (action === 'publish') renderAdmin(err.message || 'Could not complete the publish.');
+      else renderAccount(err.message || 'Could not complete that action.');
+    }
   });
 
   document.addEventListener('submit', async event => {
