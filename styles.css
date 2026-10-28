@@ -1687,6 +1687,128 @@ html[data-theme="dark"] .article-title a:hover {
 html[data-theme="dark"] :focus-visible {
   outline-color: var(--accent);
 }
+
+html[data-theme="dark"] {
+  --md-sys-color-surface: #090d13;
+  --md-sys-color-surface-container: #101720;
+  --md-sys-color-surface-container-high: #121c27;
+  --md-sys-color-surface-container-highest: #1a2835;
+  --md-sys-color-on-surface: #e6edf3;
+  --md-sys-color-on-surface-variant: #99a8b4;
+  --md-sys-color-primary: #7fe0cf;
+  --md-sys-color-on-primary: #090d13;
+  --md-sys-color-primary-container: #18363a;
+  --md-sys-color-outline: #22313c;
+  --md-sys-color-outline-variant: #29404a;
+  --md-sys-color-up: #79d6a6;
+  --md-sys-color-down: #f18d87;
+  --font-sans: Inter, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Roboto Mono", Consolas, monospace;
+}
+html[data-theme="dark"] body {
+  background-image: radial-gradient(ellipse at 60% -30%, rgba(47, 107, 105, .16), transparent 56%);
+  letter-spacing: 0;
+}
+html[data-theme="dark"] .nav-rail {
+  background: rgba(13, 19, 27, .82);
+  border-color: var(--border);
+}
+html[data-theme="dark"] .nav-rail-btn {
+  border-radius: 9px;
+}
+html[data-theme="dark"] .nav-rail-btn.is-active {
+  background: rgba(127, 224, 207, .1);
+  color: var(--accent);
+}
+html[data-theme="dark"] .top-app-bar {
+  border-color: rgba(127, 224, 207, .18);
+  backdrop-filter: blur(18px);
+}
+html[data-theme="dark"] .brand,
+html[data-theme="dark"] .cluster-name,
+html[data-theme="dark"] .movers-title,
+html[data-theme="dark"] .price-bar-title {
+  color: var(--text);
+}
+html[data-theme="dark"] .brand {
+  letter-spacing: .08em;
+}
+html[data-theme="dark"] .md-card,
+html[data-theme="dark"] .cluster-card {
+  border-color: rgba(153, 168, 180, .13);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(20, 31, 43, .98), rgba(15, 23, 32, .98));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+}
+html[data-theme="dark"] .cluster-card {
+  border-left: 2px solid var(--border);
+  transition: border-color .16s ease, transform .16s ease, background .16s ease;
+}
+html[data-theme="dark"] .cluster-card:hover {
+  border-color: rgba(127, 224, 207, .34);
+  background: #15212c;
+}
+html[data-theme="dark"] .md-btn--icon,
+html[data-theme="dark"] .md-btn--tonal,
+html[data-theme="dark"] .md-select,
+html[data-theme="dark"] .md-chip,
+html[data-theme="dark"] .stance-history-icon-btn {
+  background: var(--panel);
+  border-color: var(--border);
+  border-radius: 8px;
+}
+html[data-theme="dark"] .md-btn--tonal:hover,
+html[data-theme="dark"] .md-btn--tonal.is-active,
+html[data-theme="dark"] .md-btn--icon:hover:not(:disabled),
+html[data-theme="dark"] .stance-history-icon-btn:hover,
+html[data-theme="dark"] .stance-history-icon-btn.is-open {
+  background: rgba(127, 224, 207, .08);
+  border-color: rgba(127, 224, 207, .34);
+  color: var(--accent);
+}
+html[data-theme="dark"] .cluster-score {
+  background: var(--panel);
+  border-radius: 10px;
+}
+html[data-theme="dark"] .cluster-score--positive { color: var(--up); }
+html[data-theme="dark"] .cluster-score--negative { color: var(--down); }
+html[data-theme="dark"] .cluster-score--neutral { color: var(--text-meta); }
+html[data-theme="dark"] .cluster-score-meter i { background: var(--md-sys-color-surface-container-highest); }
+html[data-theme="dark"] .stance,
+html[data-theme="dark"] .stance-history-panel,
+html[data-theme="dark"] .price-bar {
+  background: var(--panel);
+  border-color: var(--border);
+  border-radius: 10px;
+}
+html[data-theme="dark"] .price-value { color: var(--text); }
+html[data-theme="dark"] .bubbles-scroll .md-chip,
+html[data-theme="dark"] .stock-bubbles .md-chip {
+  background: rgba(127, 224, 207, .045);
+  border-color: rgba(127, 224, 207, .2);
+  color: #c9e6e2;
+}
+html[data-theme="dark"] .md-chart {
+  background: var(--panel);
+  border-color: var(--border);
+  border-radius: 10px;
+}
+html[data-theme="dark"] .article-grid > * {
+  background: rgba(8, 13, 19, .48);
+  border-color: var(--border);
+  border-radius: 10px;
+}
+html[data-theme="dark"] .article-title,
+html[data-theme="dark"] .article-title a { color: var(--text); }
+html[data-theme="dark"] .article-title a:hover { color: var(--accent); }
+html[data-theme="dark"] .article-rating--positive {
+  background: rgba(121, 214, 166, .08);
+  border-color: rgba(121, 214, 166, .4);
+}
+html[data-theme="dark"] .article-rating--negative {
+  background: rgba(241, 141, 135, .08);
+  border-color: rgba(241, 141, 135, .4);
+}
 .cluster-reason {
   margin: 0 0 8px;
   color: var(--text);
