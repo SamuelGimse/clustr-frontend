@@ -104,14 +104,17 @@
     try { response=await root.fetch(`${base}/api/admin/publish`,{method:'POST',headers,body:JSON.stringify({market})}); }
     catch { throw new Error('Could not reach the publish service. Start the backend on this PC with npm start and allow local network access in your browser if prompted.'); }
     let job=await response.json().catch(()=>({}));
-    if(!response.ok) throw new Error(job.error||`Publish could not start (${response.status}).`);
+    if(response.status===409&&job.jobId) job={jobId:job.jobId,status:'running',stage:'Reconnecting to the active publish'};
+    else if(!response.ok) throw new Error(job.error||`Publish could not start (${response.status}).`);
+    const jobId=job.jobId;
+    if(!jobId) throw new Error('The backend did not return a publish job ID.');
     const deadline=Date.now()+30*60*1000;
     let cursor=0;
     while(job.status==='running') {
       if(onStage) onStage(job.stage||'Publish is running…');
       await new Promise(resolve=>root.setTimeout(resolve,2000));
       if(Date.now()>deadline) throw new Error('Publish is still running. Reopen Account and check the backend status before starting another one.');
-      response=await root.fetch(`${base}/api/admin/publish/${encodeURIComponent(job.jobId)}?after=${cursor}`,{headers:{Authorization:`Bearer ${current.access_token}`}});
+      response=await root.fetch(`${base}/api/admin/publish/${encodeURIComponent(jobId)}?after=${cursor}`,{headers:{Authorization:`Bearer ${current.access_token}`}});
       job=await response.json().catch(()=>({}));
       if(!response.ok) throw new Error(job.error||`Could not read publish status (${response.status}).`);
       if(onStage) onStage(job.stage||'Publish is running…');
