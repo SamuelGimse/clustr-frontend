@@ -43,7 +43,7 @@
    */
   async function fetchPublishes(limit = 30) {
     return rest(
-      `publishes?select=id,title,notes,market,created_at,groups_json&notes=like.PULSE%20pipeline*&order=id.desc&limit=${encodeURIComponent(String(Math.min(limit, 10)))}`
+      `publishes?select=id,title,notes,market,created_at,groups_json&notes=like.PULSE%20pipeline*&order=id.desc&limit=${encodeURIComponent(String(Math.min(limit, 100)))}`
     );
   }
 

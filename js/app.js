@@ -15,6 +15,8 @@
   let groupsCache = {};
   /** @type {string} */
   let moversMode = 'active';
+  let weeklyMode = 'clusters';
+  let weeklyRenderId = 0;
   /** @type {string} */
   let view = 'events';
 
@@ -28,12 +30,14 @@
   const daysView = document.getElementById('daysView');
   const signalView = document.getElementById('signalView');
   const mindView = document.getElementById('mindView');
+  const weeklyView = document.getElementById('weeklyView');
 
   const navEvents = document.getElementById('navEvents');
   const navMap = document.getElementById('navMap');
   const navDays = document.getElementById('navDays');
   const navSignal = document.getElementById('navSignal');
   const navMind = document.getElementById('navMind');
+  const navWeekly = document.getElementById('navWeekly');
 
   /**
    * Update header meta + enable/disable publish arrows.
@@ -89,7 +93,7 @@
     const R = window.ClustrRender;
     const MapApi = window.ClustrMap;
 
-    [navEvents, navMap, navDays, navSignal, navMind].forEach(b => {
+    [navEvents, navMap, navDays, navSignal, navMind, navWeekly].forEach(b => {
       if (b) {
         b.classList.remove('is-active');
         b.setAttribute('aria-current', 'false');
@@ -101,6 +105,7 @@
     if (daysView) daysView.classList.add('hidden');
     if (signalView) signalView.classList.add('hidden');
     if (mindView) mindView.classList.add('hidden');
+    if (weeklyView) weeklyView.classList.add('hidden');
 
     if (which === 'events') {
       if (navEvents) {
@@ -161,6 +166,13 @@
           setTimeout(() => Mind.invalidate && Mind.invalidate(), 40);
         }
       }
+    } else if (which === 'weekly') {
+      if (navWeekly) {
+        navWeekly.classList.add('is-active');
+        navWeekly.setAttribute('aria-current', 'page');
+      }
+      if (weeklyView) weeklyView.classList.remove('hidden');
+      renderWeekly();
     } else if (which === 'days') {
       if (navDays) {
         navDays.classList.add('is-active');
@@ -177,6 +189,118 @@
         window.ClustrSignal.renderSignalPage(currentGroups);
       }
     }
+  }
+
+  function weeklyScore(group) {
+    const ratings = (group.articles || []).map(a => Number(a.rating ?? a.score)).filter(n => Number.isFinite(n) && n >= -10 && n <= 10 && n !== 0);
+    if (ratings.length) return ratings.reduce((a, b) => a + b, 0) / ratings.length;
+    const value = Number(group.stance_score ?? group.cluster_score ?? group.impact_score);
+    return Number.isFinite(value) && value >= -10 && value <= 10 && value !== 0 ? value : null;
+  }
+
+  function weeklyKey(group) {
+    const market = String(group.market || 'US').toUpperCase();
+    const id = group.cluster_bank_key ?? group.cluster_id ?? group.clusterId ?? group.cluster_bank_id;
+    const name = String(group.name || group.title || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    return `${market}:${id != null && id !== '' ? `id-${id}` : name}`;
+  }
+
+  async function renderWeekly() {
+    const requestId = ++weeklyRenderId;
+    const range = document.getElementById('weeklyRange');
+    const summary = document.getElementById('weeklySummary');
+    const chart = document.getElementById('weeklyChart');
+    const list = document.getElementById('weeklyList');
+    if (!range || !summary || !chart || !list) return;
+    const end = publishes[0] ? new Date(publishes[0].created_at) : new Date();
+    const start = new Date(end.getTime() - 7 * 86400000);
+    const inWeek = publishes.filter(p => {
+      const at = new Date(p.created_at).getTime();
+      return at >= start.getTime() && at <= end.getTime();
+    });
+    range.textContent = `${start.toLocaleDateString()} – ${end.toLocaleDateString()} · rolling 7 days · ${inWeek.length} publishes`;
+    summary.innerHTML = '<div class="weekly-empty">Loading the last seven days…</div>';
+    const data = await Promise.all(inWeek.map(async pub => {
+      const key = String(pub.id);
+      if (!groupsCache[key]) {
+        try { groupsCache[key] = await window.ClustrApi.loadGroupsForPublish(pub); }
+        catch (err) { console.warn('weekly cluster load', pub.id, err.message); groupsCache[key] = []; }
+      }
+      return { publish: pub, groups: groupsCache[key] || [] };
+    }));
+    if (requestId !== weeklyRenderId || view !== 'weekly') return;
+    const byCluster = new Map();
+    for (const { publish, groups } of data) {
+      const day = new Date(publish.created_at).toLocaleDateString('en-CA');
+      for (const group of groups) {
+        const key = weeklyKey(group);
+        let item = byCluster.get(key);
+        if (!item) { item = { key, name: group.name || 'Cluster', market: group.market || publish.market || 'US', items: [], days: new Set(), stories: new Map(), tickers: new Set(), scoreValues: [] }; byCluster.set(key, item); }
+        item.items.push({ group, day, publish });
+        item.days.add(day);
+        const score = weeklyScore(group);
+        if (score != null) item.scoreValues.push(score);
+        for (const article of group.articles || []) {
+          const articleKey = article.link || article.title;
+          if (articleKey) item.stories.set(articleKey, { ...article, day, rating: Number(article.rating ?? article.score) });
+        }
+        for (const stock of [...(group.stocks || []), ...(group.direct_stocks || []), ...(group.fixed_stocks || []), ...(group.default_symbols || []), ...(group.mentioned_stocks || []), ...(group.related_stocks || [])]) {
+          const symbol = String((stock && stock.symbol) || stock || '').toUpperCase();
+          if (symbol) item.tickers.add(symbol);
+        }
+      }
+    }
+    const clusters = [...byCluster.values()].map(item => {
+      const articleRatings = [...item.stories.values()].map(a => a.rating).filter(n => Number.isFinite(n) && n >= -10 && n <= 10 && n !== 0);
+      const scores = articleRatings.length ? articleRatings : item.scoreValues;
+      return { ...item, score: scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : null };
+    })
+      .sort((a,b) => b.days.size-a.days.size || Math.abs(b.score||0)-Math.abs(a.score||0));
+    const days = new Map();
+    for (const { publish, groups } of data) {
+      const day = new Date(publish.created_at).toLocaleDateString('en-CA');
+      if (!days.has(day)) days.set(day, { day, scores: [], stories: new Set(), ratings: new Map(), clusters: 0 });
+      const point = days.get(day);
+      for (const group of groups) {
+        point.clusters++;
+        for (const article of group.articles || []) {
+          const key = article.link || article.title;
+          const rating = Number(article.rating ?? article.score);
+          if (key && rating) { point.stories.add(key); point.ratings.set(key, rating); }
+        }
+      }
+    }
+    const orderedDays = [...days.values()].map(point => ({ ...point, scores: [...point.ratings.values()] })).sort((a,b)=>a.day.localeCompare(b.day));
+    summary.innerHTML = `<div><b>${clusters.length}</b><span>reusable clusters</span></div><div><b>${[...new Set([...clusters].flatMap(c=>[...c.stories.keys()]))].length}</b><span>unique articles</span></div><div><b>${inWeek.length}</b><span>publishes</span></div>`;
+    if (weeklyMode === 'trends') {
+      chart.innerHTML = weeklyTrendChart(orderedDays);
+      const changes = clusters.filter(c => c.days.size > 1).map(c => {
+        const rows = [...c.items].sort((a,b)=>a.day.localeCompare(b.day));
+        const firstDay = rows[0].day, lastDay = rows[rows.length - 1].day;
+        const mean = entries => { const scores = entries.map(row => weeklyScore(row.group)).filter(score => score != null); return scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : null; };
+        const first = mean(rows.filter(row => row.day === firstDay)), last = mean(rows.filter(row => row.day === lastDay));
+        return { ...c, change: first == null || last == null ? null : last-first };
+      }).filter(c=>c.change!=null).sort((a,b)=>Math.abs(b.change)-Math.abs(a.change)).slice(0,12);
+      list.innerHTML = changes.length ? changes.map(c=>weeklyClusterCard(c,true)).join('') : '<div class="weekly-empty">No repeated rated clusters to compare this week.</div>';
+    } else {
+      chart.innerHTML = '';
+      list.innerHTML = clusters.length ? clusters.map(c=>weeklyClusterCard(c,false)).join('') : '<div class="weekly-empty">No clusters found in the last seven days.</div>';
+    }
+  }
+
+  function weeklyTrendChart(days) {
+    if (!days.length) return '<div class="weekly-empty">No trend data for this week.</div>';
+    const W=900,H=270,L=44,R=20,T=24,B=42,x=i=>days.length<2?W/2:L+i*(W-L-R)/(days.length-1),y=v=>T+(10-v)*(H-T-B)/20;
+    const avg=d=>d.scores.length?d.scores.reduce((a,b)=>a+b,0)/d.scores.length:0;
+    const max=Math.max(1,...days.map(d=>d.clusters));
+    const line=days.map((d,i)=>`${i?'L':'M'}${x(i)},${y(avg(d))}`).join(' ');
+    return `<div class="weekly-trend-panel"><div class="weekly-chart-legend"><span><i class="weekly-key-score"></i>Daily article score average</span><span><i class="weekly-key-volume"></i>Cluster releases</span></div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weekly article scores and cluster activity">${[-10,-5,0,5,10].map(v=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" class="weekly-grid"/><text x="4" y="${y(v)+4}" class="weekly-axis">${v>0?'+':''}${v}</text>`).join('')}${days.map((d,i)=>`<rect x="${x(i)-10}" y="${H-B-d.clusters/max*56}" width="20" height="${d.clusters/max*56}" rx="4" class="weekly-volume"><title>${d.clusters} cluster releases</title></rect>`).join('')}<path d="${line}" fill="none" class="weekly-score-line"/>${days.map((d,i)=>`<circle cx="${x(i)}" cy="${y(avg(d))}" r="4" class="weekly-score-dot"><title>${d.scores.length?avg(d).toFixed(1):'No ratings'} · ${d.stories.size} rated articles</title></circle><text x="${x(i)}" y="${H-12}" text-anchor="middle" class="weekly-axis">${d.day.slice(5)}</text>`).join('')}</svg><p class="weekly-footnote">Zero-rated articles are excluded from averages. Trend movement compares each cluster’s first and latest weekly score.</p></div>`;
+  }
+
+  function weeklyClusterCard(item, showChange) {
+    const score = item.score == null ? '—' : `${item.score > 0 ? '+' : ''}${item.score.toFixed(1)}`;
+    const change = showChange && item.change != null ? `<span class="weekly-change ${item.change>0?'up':item.change<0?'down':''}">${item.change>0?'+':''}${item.change.toFixed(1)}</span>` : '';
+    return `<article class="weekly-cluster"><div class="weekly-cluster-score ${item.score>0?'up':item.score<0?'down':''}">${score}</div><div class="weekly-cluster-main"><h3>${window.ClustrUtil.escapeHtml(item.name)}</h3><p>${item.stories.size} unique articles · ${item.days.size} days · ${item.market}</p><div class="weekly-tickers">${[...item.tickers].slice(0,10).map(t=>`<span>${window.ClustrUtil.escapeHtml(t)}</span>`).join('')}</div></div>${change}</article>`;
   }
 
   /**
@@ -384,7 +508,7 @@
     try {
       const bootP = runBoot();
       // Load data while the sequence runs so enter feels instant
-      const dataP = window.ClustrApi.fetchPublishes(30);
+      const dataP = window.ClustrApi.fetchPublishes(100);
       await bootP;
       publishes = await dataP;
       publishIndex = 0;
@@ -407,9 +531,22 @@
 
   if (navEvents) navEvents.addEventListener('click', () => setNav('events'));
   if (navMap) navMap.addEventListener('click', () => setNav('map'));
+  if (navWeekly) navWeekly.addEventListener('click', () => setNav('weekly'));
   if (navMind) navMind.addEventListener('click', () => setNav('mind'));
   if (navDays) navDays.addEventListener('click', () => setNav('days'));
   if (navSignal) navSignal.addEventListener('click', () => setNav('signal'));
+
+  document.querySelectorAll('[data-weekly-mode]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      weeklyMode = btn.getAttribute('data-weekly-mode') === 'trends' ? 'trends' : 'clusters';
+      document.querySelectorAll('[data-weekly-mode]').forEach(tab => {
+        const active = tab.getAttribute('data-weekly-mode') === weeklyMode;
+        tab.classList.toggle('is-active', active);
+        tab.setAttribute('aria-selected', String(active));
+      });
+      renderWeekly();
+    });
+  });
 
   const prevPublishBtn = document.getElementById('prevPublishBtn');
   const nextPublishBtn = document.getElementById('nextPublishBtn');
