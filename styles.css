@@ -1687,6 +1687,13 @@ html.boot-lock body {
   letter-spacing: .08em;
   text-transform: uppercase;
 }
+.cluster-news-ratings { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:0 0 10px; }
+.cluster-news-ratings-label { color:var(--text-meta); font:700 10px var(--font-mono); letter-spacing:.08em; }
+.cluster-news-rating { display:inline-grid; place-items:center; min-width:27px; padding:3px 6px; border:1px solid var(--border); border-radius:7px; font:700 11px var(--font-mono); }
+.cluster-news-rating--positive { color:var(--up); border-color:color-mix(in srgb,var(--up) 45%,var(--border)); }
+.cluster-news-rating--negative { color:var(--down); border-color:color-mix(in srgb,var(--down) 45%,var(--border)); }
+.cluster-news-rating--neutral { color:var(--text-meta); }
+.cluster-news-rating-more { color:var(--text-meta); font:11px var(--font-mono); }
 .cluster-score-meter {
   display: grid;
   grid-template-columns: 1fr 1fr;

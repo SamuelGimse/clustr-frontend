@@ -6,7 +6,7 @@
   const U = () => window.ClustrUtil;
 
   function articleRatingHtml(article) {
-    const rating = Number(article && article.rating);
+    const rating = Number(article && (article.rating ?? article.score));
     if (!Number.isInteger(rating) || rating < -10 || rating > 10) return '';
     const tone = rating > 0 ? 'positive' : rating < 0 ? 'negative' : 'neutral';
     const value = `${rating > 0 ? '+' : ''}${rating}`;
@@ -26,6 +26,19 @@
     const intensity = score === 0 ? '0%' : `${(100 * Math.pow(3, Math.abs(score) - 10)).toFixed(2)}%`;
     const label = score >= 2 ? '▲ POS' : score <= -2 ? '▼ NEG' : '● NEU';
     return `<div class="cluster-score cluster-score--${tone}" title="Exponential mean article rating; each point is 3× impact: ${value}" role="img" aria-label="Cluster rating ${value}, ${label}"><span class="cluster-score-value">${value}</span><span class="cluster-score-label">${label}</span><span class="cluster-score-meter" aria-hidden="true"><i style="--w:${score < 0 ? intensity : '0%'}"></i><i style="--w:${score > 0 ? intensity : '0%'}"></i></span></div>`;
+  }
+
+  function articleRatingStripHtml(articles) {
+    const rated = (articles || []).filter(article => Number.isInteger(Number(article.rating ?? article.score)) && Number(article.rating ?? article.score) >= -10 && Number(article.rating ?? article.score) <= 10).slice(0, 6);
+    if (!rated.length) return '';
+    const badges = rated.map(article => {
+      const rating = Number(article.rating ?? article.score);
+      const tone = rating > 0 ? 'positive' : rating < 0 ? 'negative' : 'neutral';
+      const value = `${rating > 0 ? '+' : ''}${rating}`;
+      return `<span class="cluster-news-rating cluster-news-rating--${tone}" title="${U().escapeHtml(article.title || 'Article rating')}">${value}</span>`;
+    }).join('');
+    const extra = (articles || []).filter(article => Number.isInteger(Number(article.rating ?? article.score)) && Number(article.rating ?? article.score) >= -10 && Number(article.rating ?? article.score) <= 10).length - rated.length;
+    return `<div class="cluster-news-ratings" aria-label="Article ratings"><span class="cluster-news-ratings-label">NEWS</span>${badges}${extra > 0 ? `<span class="cluster-news-rating-more">+${extra}</span>` : ''}</div>`;
   }
 
   /**
@@ -962,6 +975,7 @@
         <p class="cluster-reason">${util.escapeHtml(
           group.reason || group.summary || ''
         )}</p>
+        ${articleRatingStripHtml(articles)}
         ${angles
           .map(
             a =>
@@ -999,7 +1013,7 @@
         </div>
         <div class="related-under-chart"></div>
         <button type="button" class="md-btn md-btn--text toggle-articles">
-          Show articles (${count})
+          Show articles &amp; scores (${count})
         </button>
       </div>
       </div>
@@ -1129,7 +1143,7 @@
       articlesGrid.classList.toggle('hidden', !hidden);
       toggleBtn.textContent = hidden
         ? `Hide articles (${count})`
-        : `Show articles (${count})`;
+        : `Show articles & scores (${count})`;
     });
 
     const select = el.querySelector('.stock-group-select');
