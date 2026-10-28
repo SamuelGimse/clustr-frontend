@@ -382,6 +382,18 @@
     if (note) note.textContent = message;
   }
 
+  function appendPublishConsole(lines, reset = false) {
+    const output = document.getElementById('publishConsole');
+    if (!output) return;
+    if (reset) output.textContent = '';
+    for (const entry of lines || []) {
+      const time = entry.time ? `[${entry.time}] ` : '';
+      const level = entry.level ? `${entry.level.toUpperCase()} ` : '';
+      output.textContent += `${time}${level}${entry.text || ''}\n`;
+    }
+    output.scrollTop = output.scrollHeight;
+  }
+
   /**
    * Jump to events view and scroll to a cluster card.
    * @param {string} name
@@ -671,8 +683,9 @@
         const market = document.getElementById('publishMarket')?.value || 'US';
         button.disabled = true;
         button.textContent = 'Starting full publish…';
+        appendPublishConsole([], true);
         try {
-          const result = await window.ClustrAuth.runPublish(market, stage => renderAdmin(stage));
+          const result = await window.ClustrAuth.runPublish(market, stage => renderAdmin(stage), lines => appendPublishConsole(lines));
           await refreshPublishes();
           renderAdmin(`Publish saved · ${result.market} · ${result.counts?.clusters ?? result.count} clusters · ${result.counts?.relevant ?? 0} scored stories · ID ${result.publishId}.`);
         } finally { button.disabled = false; }

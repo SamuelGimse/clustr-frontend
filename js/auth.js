@@ -93,7 +93,7 @@
   async function updatePassword(password) { const s=session||read(); if(!s?.access_token) throw new Error('Open the password reset link from your email first.'); await request('/auth/v1/user','PUT',{password},s.access_token); root.localStorage.removeItem('clustr-auth-recovery'); }
   async function signOut() { const s=session||read(); try { if(s?.access_token) await request('/auth/v1/logout','POST',null,s.access_token); } finally { save(null); } }
   async function callBilling(path) { let s=session||read(); if(s&&Number(s.expires_at)<Math.floor(Date.now()/1000)+60) s=await refresh(s); if(!s?.access_token) throw new Error('Sign in first.'); const result=await request(`/functions/v1/${path}`,'POST',{app:'clustr'},s.access_token); if(!result.url) throw new Error('Billing could not be opened.'); root.location.assign(result.url); }
-  async function runPublish(market, onStage) {
+  async function runPublish(market, onStage, onLogs) {
     let current=session||read();
     if(current&&Number(current.expires_at)<Math.floor(Date.now()/1000)+60) current=await refresh(current);
     if(!current?.access_token) throw new Error('Sign in again before starting a publish.');
@@ -106,13 +106,17 @@
     let job=await response.json().catch(()=>({}));
     if(!response.ok) throw new Error(job.error||`Publish could not start (${response.status}).`);
     const deadline=Date.now()+30*60*1000;
+    let cursor=0;
     while(job.status==='running') {
       if(onStage) onStage(job.stage||'Publish is running…');
       await new Promise(resolve=>root.setTimeout(resolve,2000));
       if(Date.now()>deadline) throw new Error('Publish is still running. Reopen Account and check the backend status before starting another one.');
-      response=await root.fetch(`${base}/api/admin/publish/${encodeURIComponent(job.jobId)}`,{headers:{Authorization:`Bearer ${current.access_token}`}});
+      response=await root.fetch(`${base}/api/admin/publish/${encodeURIComponent(job.jobId)}?after=${cursor}`,{headers:{Authorization:`Bearer ${current.access_token}`}});
       job=await response.json().catch(()=>({}));
       if(!response.ok) throw new Error(job.error||`Could not read publish status (${response.status}).`);
+      if(onStage) onStage(job.stage||'Publish is running…');
+      if(onLogs&&Array.isArray(job.logs)&&job.logs.length) onLogs(job.logs);
+      cursor=Number(job.logCount)||cursor;
     }
     if(job.status==='failed') throw new Error(job.error||'Full publish failed.');
     return job.result||job;
