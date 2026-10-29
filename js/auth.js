@@ -112,7 +112,7 @@
     let cursor=0;
     while(job.status==='running') {
       if(onStage) onStage(job.stage||'Publish is running…',job);
-      await new Promise(resolve=>root.setTimeout(resolve,2000));
+      await new Promise(resolve=>root.setTimeout(resolve,1000));
       if(Date.now()>deadline) throw new Error('Publish is still running. Reopen Account and check the backend status before starting another one.');
       response=await root.fetch(`${base}/api/admin/publish/${encodeURIComponent(jobId)}?after=${cursor}`,{headers:{Authorization:`Bearer ${current.access_token}`}});
       job=await response.json().catch(()=>({}));

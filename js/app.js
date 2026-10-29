@@ -416,6 +416,32 @@
     output.scrollTop = output.scrollHeight;
   }
 
+  function updateModelMonitor(status, reset = false) {
+    const model = document.getElementById('publishModelName');
+    const activity = document.getElementById('publishModelActivity');
+    const article = document.getElementById('publishModelArticle');
+    const reply = document.getElementById('publishModelReply');
+    if (reset) {
+      if (model) model.textContent = 'Model: starting';
+      if (activity) activity.textContent = 'Waiting for filtering.';
+      if (article) article.textContent = '';
+      if (reply) reply.textContent = 'The newest model reply will appear here.';
+      return;
+    }
+    if (!status) return;
+    if (model) model.textContent = `Model: ${status.model || 'unknown'}`;
+    if (activity) {
+      const active = Number(status.active) || 0;
+      activity.textContent = status.phase === 'working'
+        ? `Working · ${active} request${active === 1 ? '' : 's'} active · ${Number(status.processed) || 0}/${Number(status.total) || 0} completed · up to ${Number(status.concurrency) || 1} in parallel`
+        : status.phase === 'complete' ? `Filtering complete · ${Number(status.processed) || 0} articles checked`
+          : status.phase === 'reply' ? `Latest reply received · ${Number(status.processed) || 0}/${Number(status.total) || 0} completed`
+            : 'Waiting for model work.';
+    }
+    if (article) article.textContent = status.article ? `Latest article: ${status.article}` : '';
+    if (reply && status.reply) reply.textContent = status.reply;
+  }
+
   function updatePublishChart(progress) {
     if (!progress) return;
     const canvas = document.getElementById('publishChart');
@@ -423,13 +449,13 @@
     const filterTotal = Number(progress.filterTotal) || 20;
     const chartValues = [
       Number(progress.fetchedArticles) || 0,
-      Math.max(Number(progress.filterProcessed) || 0, Number(progress.filterActive) || 0),
+      Number(progress.filterProcessed) || 0,
       Number(progress.relevant) || 0,
       Number(progress.groupingProcessed) || 0,
       Number(progress.clusters) || 0,
       Number(progress.stocksMapped) || 0
     ];
-    if (text) text.textContent = `Fetched ${chartValues[0]} · filtering ${chartValues[1]}/${filterTotal} · relevant ${chartValues[2]} · grouping ${chartValues[3]}/${Number(progress.groupingTotal) || 0} · clusters ${chartValues[4]} · stocks mapped ${chartValues[5]}/${Number(progress.stockMapTotal) || 0}`;
+    if (text) text.textContent = `Fetched ${chartValues[0]} · filtering ${chartValues[1]}/${filterTotal} complete · relevant ${chartValues[2]} · grouping ${chartValues[3]}/${Number(progress.groupingTotal) || 0} · clusters ${chartValues[4]} · stocks mapped ${chartValues[5]}/${Number(progress.stockMapTotal) || 0}`;
     if (!canvas || !window.Chart) return;
     const labels = ['Fetched articles', 'Filtering progress', 'Relevant', 'Stories grouped', 'Clusters formed', 'Stock maps complete'];
     if (!publishChart) {
@@ -734,9 +760,10 @@
         button.disabled = true;
         button.textContent = 'Starting full publish…';
         appendPublishConsole([], true);
+        updateModelMonitor(null, true);
         updatePublishChart({ fetchedArticles: 0, filterProcessed: 0, filterTotal: 150, relevant: 0, groupingProcessed: 0, groupingTotal: 0, clusters: 0, stocksMapped: 0, stockMapTotal: 0 });
         try {
-          const result = await window.ClustrAuth.runPublish(market, (stage, job) => { renderAdmin(stage); updatePublishChart(job?.progress); }, lines => appendPublishConsole(lines));
+          const result = await window.ClustrAuth.runPublish(market, (stage, job) => { renderAdmin(stage); updatePublishChart(job?.progress); updateModelMonitor(job?.modelStatus); }, lines => appendPublishConsole(lines));
           await refreshPublishes();
           renderAdmin(`Publish saved · ${result.market} · ${result.counts?.clusters ?? result.count} clusters · ${result.counts?.relevant ?? 0} scored stories · ID ${result.publishId}.`);
         } finally { button.disabled = false; }
