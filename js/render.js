@@ -683,12 +683,18 @@
    * @param {{price?: number|null, changePercent?: number|null}|null} live
    * @returns {string}
    */
-  function priceBarHtml(symbol, name, publishPrice, publishPct, live) {
+  function priceBarHtml(symbol, name, publishPrice, publishPct, live, stock) {
     const util = U();
     const livePrice = live?.price ?? null;
     const livePct = live?.changePercent ?? null;
     const since = util.deltaSincePublish(publishPrice, livePrice);
     const hasProxy = !!(window.ClustrQuotes && window.ClustrQuotes.isEnabled());
+    const signals = stock?.technical_signals;
+    const metric = value => Number.isFinite(Number(value)) && value != null ? util.formatPct(value) : '—';
+    const unsignedMetric = value => Number.isFinite(Number(value)) && value != null ? `${Number(value).toFixed(1)}%` : '—';
+    const turnover = Number.isFinite(Number(signals?.avgDailyTurnover20d)) && signals?.avgDailyTurnover20d != null
+      ? `${util.escapeHtml(signals.currency || '')} ${new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(signals.avgDailyTurnover20d)}`.trim()
+      : '—';
 
     return `
       <div class="price-bar" data-price-symbol="${util.escapeHtml(symbol)}">
@@ -718,6 +724,14 @@
             <div class="price-sub">signal track</div>
           </div>
         </div>
+        <div class="technical-metrics" aria-label="Historical price signals at publish">
+          <div><span>Momentum 5d</span><strong class="${util.toneClass(signals?.momentum5dPct)}">${metric(signals?.momentum5dPct)}</strong></div>
+          <div><span>Momentum 20d</span><strong class="${util.toneClass(signals?.momentum20dPct)}">${metric(signals?.momentum20dPct)}</strong></div>
+          <div><span>Volatility 20d annualized</span><strong>${unsignedMetric(signals?.annualizedVolatility20dPct)}</strong></div>
+          <div><span>Avg traded value/day 20d</span><strong>${turnover}</strong></div>
+          <div><span>Volume vs prior 20d avg</span><strong>${Number.isFinite(Number(signals?.relativeVolume20d)) && signals?.relativeVolume20d != null ? Number(signals.relativeVolume20d).toFixed(2) + '×' : '—'}</strong></div>
+        </div>
+        <div class="technical-metrics-note">${signals?.status === 'ok' ? `Completed daily bars through ${util.escapeHtml(signals.asOf || '')}. Traded value is a liquidity proxy, not a spread quote.` : 'Historical price signals unavailable for this stock.'}</div>
       </div>`;
   }
 
@@ -1252,7 +1266,8 @@
         name || stock.name,
         publishPrice,
         publishPct,
-        null
+        null,
+        stock
       );
 
       bubblesEl.querySelectorAll('[data-symbol]').forEach(b => {
@@ -1278,7 +1293,8 @@
             name || stock.name,
             publishPrice,
             publishPct,
-            live
+            live,
+            stock
           );
         }
       }

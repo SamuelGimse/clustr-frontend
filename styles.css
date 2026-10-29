@@ -2236,6 +2236,18 @@ html[data-theme="dark"] .article-rating--negative {
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
+  .technical-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .technical-metrics div { display: grid; gap: 3px; }
+  .technical-metrics span, .technical-metrics-note { color: var(--muted); font-size: 11px; }
+  .technical-metrics strong { font-size: 13px; font-weight: 600; }
+  .technical-metrics-note { margin-top: 10px; }
 .price-label,
 .price-sub {
   font-size: 11px;
