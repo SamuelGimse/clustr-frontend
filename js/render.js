@@ -103,6 +103,10 @@
     return 0;
   }
 
+  function historyRowScore(row) {
+    return stanceScore(row.stanceScore ?? row.stance_score ?? row.cluster_score ?? row.stance);
+  }
+
   /**
    * For each history row, avg % of cluster defaults from that publish price → live.
    * @param {Array<Object>} history
@@ -274,7 +278,7 @@
     const labels = dateLabels.concat(['Live']);
 
     // Stance only on publish columns (null on Live)
-    const stanceData = rows.map(r => stanceScore(r.stance_score ?? r.cluster_score ?? r.stance)).concat([null]);
+    const stanceData = rows.map(historyRowScore).concat([null]);
 
     // Price series shifted +1: index 0 null; index i+1 = return measured from publish i
     const retData = [null];
@@ -303,7 +307,7 @@
 
     const pointColors = rows
       .map(r => {
-        const s = stanceScore(r.stance_score ?? r.cluster_score ?? r.stance);
+        const s = historyRowScore(r);
         if (s > 0) return up;
         if (s < 0) return down;
         return meta;
@@ -365,7 +369,7 @@
                 if (i == null) return '';
                 const lines = [];
                 if (i < rows.length && rows[i]) {
-                  const score = rows[i].stance_score ?? rows[i].cluster_score;
+                  const score = rows[i].stanceScore ?? rows[i].stance_score ?? rows[i].cluster_score;
                   lines.push('Stance: ' + (score == null ? (rows[i].stance || '—') : `${Number(score) > 0 ? '+' : ''}${score}`));
                 }
                 // Price is one step ahead: at index i shows outcome of rows[i-1]
