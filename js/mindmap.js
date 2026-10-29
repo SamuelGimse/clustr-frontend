@@ -215,7 +215,7 @@
         });
 
         // Text match in title/summary
-        const blob = `${a.title || ''} ${a.short_summary || ''} ${a.original_summary || ''}`.toLowerCase();
+        const blob = `${a.title || ''} ${a.short_summary || ''}`.toLowerCase();
         const textHit =
           (nameHint && blob.includes(nameHint.toLowerCase().slice(0, 10))) ||
           blob.includes(sym.toLowerCase());
@@ -227,7 +227,7 @@
           link: a.link,
           source: a.source,
           date: a.date,
-          short_summary: a.short_summary || a.original_summary || '',
+          short_summary: a.short_summary || '',
           cluster: g.name,
           layer: layer,
           direction:

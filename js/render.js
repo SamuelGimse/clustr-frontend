@@ -1046,7 +1046,7 @@
               ${articleRatingHtml(a)}
             </div>
             <p class="article-summary">${util.escapeHtml(
-              a.short_summary || a.summary || ''
+              a.short_summary || ''
             )}</p>
             <div class="article-co-row">
               ${(a.mentioned_companies || [])
@@ -1492,7 +1492,7 @@
                     ${articleRatingHtml(a)}
                   </div>
                   <p class="article-summary">${util.escapeHtml(
-                    a.short_summary || a.summary || ''
+                    a.short_summary || ''
                   )}</p>
                   ${
                     a.link
