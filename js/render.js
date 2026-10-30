@@ -26,11 +26,19 @@
     return `<span class="article-impact-window" title="${U().escapeHtml(detail)}" aria-label="Estimated impact ${impact} of 10, lasting ${U().escapeHtml(duration)}">Impact <strong>${impact}</strong> · ${U().escapeHtml(duration)}</span>`;
   }
 
+  function polymarketArticleHtml(article) {
+    const market = article.polymarket; if (!market) return '';
+    const esc=U().escapeHtml;
+    const prices=(market.outcomes||[]).map(item=>`<span>${esc(item.label)} <strong>${item.price===null?'—':(Number(item.price)*100).toFixed(1)+'%'}</strong></span>`).join('');
+    const base=String(window.ClustrConfig?.PUBLISH_API_URL||'').replace(/\/$/,'');
+    return `<div class="pm-feed-label">POLYMARKET · PREDICTION MARKET · ${esc(String(market.collected_at||''))}</div><div class="pm-feed-question">${esc(market.question || article.title || '')}</div><div class="pm-feed-prices">${prices}</div><a href="${esc(base)}/polymarket?market=${encodeURIComponent(market.market_id)}" target="_blank" rel="noopener noreferrer" class="pm-feed-history">Odds and history →</a>`;
+  }
+
   function articleCategory(article) {
     const type = String(article?.type || 'news').toLowerCase();
     const categories = {
       market_report: 'markets', mover: 'markets', macro: 'economy',
-      filing: 'filings', tech: 'technology', research: 'technology',
+      prediction_market: 'prediction_market', filing: 'filings', tech: 'technology', research: 'technology',
       venture: 'technology', energy: 'energy', trade: 'trade',
       health: 'health', health_tech: 'health', auto: 'autos', news: 'world'
     };
@@ -38,7 +46,7 @@
   }
 
   const articleCategoryLabels = {
-    markets: 'Markets', economy: 'Economy', filings: 'Filings',
+    prediction_market: 'Polymarket', markets: 'Markets', economy: 'Economy', filings: 'Filings',
     technology: 'Technology', energy: 'Energy', trade: 'Trade',
     health: 'Health', autos: 'Autos', world: 'World', other: 'Other'
   };
@@ -1163,6 +1171,7 @@
               }
               ${articleRatingHtml(a)}
               ${articleImpactWindowHtml(a)}
+              ${polymarketArticleHtml(a)}
             </div>
             <p class="article-summary">${util.escapeHtml(
               a.short_summary || ''
@@ -1627,6 +1636,7 @@
                     }
                     ${articleRatingHtml(a)}
                     ${articleImpactWindowHtml(a)}
+              ${polymarketArticleHtml(a)}
                   </div>
                   <p class="article-summary">${util.escapeHtml(
                     a.short_summary || ''

@@ -32,6 +32,8 @@
   const signalView = document.getElementById('signalView');
   const mindView = document.getElementById('mindView');
   const weeklyView = document.getElementById('weeklyView');
+  const polymarketView = document.getElementById('polymarketView');
+  const navPolymarket = document.getElementById('navPolymarket');
   const accountView = document.getElementById('accountView');
   const adminView = document.getElementById('adminView');
 
@@ -124,13 +126,14 @@
     const R = window.ClustrRender;
     const MapApi = window.ClustrMap;
 
-    [navEvents, navMap, navDays, navSignal, navMind, navWeekly, navAccount, navAdmin].forEach(b => {
+    [navEvents, navMap, navDays, navSignal, navMind, navWeekly, navAccount, navAdmin, navPolymarket].forEach(b => {
       if (b) {
         b.classList.remove('is-active');
         b.setAttribute('aria-current', 'false');
       }
     });
 
+    if (polymarketView) polymarketView.classList.add('hidden');
     if (eventsView) eventsView.classList.add('hidden');
     if (mapView) mapView.classList.add('hidden');
     if (daysView) daysView.classList.add('hidden');
@@ -140,7 +143,14 @@
     if (accountView) accountView.classList.add('hidden');
     if (adminView) adminView.classList.add('hidden');
 
-    if (which === 'events') {
+    if (which !== 'polymarket' && location.hash === '#/polymarket') history.replaceState(null, '', location.pathname + location.search);
+    if (which === 'polymarket') {
+      navPolymarket?.classList.add('is-active');
+      navPolymarket?.setAttribute('aria-current', 'page');
+      polymarketView?.classList.remove('hidden');
+      history.replaceState(null, '', '#/polymarket');
+      window.ClustrPolymarket?.mount(document.getElementById('clustrPolymarket'));
+    } else if (which === 'events') {
       if (navEvents) {
         navEvents.classList.add('is-active');
         navEvents.setAttribute('aria-current', 'page');
@@ -877,6 +887,7 @@
       publishIndex = 0;
       await endBoot();
 
+      if (location.hash === '#/polymarket') setNav('polymarket');
       if (!publishes.length) {
         if (status) status.textContent = 'No publishes yet';
         return;
@@ -884,7 +895,8 @@
 
       await paintCurrent();
       warmGroupsCache(14);
-      if (location.hash === '#/admin' && authState.role === 'admin') setNav('admin');
+      if (location.hash === '#/polymarket') setNav('polymarket');
+      else if (location.hash === '#/admin' && authState.role === 'admin') setNav('admin');
       else if (location.hash === '#/account' || new URLSearchParams(location.search).has('checkout')) setNav('account');
       else setNav('events');
     } catch (err) {
@@ -894,6 +906,7 @@
     }
   }
 
+  if (navPolymarket) navPolymarket.addEventListener('click', () => setNav('polymarket'));
   if (navEvents) navEvents.addEventListener('click', () => setNav('events'));
   document.querySelectorAll('[data-event-sort]').forEach(button => button.addEventListener('click', async () => {
     eventSort = button.getAttribute('data-event-sort') || 'impact';
