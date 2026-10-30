@@ -69,12 +69,13 @@
       const onset = Number(timeframe?.starts_after_days);
       const minDuration = Number(timeframe?.duration_min_days);
       const maxDuration = Number(timeframe?.duration_max_days);
+      const rating = Number(article?.rating ?? article?.score);
       if (!Number.isFinite(impact) || impact < 1 || impact > 10 || !Number.isFinite(minDuration) || !Number.isFinite(maxDuration) || maxDuration < minDuration) return null;
       const start = Math.max(0, Number.isFinite(onset) ? onset : 0) + Math.max(0, minDuration);
       const end = Math.max(start, (Number.isFinite(onset) ? Math.max(0, onset) : 0) + Math.max(0, maxDuration));
-      return { article, impact, start, end };
+      return { article, impact, start, end, tone: rating < 0 ? 'negative' : rating > 0 ? 'positive' : 'neutral' };
     }).filter(Boolean).sort((a, b) => b.impact - a.impact || b.end - a.end).slice(0, 4);
-    if (!entries.length) return '';
+    if (!entries.length) return '<div class="impact-timeline-empty">No article impact windows are available for this cluster.</div>';
     const latestEnd = Math.max(...entries.map(entry => entry.end), 1);
     const horizon = [1, 3, 7, 14, 30, 60, 90, 180].find(days => days >= latestEnd) || Math.ceil(latestEnd / 30) * 30;
     const esc = U().escapeHtml;
@@ -83,7 +84,7 @@
       const offset = Math.min(100, entry.start / horizon * 100);
       const width = Math.max(entry.end > entry.start ? 2 : 1.5, Math.min(100 - offset, (entry.end - entry.start) / horizon * 100));
       const timing = entry.start === entry.end ? label(entry.start) : `${label(entry.start)} – ${label(entry.end)}`;
-      return `<div class="impact-timeline-row" title="${esc(String(entry.article.title || 'Article'))}: impact ${entry.impact}/10, ${timing}"><span class="impact-timeline-label">${esc(String(entry.article.source || entry.article.title || 'Article'))}</span><span class="impact-timeline-track"><i style="--offset:${offset}%;--width:${width}%;--impact:${entry.impact}"></i></span><span class="impact-timeline-duration">${esc(timing)}</span></div>`;
+      return `<div class="impact-timeline-row" title="${esc(String(entry.article.title || 'Article'))}: impact ${entry.impact}/10, ${timing}"><span class="impact-timeline-label">${esc(String(entry.article.source || entry.article.title || 'Article'))}</span><span class="impact-timeline-track"><i class="impact-timeline-bar--${entry.tone}" style="--offset:${offset}%;--width:${width}%;--impact:${entry.impact}"></i></span><span class="impact-timeline-duration">${esc(timing)}</span></div>`;
     }).join('')}</div></section>`;
   }
 
@@ -1085,7 +1086,6 @@
           group.reason || group.summary || ''
         )}</p>
         ${articleRatingStripHtml(articles)}
-        ${impactTimelineHtml(articles)}
         ${marketSignalsHtml(group)}
         ${angles
           .map(
@@ -1117,9 +1117,11 @@
         <div class="chart-folder" data-chart-folder="${index}">
           <div class="chart-folder-tabs" role="tablist">
             <button type="button" class="chart-tab is-active" data-chart-mode="stance" role="tab" aria-selected="true">Stance history</button>
+            <button type="button" class="chart-tab" data-chart-mode="impact" role="tab" aria-selected="false">Impact timeline</button>
             <button type="button" class="chart-tab" data-chart-mode="tradingview" role="tab" aria-selected="false">TradingView</button>
           </div>
           <div class="chart chart-mode-stance" id="chart-stance-${index}"></div>
+          <div class="chart chart-mode-impact is-hidden" id="chart-impact-${index}">${impactTimelineHtml(articles)}</div>
           <div class="chart chart-mode-tv is-hidden" id="chart-tv-${index}"></div>
         </div>
         <div class="related-under-chart"></div>
@@ -1279,11 +1281,12 @@
     const select = el.querySelector('.stock-group-select');
     const bubblesEl = el.querySelector('.stock-bubbles');
     const chartStance = el.querySelector(`#chart-stance-${index}`);
+    const chartImpact = el.querySelector(`#chart-impact-${index}`);
     const chartTv = el.querySelector(`#chart-tv-${index}`);
     const chartFolder = el.querySelector(`[data-chart-folder="${index}"]`);
     const priceMount = el.querySelector('.price-bar-mount');
     const relatedMount = el.querySelector('.related-under-chart');
-    /** @type {'stance'|'tradingview'} */
+    /** @type {'stance'|'impact'|'tradingview'} */
     let chartMode = 'stance';
 
     const findStock = symbol => {
@@ -1314,10 +1317,11 @@
      * @returns {Promise<void>}
      */
     const applyChartMode = () => {
-      if (!chartStance || !chartTv) return;
+      if (!chartStance || !chartImpact || !chartTv) return;
       const stanceOn = chartMode === 'stance';
       chartStance.classList.toggle('is-hidden', !stanceOn);
-      chartTv.classList.toggle('is-hidden', stanceOn);
+      chartImpact.classList.toggle('is-hidden', chartMode !== 'impact');
+      chartTv.classList.toggle('is-hidden', chartMode !== 'tradingview');
       if (chartFolder) {
         chartFolder.querySelectorAll('[data-chart-mode]').forEach(btn => {
           const on = btn.getAttribute('data-chart-mode') === chartMode;
@@ -1393,7 +1397,7 @@
 
       if (chartMode === 'stance') {
         await fillStanceChart();
-      } else {
+      } else if (chartMode === 'tradingview') {
         fillTradingView(symbol, name || stock.name);
       }
 
@@ -1416,12 +1420,12 @@
       chartFolder.querySelectorAll('[data-chart-mode]').forEach(btn => {
         btn.addEventListener('click', () => {
           const mode = btn.getAttribute('data-chart-mode');
-          if (mode !== 'stance' && mode !== 'tradingview') return;
+          if (mode !== 'stance' && mode !== 'impact' && mode !== 'tradingview') return;
           chartMode = mode;
           applyChartMode();
           if (!activeSymbol) return;
           if (chartMode === 'stance') fillStanceChart();
-          else fillTradingView(activeSymbol, activeName);
+          else if (chartMode === 'tradingview') fillTradingView(activeSymbol, activeName);
         });
       });
     }

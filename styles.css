@@ -2475,8 +2475,11 @@ html[data-theme="sea-foam"]
 .impact-timeline-label { overflow: hidden; color: var(--text-meta); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .impact-timeline-track { position: relative; display: block; height: 8px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--border) 70%, transparent); }
 .impact-timeline-track::before { position: absolute; top: -2px; bottom: -2px; left: 0; border-left: 1px solid var(--text-meta); content: ''; opacity: .7; }
-.impact-timeline-track i { position: absolute; top: 0; bottom: 0; left: var(--offset); width: var(--width); min-width: 3px; border-radius: 999px; background: hsl(calc(210 - var(--impact) * 9) 78% 62%); box-shadow: 0 0 10px color-mix(in srgb, currentColor 35%, transparent); }
+.impact-timeline-track i { position: absolute; top: 0; bottom: 0; left: var(--offset); width: var(--width); min-width: 3px; border-radius: 999px; background: var(--text-meta); box-shadow: 0 0 10px color-mix(in srgb, currentColor 35%, transparent); }
+.impact-timeline-track .impact-timeline-bar--positive { background: var(--up); }
+.impact-timeline-track .impact-timeline-bar--negative { background: var(--down); }
 .impact-timeline-duration { color: var(--text-meta); font-size: 9px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.impact-timeline-empty { padding: 28px 12px; color: var(--text-meta); font-size: 12px; text-align: center; }
 @media(max-width:700px) { .impact-timeline-head { display: block; } .impact-timeline-head span { display: block; margin-top: 3px; } .impact-timeline-axis { margin-left: 76px; margin-right: 0; } .impact-timeline-row { grid-template-columns: 68px minmax(0, 1fr); } .impact-timeline-duration { display: none; } }
 .article-summary {
   margin: 0 0 8px;
