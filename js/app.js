@@ -416,7 +416,21 @@
     const score = item.score == null ? '—' : `${item.score > 0 ? '+' : ''}${item.score.toFixed(1)}`;
     const change = showChange && item.change != null ? `<span class="weekly-change ${item.change>0?'up':item.change<0?'down':''}">${item.change>0?'+':''}${item.change.toFixed(1)}</span>` : '';
     const summary = item.summary ? `<section class="weekly-cluster-summary"><div><span>7-DAY CLUSTER SUMMARY</span><small>${window.ClustrUtil.escapeHtml(item.summary.summary_date)} · ${window.ClustrUtil.escapeHtml(item.summary.model || 'local Ollama')}</small></div><p>${window.ClustrUtil.escapeHtml(item.summary.summary)}</p></section>` : '';
-    return `<article class="weekly-cluster"><div class="weekly-cluster-score ${item.score>0?'up':item.score<0?'down':''}">${score}</div><div class="weekly-cluster-main"><h3>${window.ClustrUtil.escapeHtml(item.name)}</h3><p>${item.stories.size} unique articles · ${item.days.size} days · ${item.market}</p>${summary}<div class="weekly-tickers">${[...item.tickers].slice(0,10).map(t=>`<span>${window.ClustrUtil.escapeHtml(t)}</span>`).join('')}</div></div>${change}</article>`;
+    const entries = [...item.items]
+      .sort((a, b) => new Date(b.publish.created_at) - new Date(a.publish.created_at))
+      .map(({ group, publish, day }) => {
+        const entryScore = weeklyScore(group);
+        const scoreText = entryScore == null ? '—' : `${entryScore > 0 ? '+' : ''}${entryScore.toFixed(1)}`;
+        const entrySummary = String(group.reason || group.summary || '').trim();
+        return `<article class="weekly-cluster-entry">
+          <div class="weekly-cluster-entry-score ${entryScore > 0 ? 'up' : entryScore < 0 ? 'down' : ''}">${scoreText}</div>
+          <div>
+            <div class="weekly-cluster-entry-meta"><time datetime="${window.ClustrUtil.escapeHtml(publish.created_at || '')}">${window.ClustrUtil.escapeHtml(day)}</time><span>${window.ClustrUtil.escapeHtml(publish.title || 'Publish')}</span></div>
+            <p>${window.ClustrUtil.escapeHtml(entrySummary || 'No saved cluster summary for this publish.')}</p>
+          </div>
+        </article>`;
+      }).join('');
+    return `<details class="weekly-cluster"><summary class="weekly-cluster-head"><div class="weekly-cluster-score ${item.score>0?'up':item.score<0?'down':''}">${score}</div><div class="weekly-cluster-main"><h3>${window.ClustrUtil.escapeHtml(item.name)}</h3><p>${item.stories.size} unique articles · ${item.days.size} days · ${item.market}</p>${summary}<div class="weekly-tickers">${[...item.tickers].slice(0,10).map(t=>`<span>${window.ClustrUtil.escapeHtml(t)}</span>`).join('')}</div></div>${change}<span class="weekly-cluster-expand" aria-hidden="true">⌄</span></summary><section class="weekly-cluster-history"><div class="weekly-cluster-history-title">All ${item.items.length} cluster ${item.items.length === 1 ? 'entry' : 'entries'} in this seven-day window</div>${entries}</section></details>`;
   }
 
   function renderAccount(message = '') {
