@@ -2064,6 +2064,9 @@ html[data-theme="dark"] .article-rating--negative {
   margin-bottom: 8px;
   width: 100%;
   height: 220px;
+  min-height: 220px;
+  max-height: 220px;
+  overflow: hidden;
   position: relative;
 }
 .stance-history-canvas {
@@ -2462,6 +2465,19 @@ html[data-theme="sea-foam"]
   font-weight: 600;
   white-space: nowrap;
 }
+.impact-timeline { margin: 12px 0; padding: 11px 12px; border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border)); border-radius: var(--md-sys-shape-md); background: color-mix(in srgb, var(--panel-2) 82%, var(--accent) 5%); }
+.impact-timeline-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+.impact-timeline-head strong { color: var(--text); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.impact-timeline-head span { color: var(--text-meta); font-size: 10px; }
+.impact-timeline-axis { display: flex; justify-content: space-between; margin: 0 66px 5px 108px; color: var(--text-meta); font-size: 9px; font-variant-numeric: tabular-nums; }
+.impact-timeline-rows { display: grid; gap: 7px; }
+.impact-timeline-row { display: grid; grid-template-columns: 100px minmax(0, 1fr) 58px; align-items: center; gap: 8px; min-width: 0; }
+.impact-timeline-label { overflow: hidden; color: var(--text-meta); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.impact-timeline-track { position: relative; display: block; height: 8px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--border) 70%, transparent); }
+.impact-timeline-track::before { position: absolute; top: -2px; bottom: -2px; left: 0; border-left: 1px solid var(--text-meta); content: ''; opacity: .7; }
+.impact-timeline-track i { position: absolute; top: 0; bottom: 0; left: var(--offset); width: var(--width); min-width: 3px; border-radius: 999px; background: hsl(calc(210 - var(--impact) * 9) 78% 62%); box-shadow: 0 0 10px color-mix(in srgb, currentColor 35%, transparent); }
+.impact-timeline-duration { color: var(--text-meta); font-size: 9px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+@media(max-width:700px) { .impact-timeline-head { display: block; } .impact-timeline-head span { display: block; margin-top: 3px; } .impact-timeline-axis { margin-left: 76px; margin-right: 0; } .impact-timeline-row { grid-template-columns: 68px minmax(0, 1fr); } .impact-timeline-duration { display: none; } }
 .article-summary {
   margin: 0 0 8px;
   font-size: 13px;

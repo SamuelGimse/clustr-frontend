@@ -244,6 +244,15 @@
     return Number.isFinite(value) && value >= -10 && value <= 10 && value !== 0 ? value : null;
   }
 
+  function symmetricReturnRange(values) {
+    const largest = Math.max(0, ...values.filter(Number.isFinite).map(value => Math.abs(value)));
+    const padded = Math.max(largest * 1.1, 0.1);
+    const power = Math.pow(10, Math.floor(Math.log10(padded)));
+    const normalized = padded / power;
+    const ceiling = (normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10) * power;
+    return { min: -ceiling, max: ceiling };
+  }
+
   function weeklyKey(group) {
     const market = String(group.market || 'US').toUpperCase();
     const id = group.cluster_bank_key ?? group.cluster_id ?? group.clusterId ?? group.cluster_bank_id;
@@ -461,18 +470,22 @@
       console.warn('weekly default-stock chart quotes', err.message);
     }
 
-    const basketReturns = defaultsByRow.map(defaults => {
-      const changes = defaults.map(stock => {
-        const live = quotes[stock.symbol]?.price;
-        return live != null && Number.isFinite(Number(live))
-          ? ((Number(live) - stock.price) / stock.price) * 100
-          : null;
+    const priceMap = defaults => Object.fromEntries(defaults.map(stock => [stock.symbol, stock.price]));
+    const basketReturns = defaultsByRow.map((defaults, index) => {
+      const start = priceMap(defaults);
+      const end = index === defaultsByRow.length - 1
+        ? Object.fromEntries(Object.keys(start).map(symbol => [symbol, Number(quotes[symbol]?.price)]).filter(([, price]) => Number.isFinite(price)))
+        : priceMap(defaultsByRow[index + 1]);
+      const changes = Object.entries(start).map(([symbol, publishPrice]) => {
+        const endPrice = end[symbol];
+        return Number.isFinite(endPrice) ? ((endPrice - publishPrice) / publishPrice) * 100 : null;
       }).filter(Number.isFinite);
       return changes.length ? changes.reduce((sum, value) => sum + value, 0) / changes.length : null;
     });
     const usableRows = basketReturns.filter(Number.isFinite).length;
+    const returnRange = symmetricReturnRange(basketReturns);
     note.textContent = usableRows
-      ? `Default basket uses ${symbols.length} unique stock${symbols.length === 1 ? '' : 's'}; price change is measured from each publish to the latest quote.`
+      ? `Same method as the stance chart: each default basket runs to the next publish; the final point runs to the latest quote.`
       : 'No usable default-stock publish prices or current quotes were available for this cluster.';
 
     const rootStyle = getComputedStyle(document.documentElement);
@@ -480,15 +493,18 @@
     const down = rootStyle.getPropertyValue('--down').trim() || '#f87171';
     const muted = rootStyle.getPropertyValue('--text-meta').trim() || '#94a3b8';
     const border = rootStyle.getPropertyValue('--border').trim() || '#334155';
-    const sentiment = rows.map(row => weeklyScore(row.group));
+    const accent = rootStyle.getPropertyValue('--accent').trim() || '#f97316';
+    const sentiment = rows.map(row => weeklyScore(row.group)).concat([null]);
     const pointColors = sentiment.map(score => score > 0 ? up : score < 0 ? down : muted);
+    pointColors[pointColors.length - 1] = 'transparent';
+    const returnData = [null].concat(basketReturns);
     canvas._clustrChart = new window.Chart(canvas.getContext('2d'), {
       type: 'line',
       data: {
-        labels: rows.map(row => row.day),
+        labels: rows.map(row => row.day).concat(['Live']),
         datasets: [
-          { label: 'Sentiment score', data: sentiment, yAxisID: 'sentiment', borderColor: muted, pointBackgroundColor: pointColors, pointBorderColor: pointColors, borderWidth: 2, pointRadius: 4, tension: 0.25, spanGaps: true },
-          { label: 'Default basket change %', data: basketReturns, yAxisID: 'returns', borderColor: '#76b7ff', pointBackgroundColor: '#76b7ff', borderWidth: 2, pointRadius: 4, tension: 0.25, spanGaps: true }
+          { label: 'Sentiment score', data: sentiment, yAxisID: 'sentiment', borderColor: muted, pointBackgroundColor: pointColors, pointBorderColor: pointColors, borderWidth: 2, pointRadius: 5, pointHoverRadius: 7, tension: 0.25, spanGaps: true },
+          { label: 'Defaults → next / live %', data: returnData, yAxisID: 'returns', borderColor: accent, backgroundColor: `${accent}22`, pointBackgroundColor: accent, borderWidth: 2, pointRadius: 4, borderDash: [5, 4], tension: 0.25, spanGaps: true, fill: false }
         ]
       },
       options: {
@@ -499,7 +515,7 @@
         scales: {
           x: { ticks: { color: muted }, grid: { color: border } },
           sentiment: { position: 'left', min: -10, max: 10, ticks: { color: muted }, grid: { color: border } },
-          returns: { position: 'right', ticks: { color: '#76b7ff', callback: value => `${value}%` }, grid: { drawOnChartArea: false } }
+          returns: { position: 'right', min: returnRange.min, max: returnRange.max, ticks: { color: '#76b7ff', callback: value => `${value}%` }, grid: { drawOnChartArea: false } }
         }
       }
     });

@@ -62,6 +62,31 @@
     }).join('')}</div></section>`;
   }
 
+  function impactTimelineHtml(articles) {
+    const entries = (articles || []).map(article => {
+      const timeframe = article?.impact_timeframe;
+      const impact = Number(article?.impact);
+      const onset = Number(timeframe?.starts_after_days);
+      const minDuration = Number(timeframe?.duration_min_days);
+      const maxDuration = Number(timeframe?.duration_max_days);
+      if (!Number.isFinite(impact) || impact < 1 || impact > 10 || !Number.isFinite(minDuration) || !Number.isFinite(maxDuration) || maxDuration < minDuration) return null;
+      const start = Math.max(0, Number.isFinite(onset) ? onset : 0) + Math.max(0, minDuration);
+      const end = Math.max(start, (Number.isFinite(onset) ? Math.max(0, onset) : 0) + Math.max(0, maxDuration));
+      return { article, impact, start, end };
+    }).filter(Boolean).sort((a, b) => b.impact - a.impact || b.end - a.end).slice(0, 4);
+    if (!entries.length) return '';
+    const latestEnd = Math.max(...entries.map(entry => entry.end), 1);
+    const horizon = [1, 3, 7, 14, 30, 60, 90, 180].find(days => days >= latestEnd) || Math.ceil(latestEnd / 30) * 30;
+    const esc = U().escapeHtml;
+    const label = days => days === 0 ? 'now' : days === 1 ? '1 day' : `${days} days`;
+    return `<section class="impact-timeline" aria-label="Estimated impact timeline"><div class="impact-timeline-head"><strong>Impact timeline</strong><span>Expected window after publication</span></div><div class="impact-timeline-axis" aria-hidden="true"><span>Now</span><span>+${horizon}d</span></div><div class="impact-timeline-rows">${entries.map(entry => {
+      const offset = Math.min(100, entry.start / horizon * 100);
+      const width = Math.max(entry.end > entry.start ? 2 : 1.5, Math.min(100 - offset, (entry.end - entry.start) / horizon * 100));
+      const timing = entry.start === entry.end ? label(entry.start) : `${label(entry.start)} – ${label(entry.end)}`;
+      return `<div class="impact-timeline-row" title="${esc(String(entry.article.title || 'Article'))}: impact ${entry.impact}/10, ${timing}"><span class="impact-timeline-label">${esc(String(entry.article.source || entry.article.title || 'Article'))}</span><span class="impact-timeline-track"><i style="--offset:${offset}%;--width:${width}%;--impact:${entry.impact}"></i></span><span class="impact-timeline-duration">${esc(timing)}</span></div>`;
+    }).join('')}</div></section>`;
+  }
+
   function groupRating(group) {
     const ratings = (group && group.articles || []).map(article => article.rating ?? article.score);
     return U().exponentialMeanRating(ratings) ?? Number(group && (group.stance_score ?? group.cluster_score));
@@ -298,6 +323,15 @@
     }
   }
 
+  function symmetricReturnRange(values) {
+    const largest = Math.max(0, ...values.filter(Number.isFinite).map(value => Math.abs(value)));
+    const padded = Math.max(largest * 1.1, 0.1);
+    const power = Math.pow(10, Math.floor(Math.log10(padded)));
+    const normalized = padded / power;
+    const ceiling = (normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10) * power;
+    return { min: -ceiling, max: ceiling };
+  }
+
   /**
    * Mount Chart.js dual series (stance score + defaults→live %) full width.
    * @param {HTMLCanvasElement|null} canvas
@@ -337,6 +371,7 @@
         v != null && Number.isFinite(v) ? v : null
       );
     }
+    const returnRange = symmetricReturnRange(retData);
 
     const accent =
       getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() ||
@@ -461,6 +496,8 @@
           yRet: {
             type: 'linear',
             position: 'right',
+            min: returnRange.min,
+            max: returnRange.max,
             ticks: {
               color: accent,
               callback(v) {
@@ -1048,6 +1085,7 @@
           group.reason || group.summary || ''
         )}</p>
         ${articleRatingStripHtml(articles)}
+        ${impactTimelineHtml(articles)}
         ${marketSignalsHtml(group)}
         ${angles
           .map(
