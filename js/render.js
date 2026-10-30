@@ -26,6 +26,23 @@
     return `<span class="article-impact-window" title="${U().escapeHtml(detail)}" aria-label="Estimated impact ${impact} of 10, lasting ${U().escapeHtml(duration)}">Impact <strong>${impact}</strong> · ${U().escapeHtml(duration)}</span>`;
   }
 
+  function articleCategory(article) {
+    const type = String(article?.type || 'news').toLowerCase();
+    const categories = {
+      market_report: 'markets', mover: 'markets', macro: 'economy',
+      filing: 'filings', tech: 'technology', research: 'technology',
+      venture: 'technology', energy: 'energy', trade: 'trade',
+      health: 'health', health_tech: 'health', auto: 'autos', news: 'world'
+    };
+    return categories[type] || 'other';
+  }
+
+  const articleCategoryLabels = {
+    markets: 'Markets', economy: 'Economy', filings: 'Filings',
+    technology: 'Technology', energy: 'Energy', trade: 'Trade',
+    health: 'Health', autos: 'Autos', world: 'World', other: 'Other'
+  };
+
   function groupRating(group) {
     const ratings = (group && group.articles || []).map(article => article.rating ?? article.score);
     return U().exponentialMeanRating(ratings) ?? Number(group && (group.stance_score ?? group.cluster_score));
@@ -987,6 +1004,11 @@
     const angles = group.opportunity_angles || group.angles || [];
     const articles = group.articles || [];
     const count = group.count || articles.length || 0;
+    const categoryCounts = new Map();
+    for (const article of articles) {
+      const category = articleCategory(article);
+      categoryCounts.set(category, (categoryCounts.get(category) || 0) + 1);
+    }
     const defaultGroupId = stockGroups[0]?.id || '';
 
     const el = document.createElement('section');
@@ -1054,11 +1076,16 @@
       </aside>
       </div>
 
-      <div class="article-grid articles hidden">
+      <div class="articles-panel hidden">
+        <div class="article-category-tabs" role="tablist" aria-label="Article categories in ${util.escapeHtml(group.name || 'cluster')}">
+          <button type="button" class="article-category-tab is-active" data-article-category="all" role="tab" aria-selected="true">All <span>${articles.length}</span></button>
+          ${Object.entries(articleCategoryLabels).filter(([category]) => categoryCounts.has(category)).map(([category, label]) => `<button type="button" class="article-category-tab" data-article-category="${category}" role="tab" aria-selected="false">${label} <span>${categoryCounts.get(category)}</span></button>`).join('')}
+        </div>
+      <div class="article-grid articles">
         ${articles
           .map(
             a => `
-          <article class="md-card md-card--outlined article-card">
+          <article class="md-card md-card--outlined article-card" data-article-category="${articleCategory(a)}">
             <h3 class="article-title">${util.escapeHtml(a.title || '')}</h3>
             <div class="article-meta">
               ${util.escapeHtml(a.source || '')}
@@ -1119,7 +1146,7 @@
           </article>`
           )
           .join('')}
-      </div>`;
+      </div></div>`;
 
     const stanceMount = el.querySelector('.stance-mount');
     const historyBtn =
@@ -1169,14 +1196,27 @@
     }
 
     const toggleBtn = el.querySelector('.toggle-articles');
-    const articlesGrid = el.querySelector('.articles');
+    const articlesPanel = el.querySelector('.articles-panel');
     toggleBtn.addEventListener('click', () => {
-      const hidden = articlesGrid.classList.contains('hidden');
-      articlesGrid.classList.toggle('hidden', !hidden);
+      const hidden = articlesPanel.classList.contains('hidden');
+      articlesPanel.classList.toggle('hidden', !hidden);
       toggleBtn.textContent = hidden
         ? `Hide articles (${count})`
         : `Show articles & scores (${count})`;
     });
+    const categoryTabs = [...el.querySelectorAll('.article-category-tab')];
+    const articleCards = [...el.querySelectorAll('.article-grid .article-card')];
+    for (const tab of categoryTabs) {
+      tab.addEventListener('click', () => {
+        const selected = tab.dataset.articleCategory;
+        for (const option of categoryTabs) {
+          const active = option === tab;
+          option.classList.toggle('is-active', active);
+          option.setAttribute('aria-selected', String(active));
+        }
+        for (const card of articleCards) card.hidden = selected !== 'all' && card.dataset.articleCategory !== selected;
+      });
+    }
 
     const select = el.querySelector('.stock-group-select');
     const bubblesEl = el.querySelector('.stock-bubbles');

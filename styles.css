@@ -2353,6 +2353,31 @@ html[data-theme="sea-foam"]
   font-size: 13px;
 }
 
+.article-category-tabs {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding: 13px 0 3px;
+  scrollbar-width: thin;
+}
+.article-category-tab {
+  flex: 0 0 auto;
+  padding: 7px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--text-meta);
+  font: 600 12px var(--font-sans);
+  cursor: pointer;
+}
+.article-category-tab span { margin-left: 5px; opacity: .7; }
+.article-category-tab:hover,
+.article-category-tab.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.article-category-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.article-card[hidden] { display: none !important; }
 .article-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
