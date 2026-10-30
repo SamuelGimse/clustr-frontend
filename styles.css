@@ -782,10 +782,14 @@ html[data-theme="crt"] .crt-overlay::after {
 .admin-monitor-panel h3 { margin:0; }
 .admin-monitor-panel .publish-chart { height:260px !important; max-height:none; margin:8px 0 0; }
 .admin-monitor-panel .account-plan-note { margin:8px 0 0; }
+.admin-source-panel { grid-column:1 / -1; }
+.publish-source-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+.publish-source-grid h4 { margin:12px 0 0; font-size:12px; }
+.publish-source-list { max-height:240px; overflow:auto; margin:8px 0 0; color:var(--md-on-surface,#dce7f4); font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace; white-space:pre-wrap; }
 .admin-monitor-panel .publish-console { height:300px; min-height:0; max-height:calc(100vh - 310px); margin:8px 0 0; }
 .admin-model-panel { grid-column:1 / -1; }
 .publish-model-reply { min-height:54px; max-height:180px; overflow:auto; margin:8px 0 0; padding:12px; border:1px solid var(--md-outline,#334155); border-radius:10px; color:var(--md-on-surface,#dce7f4); background:#050a10; font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; white-space:pre-wrap; overflow-wrap:anywhere; }
-@media(max-width:900px) { .admin-monitor-grid { grid-template-columns:1fr; } .admin-monitor-panel .publish-console { height:250px; max-height:40vh; } }
+@media(max-width:900px) { .admin-monitor-grid,.publish-source-grid { grid-template-columns:1fr; } .admin-monitor-panel .publish-console { height:250px; max-height:40vh; } }
 @media(max-width:700px) { #adminView.account-page { padding:8px 0 20px; } #adminView .account-shell { padding:20px 14px; } .admin-publish-head { grid-template-columns:1fr 1fr; } .admin-publish-head > div,.admin-publish-head .account-plan-note { grid-column:1 / -1; } }
 
 html[data-theme="crt"] .brand,

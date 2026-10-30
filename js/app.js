@@ -459,6 +459,26 @@
     output.scrollTop = output.scrollHeight;
   }
 
+  function updateSourceMonitor(job, reset = false) {
+    const grid = document.querySelector('.admin-monitor-grid');
+    if (!grid) return;
+    let panel = document.getElementById('publishSources');
+    if (!panel) {
+      panel = document.createElement('section');
+      panel.id = 'publishSources';
+      panel.className = 'admin-monitor-panel admin-source-panel';
+      panel.innerHTML = '<h3>Sources</h3><div class="publish-source-grid"><div><h4>News feeds · articles after deduplication</h4><pre class="publish-source-list publish-news-sources"></pre></div><div><h4>Market data · dated measurements, not news articles</h4><pre class="publish-source-list publish-market-sources"></pre></div></div>';
+      grid.appendChild(panel);
+    }
+    const newsList = panel.querySelector('.publish-news-sources');
+    const marketList = panel.querySelector('.publish-market-sources');
+    if (reset) { newsList.textContent = 'Waiting for source results.'; marketList.textContent = 'Waiting for source results.'; return; }
+    const news = Object.entries(job?.newsSources || {});
+    const market = Object.entries(job?.marketSources || {});
+    newsList.textContent = news.length ? news.map(([name, count]) => `${name}: ${count}`).join('\n') : 'Fetching…';
+    marketList.textContent = market.length ? market.map(([name, status]) => `${name}: ${status}`).join('\n') : 'Fetching…';
+  }
+
   function updateModelMonitor(status, reset = false) {
     const model = document.getElementById('publishModelName');
     const activity = document.getElementById('publishModelActivity');
@@ -498,7 +518,7 @@
       Number(progress.clusters) || 0,
       Number(progress.stocksMapped) || 0
     ];
-    if (text) text.textContent = `Fetched ${chartValues[0]} · filtering ${chartValues[1]}/${filterTotal} complete · relevant ${chartValues[2]} · grouping ${chartValues[3]}/${Number(progress.groupingTotal) || 0} · clusters ${chartValues[4]} · stocks mapped ${chartValues[5]}/${Number(progress.stockMapTotal) || 0}`;
+    if (text) text.textContent = `Fetched ${chartValues[0]} news articles · ${Number(progress.marketSignals) || 0} market measurements · filtering ${chartValues[1]}/${filterTotal} complete · relevant ${chartValues[2]} · grouping ${chartValues[3]}/${Number(progress.groupingTotal) || 0} · clusters ${chartValues[4]} · stocks mapped ${chartValues[5]}/${Number(progress.stockMapTotal) || 0}`;
     if (!canvas || !window.Chart) return;
     const labels = ['Fetched articles', 'Filtering progress', 'Relevant', 'Stories grouped', 'Clusters formed', 'Stock maps complete'];
     if (!publishChart) {
@@ -803,10 +823,11 @@
         button.disabled = true;
         button.textContent = 'Starting full publish…';
         appendPublishConsole([], true);
+        updateSourceMonitor(null, true);
         updateModelMonitor(null, true);
         updatePublishChart({ fetchedArticles: 0, filterProcessed: 0, filterTotal: 150, relevant: 0, groupingProcessed: 0, groupingTotal: 0, clusters: 0, stocksMapped: 0, stockMapTotal: 0 });
         try {
-          const result = await window.ClustrAuth.runPublish(market, (stage, job) => { renderAdmin(stage); updatePublishChart(job?.progress); updateModelMonitor(job?.modelStatus); }, lines => appendPublishConsole(lines));
+          const result = await window.ClustrAuth.runPublish(market, (stage, job) => { renderAdmin(stage); updatePublishChart(job?.progress); updateSourceMonitor(job); updateModelMonitor(job?.modelStatus); }, lines => appendPublishConsole(lines));
           await refreshPublishes();
           renderAdmin(`Publish saved · ${result.market} · ${result.counts?.clusters ?? result.count} clusters · ${result.counts?.relevant ?? 0} scored stories · ID ${result.publishId}.`);
         } finally { button.disabled = false; }
