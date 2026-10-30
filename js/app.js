@@ -401,6 +401,7 @@
       chart.innerHTML = '';
       list.innerHTML = clusters.length ? clusters.map(c=>weeklyClusterCard(c,false)).join('') : '<div class="weekly-empty">No clusters found in the last seven days.</div>';
     }
+    bindWeeklyClusterCharts(list, clusters);
   }
 
   function weeklyTrendChart(days) {
@@ -430,7 +431,91 @@
           </div>
         </article>`;
       }).join('');
-    return `<details class="weekly-cluster"><summary class="weekly-cluster-head"><div class="weekly-cluster-score ${item.score>0?'up':item.score<0?'down':''}">${score}</div><div class="weekly-cluster-main"><h3>${window.ClustrUtil.escapeHtml(item.name)}</h3><p>${item.stories.size} unique articles · ${item.days.size} days · ${item.market}</p>${summary}<div class="weekly-tickers">${[...item.tickers].slice(0,10).map(t=>`<span>${window.ClustrUtil.escapeHtml(t)}</span>`).join('')}</div></div>${change}<span class="weekly-cluster-expand" aria-hidden="true">⌄</span></summary><section class="weekly-cluster-history"><div class="weekly-cluster-history-title">All ${item.items.length} cluster ${item.items.length === 1 ? 'entry' : 'entries'} in this seven-day window</div>${entries}</section></details>`;
+    return `<details class="weekly-cluster" data-weekly-key="${window.ClustrUtil.escapeHtml(item.key)}"><summary class="weekly-cluster-head"><div class="weekly-cluster-score ${item.score>0?'up':item.score<0?'down':''}">${score}</div><div class="weekly-cluster-main"><h3>${window.ClustrUtil.escapeHtml(item.name)}</h3><p>${item.stories.size} unique articles · ${item.days.size} days · ${item.market}</p>${summary}<div class="weekly-tickers">${[...item.tickers].slice(0,10).map(t=>`<span>${window.ClustrUtil.escapeHtml(t)}</span>`).join('')}</div></div>${change}<span class="weekly-cluster-expand" aria-hidden="true">⌄</span></summary><section class="weekly-cluster-history"><div class="weekly-cluster-history-title">All ${item.items.length} cluster ${item.items.length === 1 ? 'entry' : 'entries'} in this seven-day window</div><section class="weekly-cluster-chart"><div><span>SENTIMENT × DEFAULT STOCKS</span><small>Score vs average default-basket change since each publish</small></div><canvas class="weekly-cluster-chart-canvas" aria-label="Sentiment score and default-stock basket change"></canvas><p class="weekly-cluster-chart-note">Open this cluster to load default-stock price changes.</p></section>${entries}</section></details>`;
+  }
+
+  function defaultStocksForWeeklyGroup(group) {
+    return (group.fixed_stocks || group.default_stocks || [])
+      .map(stock => ({
+        symbol: String(stock?.symbol || stock || '').trim().toUpperCase(),
+        price: Number(stock?.priceAtPublish ?? stock?.price)
+      }))
+      .filter(stock => stock.symbol && Number.isFinite(stock.price) && stock.price > 0);
+  }
+
+  async function mountWeeklyClusterChart(details, item) {
+    const canvas = details.querySelector('.weekly-cluster-chart-canvas');
+    const note = details.querySelector('.weekly-cluster-chart-note');
+    if (!canvas || !note || !window.Chart || !window.ClustrQuotes) return;
+    if (canvas._clustrChart) return;
+
+    const rows = [...item.items].sort((a, b) => new Date(a.publish.created_at) - new Date(b.publish.created_at));
+    const defaultsByRow = rows.map(row => defaultStocksForWeeklyGroup(row.group));
+    const symbols = [...new Set(defaultsByRow.flat().map(stock => stock.symbol))];
+    note.textContent = 'Loading default-stock price changes…';
+
+    let quotes = {};
+    try {
+      quotes = await window.ClustrQuotes.getQuotes(symbols);
+    } catch (err) {
+      console.warn('weekly default-stock chart quotes', err.message);
+    }
+
+    const basketReturns = defaultsByRow.map(defaults => {
+      const changes = defaults.map(stock => {
+        const live = quotes[stock.symbol]?.price;
+        return live != null && Number.isFinite(Number(live))
+          ? ((Number(live) - stock.price) / stock.price) * 100
+          : null;
+      }).filter(Number.isFinite);
+      return changes.length ? changes.reduce((sum, value) => sum + value, 0) / changes.length : null;
+    });
+    const usableRows = basketReturns.filter(Number.isFinite).length;
+    note.textContent = usableRows
+      ? `Default basket uses ${symbols.length} unique stock${symbols.length === 1 ? '' : 's'}; price change is measured from each publish to the latest quote.`
+      : 'No usable default-stock publish prices or current quotes were available for this cluster.';
+
+    const rootStyle = getComputedStyle(document.documentElement);
+    const up = rootStyle.getPropertyValue('--up').trim() || '#4ade80';
+    const down = rootStyle.getPropertyValue('--down').trim() || '#f87171';
+    const muted = rootStyle.getPropertyValue('--text-meta').trim() || '#94a3b8';
+    const border = rootStyle.getPropertyValue('--border').trim() || '#334155';
+    const sentiment = rows.map(row => weeklyScore(row.group));
+    const pointColors = sentiment.map(score => score > 0 ? up : score < 0 ? down : muted);
+    canvas._clustrChart = new window.Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: rows.map(row => row.day),
+        datasets: [
+          { label: 'Sentiment score', data: sentiment, yAxisID: 'sentiment', borderColor: muted, pointBackgroundColor: pointColors, pointBorderColor: pointColors, borderWidth: 2, pointRadius: 4, tension: 0.25, spanGaps: true },
+          { label: 'Default basket change %', data: basketReturns, yAxisID: 'returns', borderColor: '#76b7ff', pointBackgroundColor: '#76b7ff', borderWidth: 2, pointRadius: 4, tension: 0.25, spanGaps: true }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: { legend: { labels: { color: muted, boxWidth: 10 } } },
+        scales: {
+          x: { ticks: { color: muted }, grid: { color: border } },
+          sentiment: { position: 'left', min: -10, max: 10, ticks: { color: muted }, grid: { color: border } },
+          returns: { position: 'right', ticks: { color: '#76b7ff', callback: value => `${value}%` }, grid: { drawOnChartArea: false } }
+        }
+      }
+    });
+  }
+
+  function bindWeeklyClusterCharts(list, clusters) {
+    const byKey = new Map(clusters.map(cluster => [cluster.key, cluster]));
+    list.querySelectorAll('.weekly-cluster[data-weekly-key]').forEach(details => {
+      details.addEventListener('toggle', () => {
+        if (!details.open || details.dataset.chartLoaded === 'true') return;
+        const item = byKey.get(details.dataset.weeklyKey);
+        if (!item) return;
+        details.dataset.chartLoaded = 'true';
+        mountWeeklyClusterChart(details, item);
+      });
+    });
   }
 
   function renderAccount(message = '') {
