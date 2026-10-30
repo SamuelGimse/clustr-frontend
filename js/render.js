@@ -13,6 +13,19 @@
     return `<span class="article-rating article-rating--${tone}" aria-label="Article rating ${value}" title="Each rating point represents 3× directional impact">Rating <strong>${value}</strong></span>`;
   }
 
+  function articleImpactWindowHtml(article) {
+    const window = article?.impact_timeframe;
+    const impact = Number(article?.impact);
+    const min = Number(window?.duration_min_days);
+    const max = Number(window?.duration_max_days);
+    if (!Number.isInteger(impact) || impact < 1 || impact > 10 || !Number.isFinite(min) || !Number.isFinite(max) || min < 0 || max < min) return '';
+    const duration = max <= 1 ? 'same day' : min === 0 ? `up to ${max} days` : `${min}–${max} days`;
+    const start = Number(window.starts_after_days);
+    const onset = Number.isFinite(start) && start > 0 ? ` · starts in ${start} days` : '';
+    const detail = `${duration}${onset}${window.confidence ? ` · ${window.confidence} confidence` : ''}${window.rationale ? ` · ${window.rationale}` : ''}`;
+    return `<span class="article-impact-window" title="${U().escapeHtml(detail)}" aria-label="Estimated impact ${impact} of 10, lasting ${U().escapeHtml(duration)}">Impact <strong>${impact}</strong> · ${U().escapeHtml(duration)}</span>`;
+  }
+
   function groupRating(group) {
     const ratings = (group && group.articles || []).map(article => article.rating ?? article.score);
     return U().exponentialMeanRating(ratings) ?? Number(group && (group.stance_score ?? group.cluster_score));
@@ -1062,6 +1075,7 @@
                   : ''
               }
               ${articleRatingHtml(a)}
+              ${articleImpactWindowHtml(a)}
             </div>
             <p class="article-summary">${util.escapeHtml(
               a.short_summary || ''
@@ -1510,6 +1524,7 @@
                         : ''
                     }
                     ${articleRatingHtml(a)}
+                    ${articleImpactWindowHtml(a)}
                   </div>
                   <p class="article-summary">${util.escapeHtml(
                     a.short_summary || ''
