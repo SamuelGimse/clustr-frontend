@@ -43,6 +43,25 @@
     health: 'Health', autos: 'Autos', world: 'World', other: 'Other'
   };
 
+  function marketSignalsHtml(group) {
+    const signals = Array.isArray(group.market_signals) ? group.market_signals : [];
+    if (!signals.length) return '';
+    const util = U();
+    const labels = {
+      crude_inventory_weekly_change_pct: 'Crude inventory change',
+      gas_storage_weekly_change_pct: 'Gas storage change',
+      federal_funds_rate: 'Federal funds rate', unemployment_rate: 'Unemployment',
+      consumer_price_index: 'Consumer price index',
+      heating_degree_days_72h: 'Heating forecast', cooling_degree_days_72h: 'Cooling forecast',
+      conflict_event_share: 'Conflict event share', satellite_hotspots_24h: 'Satellite hotspots'
+    };
+    return `<section class="cluster-market-signals" aria-label="Dated market data"><div class="cluster-market-signals-head"><strong>Market data</strong><span>Context only · does not change news scores</span></div><div class="cluster-market-signals-list">${signals.map(item => {
+      const value = Number(item.value);
+      const formatted = Number.isFinite(value) ? `${value > 0 && String(item.metric).endsWith('_change_pct') ? '+' : ''}${value.toFixed(item.unit === 'detections' ? 0 : 1)}${item.unit === '%' ? '%' : ''}` : '—';
+      return `<div class="cluster-market-signal"><span>${util.escapeHtml(item.source || '')} · ${util.escapeHtml(labels[item.metric] || item.metric || '')}</span><strong>${formatted}</strong><small>${util.escapeHtml(item.region || '')} · observed ${util.escapeHtml(String(item.observed_at || '').slice(0, 10))}</small></div>`;
+    }).join('')}</div></section>`;
+  }
+
   function groupRating(group) {
     const ratings = (group && group.articles || []).map(article => article.rating ?? article.score);
     return U().exponentialMeanRating(ratings) ?? Number(group && (group.stance_score ?? group.cluster_score));
@@ -1029,6 +1048,7 @@
           group.reason || group.summary || ''
         )}</p>
         ${articleRatingStripHtml(articles)}
+        ${marketSignalsHtml(group)}
         ${angles
           .map(
             a =>

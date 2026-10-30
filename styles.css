@@ -2378,6 +2378,13 @@ html[data-theme="sea-foam"]
 }
 .article-category-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .article-card[hidden] { display: none !important; }
+.cluster-market-signals { margin: 12px 0; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel-2); }
+.cluster-market-signals-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; margin-bottom: 9px; font-size: 12px; }
+.cluster-market-signals-head span { color: var(--text-meta); }
+.cluster-market-signals-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.cluster-market-signal { display: grid; gap: 2px; min-width: 180px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 9px; font-size: 11px; }
+.cluster-market-signal strong { font-size: 15px; }
+.cluster-market-signal small { color: var(--text-meta); }
 .article-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
