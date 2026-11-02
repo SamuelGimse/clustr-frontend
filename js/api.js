@@ -5,6 +5,8 @@
  */
 
 (function () {
+  let fullPublishHistoryPromise = null;
+
   /**
    * @returns {{url: string, key: string}}
    */
@@ -45,6 +47,32 @@
     return rest(
       `clustr_publishes?select=id,title,notes,market,created_at,groups_json&notes=like.PULSE%20pipeline*&order=id.desc&limit=${encodeURIComponent(String(Math.min(limit, 100)))}`
     );
+  }
+
+  /**
+   * Load every publish available to the current visitor, one REST page at a time.
+   * This is only used by stance history so the Events landing view stays quick.
+   * @returns {Promise<object[]>}
+   */
+  async function fetchAllPublishes() {
+    if (fullPublishHistoryPromise) return fullPublishHistoryPromise;
+    fullPublishHistoryPromise = (async () => {
+      const pageSize = 100;
+      const all = [];
+      for (let offset = 0; ; offset += pageSize) {
+        const page = await rest(
+          `clustr_publishes?select=id,title,notes,market,created_at,groups_json&notes=like.PULSE%20pipeline*&order=id.desc&limit=${pageSize}&offset=${offset}`
+        );
+        all.push(...page);
+        if (page.length < pageSize) return all;
+      }
+    })();
+    try {
+      return await fullPublishHistoryPromise;
+    } catch (err) {
+      fullPublishHistoryPromise = null;
+      throw err;
+    }
   }
 
   async function fetchAiSummaries(fromDate, markets = []) {
@@ -214,8 +242,14 @@
     if (!name) return [];
 
     const local = localStanceHistory(name);
-    if (window.ClustrAuth?.accessToken()) return local;
-    if (local.some(row => row.stanceScore != null)) return local;
+
+    try {
+      const publishes = await fetchAllPublishes();
+      const history = stanceHistoryFromPublishes(name, publishes, {});
+      if (history.length) return history;
+    } catch (err) {
+      console.warn('full stance history', err.message);
+    }
 
     try {
       const q =
@@ -255,7 +289,7 @@
     }
 
     // Local fallback: all loaded publishes.groups_json + groupsCache
-    return localStanceHistory(name);
+    return local;
   }
 
   /**
@@ -263,8 +297,6 @@
    * @returns {object[]}
    */
   function localStanceHistory(clusterName) {
-    const name = String(clusterName || '').trim().toLowerCase();
-    if (!name) return [];
     const publishes =
       (window.ClustrApp && typeof window.ClustrApp.getPublishes === 'function'
         ? window.ClustrApp.getPublishes()
@@ -273,9 +305,24 @@
       (window.ClustrApp && typeof window.ClustrApp.getGroupsCache === 'function'
         ? window.ClustrApp.getGroupsCache()
         : {}) || {};
+    return stanceHistoryFromPublishes(clusterName, publishes, cache);
+  }
+
+  /**
+   * Extract matching cluster rows from an ordered set of publishes.
+   * @param {string} clusterName
+   * @param {object[]} publishRows
+   * @param {Object.<string, object[]>} cache
+   * @returns {object[]}
+   */
+  function stanceHistoryFromPublishes(clusterName, publishRows, cache) {
+    const name = String(clusterName || '').trim().toLowerCase();
+    if (!name) return [];
 
     const rows = [];
-    const ordered = publishes.slice().reverse(); // oldest → newest
+    const ordered = (publishRows || []).slice().sort((a, b) =>
+      String(a.created_at || '').localeCompare(String(b.created_at || ''))
+    );
     for (const p of ordered) {
       let groups = cache[p.id] || cache[String(p.id)] || [];
       if (!groups.length) {
