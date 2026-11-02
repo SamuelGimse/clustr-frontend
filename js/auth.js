@@ -108,20 +108,29 @@
     else if(!response.ok) throw new Error(job.error||`Publish could not start (${response.status}).`);
     const jobId=job.jobId;
     if(!jobId) throw new Error('The backend did not return a publish job ID.');
-    const deadline=Date.now()+30*60*1000;
+    const deadline=Date.now()+3*60*60*1000;
     let cursor=0;
+    let disconnectedAt=0;
     while(job.status==='running') {
       if(onStage) onStage(job.stage||'Publish is running…',job);
       await new Promise(resolve=>root.setTimeout(resolve,1000));
-      if(Date.now()>deadline) throw new Error('Publish is still running. Reopen Account and check the backend status before starting another one.');
-      response=await root.fetch(`${base}/api/admin/publish/${encodeURIComponent(jobId)}?after=${cursor}`,{headers:{Authorization:`Bearer ${current.access_token}`}});
+      if(Date.now()>deadline) throw new Error('Publish is still running after three hours. Check the backend status before starting another one.');
+      try { response=await root.fetch(`${base}/api/admin/publish/${encodeURIComponent(jobId)}?after=${cursor}`,{headers:{Authorization:`Bearer ${current.access_token}`}}); }
+      catch {
+        disconnectedAt ||= Date.now();
+        if(Date.now()-disconnectedAt>60000) throw new Error('Could not reconnect to the publish service for one minute. The backend may still be running; check its console before starting another publish.');
+        if(onStage) onStage('Connection lost; retrying publish status…',job);
+        await new Promise(resolve=>root.setTimeout(resolve,2000));
+        continue;
+      }
+      disconnectedAt=0;
       job=await response.json().catch(()=>({}));
       if(!response.ok) throw new Error(job.error||`Could not read publish status (${response.status}).`);
       if(onStage) onStage(job.stage||'Publish is running…',job);
       if(onLogs&&Array.isArray(job.logs)&&job.logs.length) onLogs(job.logs);
       cursor=Number(job.logCount)||cursor;
     }
-    if(job.status==='failed') throw new Error(job.error||'Full publish failed.');
+    if(job.status==='failed'||job.status==='interrupted') throw new Error(job.error||'Full publish failed.');
     return job.result||job;
   }
   root.ClustrAuth={restore,signIn,signInWithGoogle,signUp,resendConfirmation,resetPassword,updatePassword,signOut,checkout:()=>callBilling('create-checkout-session'),portal:()=>callBilling('create-portal-session'),runPublish,accessToken:()=>{const s=session||read();return s&&s.access_token||'';}};
