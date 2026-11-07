@@ -1717,6 +1717,13 @@ html.boot-lock body {
 .movers-strip {
   margin-bottom: 20px;
 }
+.movers-disclosure { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; cursor: pointer; list-style: none; }
+.movers-disclosure::-webkit-details-marker { display: none; }
+.movers-disclosure:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; border-radius: 4px; }
+.movers-chevron { width: 16px; height: 16px; flex: 0 0 16px; color: var(--text-meta); transition: transform .2s ease; }
+.movers-strip[open] .movers-chevron { transform: rotate(180deg); }
+.movers-content { padding-top: 12px; }
+.movers-content .movers-head { justify-content: flex-start; }
 .movers-head {
   display: flex;
   align-items: center;
@@ -4003,7 +4010,7 @@ html[data-theme="apple"] .nav-rail-btn.is-active {
 }
 
 /* Card structure: compact overview, balanced analysis, one stock/chart workspace. */
-.events-list { width: 100%; max-width: 1480px; margin-inline: auto; }
+.events-list { width: 100%; }
 .cluster-top { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; margin-bottom: 16px; }
 .cluster-name { font-size: 20px; }
 .cluster-reason { line-height: 1.6; }
