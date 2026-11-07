@@ -190,33 +190,70 @@
     return stanceScore(row.stanceScore ?? row.stance_score ?? row.cluster_score ?? row.stance);
   }
 
+  function stanceTrendData(history, selectedDate) {
+    const dayMs = 86400000;
+    const dayFormat = new Intl.DateTimeFormat('en', { timeZone: 'Europe/Oslo', year: 'numeric', month: '2-digit', day: '2-digit' });
+    const dayOf = timestamp => {
+      const parts = Object.fromEntries(dayFormat.formatToParts(new Date(timestamp)).map(part => [part.type, part.value]));
+      return Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day)) / dayMs;
+    };
+    const valid = history.map(row => {
+      const value = row.stanceScore ?? row.stance_score ?? row.cluster_score;
+      return { timestamp: Date.parse(row.date), score: value == null || String(value).trim() === '' ? NaN : Number(value) };
+    }).filter(row => Number.isFinite(row.timestamp) && Number.isFinite(row.score) && Math.abs(row.score) <= 10);
+    const selected = Date.parse(selectedDate);
+    const anchor = Number.isFinite(selected) ? selected : valid.reduce((latest, row) => Math.max(latest, row.timestamp), -Infinity);
+    if (!Number.isFinite(anchor)) return { rows: [], direction: 'insufficient', delta: null };
+    const endDay = dayOf(anchor), startDay = endDay - 6;
+    const daily = new Map();
+    for (const row of valid.sort((a, b) => a.timestamp - b.timestamp)) {
+      const day = dayOf(row.timestamp);
+      if (row.timestamp <= anchor && day >= startDay && day <= endDay) daily.set(day, { ...row, day });
+    }
+    const rows = [...daily.values()];
+    const delta = rows.length > 1 ? rows.at(-1).score - rows[0].score : null;
+    let direction = 'insufficient';
+    if (rows.length >= 3) {
+      const meanX = rows.reduce((sum, row) => sum + row.day - startDay, 0) / rows.length;
+      const meanY = rows.reduce((sum, row) => sum + row.score, 0) / rows.length;
+      const numerator = rows.reduce((sum, row) => sum + (row.day - startDay - meanX) * (row.score - meanY), 0);
+      const denominator = rows.reduce((sum, row) => sum + (row.day - startDay - meanX) ** 2, 0);
+      const fittedChange = numerator / denominator * (rows.at(-1).day - rows[0].day);
+      // A descriptive half-point deadband keeps small score fluctuations neutral.
+      direction = Math.abs(fittedChange) < 0.5 ? 'stable' : fittedChange > 0 ? 'up' : 'down';
+      if ((direction === 'up' && delta <= -0.5) || (direction === 'down' && delta >= 0.5)) direction = 'mixed';
+    }
+    return { rows, startDay, endDay, delta, direction };
+  }
+
   function stanceMiniHtml(group) {
     const app = window.ClustrApp;
     const publish = app?.getPublishes?.()[app?.getPublishIndex?.() ?? 0];
-    const cutoff = Date.parse(publish?.created_at || '') || Infinity;
-    const rows = stanceHistoryForCluster(group.name)
-      .filter(row => Number.isFinite(Date.parse(row.date)) && Date.parse(row.date) <= cutoff)
-      .slice().sort((a, b) => Date.parse(a.date) - Date.parse(b.date)).slice(-30);
+    const trend = stanceTrendData(stanceHistoryForCluster(group.name), publish?.created_at);
+    const { rows, direction, delta } = trend;
     const esc = U().escapeHtml;
-    const heading = '<div class="stance-mini-head"><span>Stance history</span><span>' +
-      (rows.length ? `${rows.length} publish${rows.length === 1 ? '' : 'es'}` : 'No history yet') + '</span></div>';
-    if (!rows.length) return `<div class="stance-mini">${heading}<p class="stance-mini-empty">History appears as this cluster is published over time.</p></div>`;
-    const first = Date.parse(rows[0].date), last = Date.parse(rows[rows.length - 1].date);
-    const points = rows.map(row => ({
-      x: rows.length === 1 ? 200 : 16 + (Date.parse(row.date) - first) / (last - first || 1) * 368,
-      y: 48 - Math.max(-10, Math.min(10, historyRowScore(row))) * 3.4
-    }));
-    const latest = points[points.length - 1];
-    const score = historyRowScore(rows[rows.length - 1]);
-    const tone = score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral';
-    const formatDate = date => new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    return `<div class="stance-mini stance-mini--${tone}">${heading}
-      <svg class="stance-mini-chart" viewBox="0 0 400 96" role="img" aria-label="${esc(`Stance history across ${rows.length} publishes, latest score ${score}`)}">
-        <path class="stance-mini-grid" d="M16 14H384M16 48H384M16 82H384"/>
-        ${points.length > 1 ? `<polyline class="stance-mini-line" points="${points.map(point => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ')}"/>` : ''}
-        <circle class="stance-mini-dot" cx="${latest.x}" cy="${latest.y}" r="3.5"/>
+    const signed = value => {
+      const rounded = Number(value.toFixed(1));
+      return `${rounded >= 0 ? '+' : '−'}${Math.abs(rounded).toFixed(1)}`;
+    };
+    const labels = { up: 'Strengthening', down: 'Weakening', stable: 'Stable', mixed: 'Mixed', insufficient: 'More history needed' };
+    const tone = direction === 'up' ? 'positive' : direction === 'down' ? 'negative' : 'neutral';
+    const arrow = direction === 'up' ? 'm4 12 8-8M4 4h8v8' : direction === 'down' ? 'm4 4 8 8M4 12h8V4' : 'M3 8h10m-4-4 4 4-4 4';
+    const dateLabel = day => new Date(day * 86400000).toLocaleDateString(undefined, { timeZone: 'UTC', month: 'short', day: 'numeric' });
+    const description = 'Latest numeric score per Oslo calendar day. Direction uses a linear fit across at least 3 days; changes below 0.5 points over the observed span are stable. Dashed segments mark missing days. Historical change, not a forecast.';
+    const heading = `<div class="stance-mini-head"><span>Stance trend · 7 days</span><span>${rows.length ? `Latest ${signed(rows.at(-1).score)}` : 'No recent scores'}</span></div>`;
+    const icon = direction === 'insufficient' ? '' : `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${arrow}"/></svg>`;
+    const summary = `<div class="stance-trend-summary" title="${description}"><span class="stance-trend-direction">${icon}${labels[direction]}</span><span>${delta == null ? 'Need scores on 3 separate days' : `${signed(delta)} pts overall · ${rows.length}/7 days`}</span></div>`;
+    if (!rows.length) return `<div class="stance-mini">${heading}${summary}<p class="stance-mini-empty">No numeric stance scores in this 7-day window.</p></div>`;
+    const points = rows.map(row => ({ ...row, x: 28 + (row.day - trend.startDay) / 6 * 356, y: 48 - row.score * 3.4 }));
+    const segments = points.slice(1).map((point, i) => `<line class="stance-mini-line${point.day - points[i].day > 1 ? ' stance-mini-gap' : ''}" x1="${points[i].x}" y1="${points[i].y}" x2="${point.x}" y2="${point.y}"/>`).join('');
+    return `<div class="stance-mini stance-mini--${tone}">${heading}${summary}
+      <svg class="stance-mini-chart" viewBox="0 0 400 96" role="img" aria-label="${esc(`${labels[direction]}. ${rows.length} observed days. Latest stance ${signed(rows.at(-1).score)}. ${delta == null ? '' : `Overall change ${signed(delta)} stance points.`}`)}">
+        <path class="stance-mini-grid" d="M28 14H384M28 82H384"/><path class="stance-mini-zero" d="M28 48H384"/>
+        <g class="stance-mini-axis"><text x="0" y="18">+10</text><text x="8" y="52">0</text><text x="0" y="86">−10</text></g>
+        ${segments}${points.map((point, i) => `<circle class="stance-mini-dot" cx="${point.x}" cy="${point.y}" r="${i === points.length - 1 ? 3.5 : 2.5}"><title>${esc(`${dateLabel(point.day)}: ${signed(point.score)}`)}</title></circle>`).join('')}
       </svg>
-      <div class="stance-mini-dates"><span>${esc(formatDate(first))}</span><span>−10 to +10</span><span>${esc(formatDate(last))}</span></div>
+      <div class="stance-mini-dates"><span>${esc(dateLabel(trend.startDay))}</span><span>Stance points</span><span>${esc(dateLabel(trend.endDay))}</span></div>
     </div>`;
   }
 
