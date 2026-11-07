@@ -1097,7 +1097,7 @@
           <div class="cluster-overview-footer">
             ${articleRatingStripHtml(articles)}
             <button type="button" class="cluster-expand" aria-expanded="false" aria-controls="cluster-details-${index}">
-              <span>Open full analysis</span><span class="cluster-expand-icon" aria-hidden="true">⌄</span>
+              <span>View analysis</span><svg class="cluster-expand-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>
             </button>
           </div>
         </div>
@@ -1292,8 +1292,8 @@
         el.classList.toggle('is-expanded', opening);
         expandBtn.setAttribute('aria-expanded', String(opening));
         expandBtn.querySelector('span').textContent = opening
-          ? 'Hide full analysis'
-          : 'Open full analysis';
+          ? 'Hide analysis'
+          : 'View analysis';
       };
       el.addEventListener('click', event => {
         if (event.target.closest('.cluster-details, .stance-aside')) return;
