@@ -1090,12 +1090,28 @@
       </div>
 
       <div class="cluster-body">
-        <p class="cluster-reason">${util.escapeHtml(
-          group.reason || group.summary || ''
-        )}</p>
+        <div class="cluster-summary">
+          <p class="cluster-reason cluster-reason--preview">${util.escapeHtml(
+            group.reason || group.summary || ''
+          )}</p>
         ${articleRatingStripHtml(articles)}
+          <div class="cluster-angle-list cluster-angle-list--preview">
+            ${angles
+              .slice(0, 2)
+              .map(
+                a =>
+                  `<div class="cluster-angle">• ${util.escapeHtml(String(a))}</div>`
+              )
+              .join('')}
+          </div>
+        </div>
+        <button type="button" class="cluster-expand" aria-expanded="false" aria-controls="cluster-details-${index}">
+          <span>Open full analysis</span><span class="cluster-expand-icon" aria-hidden="true">⌄</span>
+        </button>
+        <div class="cluster-details" id="cluster-details-${index}" hidden>
         ${marketSignalsHtml(group)}
         ${angles
+          .slice(2)
           .map(
             a =>
               `<div class="cluster-angle">• ${util.escapeHtml(String(a))}</div>`
@@ -1136,6 +1152,7 @@
         <button type="button" class="md-btn md-btn--text toggle-articles">
           Show articles &amp; scores (${count})
         </button>
+        </div>
       </div>
       </div>
 
@@ -1273,6 +1290,20 @@
         ? `Hide articles (${count})`
         : `Show articles & scores (${count})`;
     });
+
+    const expandBtn = el.querySelector('.cluster-expand');
+    const details = el.querySelector('.cluster-details');
+    if (expandBtn && details) {
+      expandBtn.addEventListener('click', () => {
+        const opening = details.hidden;
+        details.hidden = !opening;
+        el.classList.toggle('is-expanded', opening);
+        expandBtn.setAttribute('aria-expanded', String(opening));
+        expandBtn.querySelector('span').textContent = opening
+          ? 'Hide full analysis'
+          : 'Open full analysis';
+      });
+    }
     const categoryTabs = [...el.querySelectorAll('.article-category-tab')];
     const articleCards = [...el.querySelectorAll('.article-grid .article-card')];
     for (const tab of categoryTabs) {

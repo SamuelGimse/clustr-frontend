@@ -1973,6 +1973,49 @@ html[data-theme="dark"] .article-rating--negative {
   color: var(--text);
   line-height: 1.55;
 }
+.cluster-reason--preview {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.cluster-card.is-expanded .cluster-reason--preview {
+  display: block;
+  overflow: visible;
+}
+.cluster-angle-list--preview {
+  display: grid;
+  gap: 2px;
+}
+.cluster-details {
+  padding-top: 14px;
+}
+.cluster-expand {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 6px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-meta);
+  font: 600 12px var(--font-sans);
+  cursor: pointer;
+}
+.cluster-expand:hover,
+.cluster-expand:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.cluster-expand-icon {
+  font-size: 17px;
+  line-height: .65;
+  transition: transform .16s ease;
+}
+.cluster-expand[aria-expanded="true"] .cluster-expand-icon {
+  transform: rotate(180deg);
+}
 .cluster-angle {
   color: var(--text-meta);
   font-size: 13px;
