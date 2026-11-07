@@ -3533,10 +3533,10 @@ html[data-theme="apple"] .md-chip {
   font-size: 12px;
 }
 html[data-theme="apple"] .md-chip--filter.is-selected {
-  background: var(--accent);
-  border-color: var(--accent);
-  box-shadow: none;
-  color: var(--md-sys-color-on-primary);
+  background: color-mix(in srgb, var(--text) 10%, var(--panel-2));
+  border-color: color-mix(in srgb, var(--text) 28%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text);
 }
 html[data-theme="apple"] .cluster-name,
 html[data-theme="apple"] .movers-title,
@@ -3670,7 +3670,6 @@ html[data-theme="material"] .theme-menu-heading { color: var(--text-meta); }
   html[data-theme="apple"] .price-bar,
   html[data-theme="apple"] .article-grid > * { background: rgba(28, 28, 30, .88); }
   html[data-theme="apple"] .cluster-card:hover { background: #2c2c2e; }
-  html[data-theme="apple"] .md-chip--filter.is-selected { color: var(--md-sys-color-on-primary); }
 
   html[data-theme="material"] {
     color-scheme: dark;
