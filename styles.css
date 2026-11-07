@@ -3632,7 +3632,7 @@ html:is([data-theme="apple"], [data-theme="material"]) :is(.stance, .stance-hist
   background: var(--panel-2);
   border-color: var(--border);
 }
-html:is([data-theme="apple"], [data-theme="material"]) :is(.md-btn, .account-primary, .account-secondary, .account-actions button, .cluster-expand, .article-category-tab, .chart-tab, .tank-back, .tank-pill, .tank-side-chip, .btn-open-map, .stance-toggle-history, .pm-secondary, .day-item) {
+html:is([data-theme="apple"], [data-theme="material"]) :is(.md-btn, .account-primary, .account-secondary, .account-actions button, .cluster-expand, .article-category-tab, .tank-back, .tank-pill, .tank-side-chip, .btn-open-map, .stance-toggle-history, .pm-secondary, .day-item) {
   min-height: 44px;
   padding: 10px 16px;
   border-radius: var(--design-control-radius);
@@ -3689,7 +3689,40 @@ html:is([data-theme="apple"], [data-theme="material"]) :is(.account-eyebrow, .ev
 html:is([data-theme="apple"], [data-theme="material"]) :is(.publish-console, .publish-model-reply, .publish-source-list) { font-family: var(--font-mono); background: var(--bg); color: var(--text); border-radius: var(--design-inset-radius); }
 html:is([data-theme="apple"], [data-theme="material"]) .theme-menu button { min-height: 44px; border-radius: var(--design-control-radius); }
 html:is([data-theme="apple"], [data-theme="material"]) .theme-menu button.is-active { outline-color: var(--accent); }
-html:is([data-theme="apple"], [data-theme="material"]) :is(.article-category-tab.is-active, .chart-tab.is-active, .tank-pill.is-on) { background: var(--md-sys-color-primary-container); color: var(--accent); }
+html:is([data-theme="apple"], [data-theme="material"]) :is(.article-category-tab.is-active, .tank-pill.is-on) { background: var(--md-sys-color-primary-container); color: var(--accent); }
+html:is([data-theme="apple"], [data-theme="material"]) .chart-folder {
+  padding: 12px;
+}
+html:is([data-theme="apple"], [data-theme="material"]) .chart-folder-tabs {
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 0 12px;
+  border: 0;
+  background: transparent;
+}
+html:is([data-theme="apple"], [data-theme="material"]) .chart-tab {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 6px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--design-control-radius);
+  background: transparent;
+  color: var(--text-meta);
+  font-size: 12px;
+  font-weight: var(--design-control-weight);
+  line-height: 20px;
+}
+html:is([data-theme="apple"], [data-theme="material"]) .chart-tab:hover {
+  background: var(--panel-2);
+  color: var(--text);
+}
+html:is([data-theme="apple"], [data-theme="material"]) .chart-tab.is-active {
+  background: var(--md-sys-color-primary-container);
+  color: var(--accent);
+}
+@media (pointer: coarse) {
+  html:is([data-theme="apple"], [data-theme="material"]) .chart-tab { min-height: 44px; }
+}
 html:is([data-theme="apple"], [data-theme="material"]) :is(.md-btn, .account-primary, .account-secondary, .account-actions button, .cluster-expand, .pm-secondary):hover:not(:disabled) { filter: brightness(.96); box-shadow: var(--md-sys-elevation-1); }
 
 html[data-theme="apple"] .events-list { gap: 16px; }
