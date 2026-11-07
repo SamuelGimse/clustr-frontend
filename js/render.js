@@ -190,6 +190,36 @@
     return stanceScore(row.stanceScore ?? row.stance_score ?? row.cluster_score ?? row.stance);
   }
 
+  function stanceMiniHtml(group) {
+    const app = window.ClustrApp;
+    const publish = app?.getPublishes?.()[app?.getPublishIndex?.() ?? 0];
+    const cutoff = Date.parse(publish?.created_at || '') || Infinity;
+    const rows = stanceHistoryForCluster(group.name)
+      .filter(row => Number.isFinite(Date.parse(row.date)) && Date.parse(row.date) <= cutoff)
+      .slice().sort((a, b) => Date.parse(a.date) - Date.parse(b.date)).slice(-30);
+    const esc = U().escapeHtml;
+    const heading = '<div class="stance-mini-head"><span>Stance history</span><span>' +
+      (rows.length ? `${rows.length} publish${rows.length === 1 ? '' : 'es'}` : 'No history yet') + '</span></div>';
+    if (!rows.length) return `<div class="stance-mini">${heading}<p class="stance-mini-empty">History appears as this cluster is published over time.</p></div>`;
+    const first = Date.parse(rows[0].date), last = Date.parse(rows[rows.length - 1].date);
+    const points = rows.map(row => ({
+      x: rows.length === 1 ? 200 : 16 + (Date.parse(row.date) - first) / (last - first || 1) * 368,
+      y: 48 - Math.max(-10, Math.min(10, historyRowScore(row))) * 3.4
+    }));
+    const latest = points[points.length - 1];
+    const score = historyRowScore(rows[rows.length - 1]);
+    const tone = score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral';
+    const formatDate = date => new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return `<div class="stance-mini stance-mini--${tone}">${heading}
+      <svg class="stance-mini-chart" viewBox="0 0 400 96" role="img" aria-label="${esc(`Stance history across ${rows.length} publishes, latest score ${score}`)}">
+        <path class="stance-mini-grid" d="M16 14H384M16 48H384M16 82H384"/>
+        ${points.length > 1 ? `<polyline class="stance-mini-line" points="${points.map(point => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ')}"/>` : ''}
+        <circle class="stance-mini-dot" cx="${latest.x}" cy="${latest.y}" r="3.5"/>
+      </svg>
+      <div class="stance-mini-dates"><span>${esc(formatDate(first))}</span><span>−10 to +10</span><span>${esc(formatDate(last))}</span></div>
+    </div>`;
+  }
+
   /**
    * For each history row, avg % of cluster defaults from that publish price → live.
    * @param {Array<Object>} history
@@ -1090,6 +1120,7 @@
       </div>
 
       <div class="cluster-body">
+        <div class="cluster-overview">
         <div class="cluster-summary">
           <p class="cluster-reason cluster-reason--preview">${util.escapeHtml(
             group.reason || group.summary || ''
@@ -1100,6 +1131,8 @@
               <span>View analysis</span><svg class="cluster-expand-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>
             </button>
           </div>
+        </div>
+        <div class="cluster-stance-preview">${stanceMiniHtml(group)}</div>
         </div>
         <div class="cluster-details" id="cluster-details-${index}" hidden>
         ${marketSignalsHtml(group)}
