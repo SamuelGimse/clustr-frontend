@@ -1286,7 +1286,7 @@
     const expandBtn = el.querySelector('.cluster-expand');
     const details = el.querySelector('.cluster-details');
     if (expandBtn && details) {
-      expandBtn.addEventListener('click', () => {
+      const toggleDetails = () => {
         const opening = details.hidden;
         details.hidden = !opening;
         el.classList.toggle('is-expanded', opening);
@@ -1294,6 +1294,13 @@
         expandBtn.querySelector('span').textContent = opening
           ? 'Hide full analysis'
           : 'Open full analysis';
+      };
+      el.addEventListener('click', event => {
+        if (event.target.closest('.cluster-details, .stance-aside')) return;
+        if (event.target.closest('button, a, input, select, textarea, summary') &&
+            !event.target.closest('.cluster-expand')) return;
+        if (window.getSelection()?.toString()) return;
+        toggleDetails();
       });
     }
     const categoryTabs = [...el.querySelectorAll('.article-category-tab')];

@@ -2016,6 +2016,8 @@ html[data-theme="dark"] .article-rating--negative {
   justify-content: space-between;
   gap: 12px;
 }
+.cluster-top,
+.cluster-summary { cursor: pointer; }
 .cluster-overview-footer .cluster-news-ratings {
   margin: 0;
   min-width: 0;
@@ -3280,6 +3282,15 @@ body.nav-open .burger-lines span:nth-child(3) {
 
 /* ========== System themes: Apple (default) and Google Material ========== */
 html[data-theme="apple"] {
+  --design-card-radius: 20px;
+  --design-inset-radius: 12px;
+  --design-control-radius: 10px;
+  --design-chip-radius: 999px;
+  --design-heading-weight: 650;
+  --design-control-weight: 600;
+  --design-body-size: 15px;
+  --design-card-padding: 20px;
+  --design-motion: 180ms ease-out;
   color-scheme: light;
   --md-sys-color-surface: #f2f2f7;
   --md-sys-color-surface-container: rgba(255, 255, 255, .78);
@@ -3299,11 +3310,20 @@ html[data-theme="apple"] {
   --md-sys-shape-sm: 10px;
   --md-sys-shape-md: 12px;
   --md-sys-shape-lg: 16px;
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 html[data-theme="material"] {
+  --design-card-radius: 12px;
+  --design-inset-radius: 8px;
+  --design-control-radius: 999px;
+  --design-chip-radius: 8px;
+  --design-heading-weight: 400;
+  --design-control-weight: 500;
+  --design-body-size: 16px;
+  --design-card-padding: 24px;
+  --design-motion: 250ms cubic-bezier(.2, 0, 0, 1);
   color-scheme: light;
   --md-sys-color-surface: #fef7ff;
   --md-sys-color-surface-container: #f3edf7;
@@ -3575,4 +3595,197 @@ html[data-theme="material"] .theme-menu-heading { color: var(--text-meta); }
 @media (prefers-reduced-motion: reduce) {
   html[data-theme="apple"] *,
   html[data-theme="material"] * { transition-duration: .01ms !important; }
+}
+
+/* Shared coverage for components that predate the system theme tokens. */
+html:is([data-theme="apple"], [data-theme="material"]) {
+  --md-surface-container: var(--panel);
+  --md-on-surface: var(--text);
+  --md-on-surface-variant: var(--text-meta);
+  --md-outline: var(--border);
+  --md-primary: var(--accent);
+}
+html:is([data-theme="apple"], [data-theme="material"]) :is(body, .pm-app) {
+  font-family: var(--font-sans);
+  font-size: var(--design-body-size);
+  line-height: 1.5;
+}
+html:is([data-theme="apple"], [data-theme="material"]) :is(button, input, select, textarea, summary, .pm-back) {
+  font-family: var(--font-sans);
+}
+html:is([data-theme="apple"], [data-theme="material"]) :is(h1, h2, h3, .brand, .cluster-name, .pm-header h1, .pm-detail-head h2) {
+  font-family: var(--font-sans);
+  font-weight: var(--design-heading-weight);
+  line-height: 1.25;
+}
+html:is([data-theme="apple"], [data-theme="material"]) :is(.md-card, .cluster-card, .account-shell, .account-plan, .pm-browser, .pm-detail, .country-panel, .mindmap, .chart-folder) {
+  border-radius: var(--design-card-radius);
+  background: var(--panel);
+  color: var(--text);
+  border-color: var(--border);
+  padding: var(--design-card-padding);
+  box-shadow: var(--md-sys-elevation-1);
+}
+html:is([data-theme="apple"], [data-theme="material"]) .pm-browser { padding: 0; }
+html:is([data-theme="apple"], [data-theme="material"]) :is(.stance, .stance-history-panel, .price-bar, .md-chart, .article-grid > *, .country-card, .related-item, .cluster-market-signals, .cluster-market-signal, .tank-art-card, .tank-side, .pm-outcome, .pm-info, .pm-warning) {
+  border-radius: var(--design-inset-radius);
+  background: var(--panel-2);
+  border-color: var(--border);
+}
+html:is([data-theme="apple"], [data-theme="material"]) :is(.md-btn, .account-primary, .account-secondary, .account-actions button, .cluster-expand, .article-category-tab, .chart-tab, .tank-back, .tank-pill, .tank-side-chip, .btn-open-map, .stance-toggle-history, .pm-secondary, .day-item) {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: var(--design-control-radius);
+  font-size: 14px;
+  font-weight: var(--design-control-weight);
+  line-height: 20px;
+  color: var(--accent);
+  background: var(--panel-2);
+  border: 1px solid transparent;
+  transition: background var(--design-motion), box-shadow var(--design-motion), color var(--design-motion);
+}
+html:is([data-theme="apple"], [data-theme="material"]) :is(.account-primary, .account-actions .account-primary) {
+  background: var(--accent);
+  color: var(--md-sys-color-on-primary);
+}
+html:is([data-theme="apple"], [data-theme="material"]) :is(.md-btn--icon, .stance-history-icon-btn, .burger-btn) {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: var(--design-control-radius);
+}
+html:is([data-theme="apple"], [data-theme="material"]) :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--design-inset-radius);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 24px;
+}
+html:is([data-theme="apple"], [data-theme="material"]) :is(.md-chip, .art-co-bubble, .country-pill, .account-plan-badge, .pm-feed-prices span) {
+  border-radius: var(--design-chip-radius);
+  font-family: var(--font-sans);
+  font-weight: var(--design-control-weight);
+}
+html:is([data-theme="apple"], [data-theme="material"]) :is(.cluster-score, .article-rating, .cluster-news-rating, .stance-stat) {
+  border-radius: var(--design-inset-radius);
+  background: var(--panel-2);
+}
+html:is([data-theme="apple"], [data-theme="material"]) :is(.cluster-score-value, .cluster-score-label, .cluster-news-ratings-label, .cluster-news-rating, .cluster-news-rating-more, .article-rating, .price-value, .signal-num) {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+html:is([data-theme="apple"], [data-theme="material"]) .cluster-score-value { font-size: 26px; font-weight: 600; }
+html:is([data-theme="apple"], [data-theme="material"]) .cluster-name { font-size: 22px; }
+html:is([data-theme="apple"], [data-theme="material"]) .cluster-reason { font-size: var(--design-body-size); line-height: 1.55; }
+html:is([data-theme="apple"], [data-theme="material"]) .account-shell { padding: 32px; }
+html:is([data-theme="apple"], [data-theme="material"]) .account-shell h1 { font-size: 28px; }
+html:is([data-theme="apple"], [data-theme="material"]) :is(.account-form label, .account-plan-note, .account-plan p) { color: var(--text-meta); font-size: 14px; }
+html:is([data-theme="apple"], [data-theme="material"]) :is(.account-eyebrow, .events-sort-label, .pm-eyebrow) { font-family: var(--font-sans); letter-spacing: .04em; font-weight: 600; }
+html:is([data-theme="apple"], [data-theme="material"]) :is(.publish-console, .publish-model-reply, .publish-source-list) { font-family: var(--font-mono); background: var(--bg); color: var(--text); border-radius: var(--design-inset-radius); }
+html:is([data-theme="apple"], [data-theme="material"]) .theme-menu button { min-height: 44px; border-radius: var(--design-control-radius); }
+html:is([data-theme="apple"], [data-theme="material"]) .theme-menu button.is-active { outline-color: var(--accent); }
+html:is([data-theme="apple"], [data-theme="material"]) :is(.article-category-tab.is-active, .chart-tab.is-active, .tank-pill.is-on) { background: var(--md-sys-color-primary-container); color: var(--accent); }
+html:is([data-theme="apple"], [data-theme="material"]) :is(.md-btn, .account-primary, .account-secondary, .account-actions button, .cluster-expand, .pm-secondary):hover:not(:disabled) { filter: brightness(.96); box-shadow: var(--md-sys-elevation-1); }
+
+html[data-theme="apple"] .events-list { gap: 16px; }
+html[data-theme="apple"] .account-shell { border-radius: 24px; }
+html[data-theme="apple"] .brand { font-weight: 700; letter-spacing: -.035em; }
+html[data-theme="apple"] .account-shell h1 { letter-spacing: -.025em; }
+html[data-theme="apple"] .events-sort-segmented { padding: 3px; gap: 2px; border-radius: 12px; background: var(--panel-2); }
+html[data-theme="apple"] .events-sort-segmented .md-btn { min-height: 36px; background: transparent; box-shadow: none; color: var(--text-meta); }
+html[data-theme="apple"] .events-sort-segmented .md-btn.is-active { background: var(--panel); color: var(--text); box-shadow: 0 1px 4px rgba(0, 0, 0, .16); }
+html[data-theme="apple"] .pm-ranges { border-radius: 10px; }
+html[data-theme="apple"] .pm-ranges button { min-height: 36px; border-radius: 7px; font-size: 12px; }
+html[data-theme="apple"] .md-chip { min-height: 32px; }
+
+html[data-theme="material"] .events-list { gap: 24px; }
+html[data-theme="material"] .account-shell { border-radius: 28px; }
+html[data-theme="material"] .account-shell h1 { font-size: 32px; letter-spacing: 0; }
+html[data-theme="material"] .cluster-name { font-size: 24px; letter-spacing: 0; }
+html[data-theme="material"] .nav-rail-btn { border-radius: 28px; }
+html[data-theme="material"] .nav-rail-label { font-size: 12px; letter-spacing: .01em; }
+html[data-theme="material"] :is(.account-form input, .pm-filters input, .pm-filters select, .md-select):not([type="checkbox"]) { min-height: 56px; border-radius: 4px 4px 0 0; border-width: 0 0 1px; background: var(--panel-2); }
+html[data-theme="material"] .account-secondary { border-color: var(--border); background: transparent; }
+html[data-theme="material"] .events-sort-segmented { gap: 0; }
+html[data-theme="material"] .events-sort-segmented .md-btn { border-radius: 0; border: 1px solid var(--border); background: transparent; color: var(--text); }
+html[data-theme="material"] .events-sort-segmented .md-btn:first-child { border-radius: 24px 0 0 24px; }
+html[data-theme="material"] .events-sort-segmented .md-btn:last-child { border-radius: 0 24px 24px 0; }
+html[data-theme="material"] .events-sort-segmented .md-btn + .md-btn { margin-left: -1px; }
+html[data-theme="material"] .events-sort-segmented .md-btn.is-active { background: var(--md-sys-color-primary-container); }
+html[data-theme="material"] .pm-ranges { border-radius: 999px; }
+html[data-theme="material"] .pm-ranges button { min-height: 40px; border-radius: 999px; font-size: 12px; }
+
+@media (max-width: 620px) {
+  html:is([data-theme="apple"], [data-theme="material"]) .account-shell { padding: 24px 18px; }
+  html:is([data-theme="apple"], [data-theme="material"]) .cluster-card { padding: 16px; }
+  html[data-theme="material"] .events-sort-segmented { flex-wrap: nowrap; }
+}
+
+/* Liquid Glass belongs to the floating navigation and control layer. */
+html[data-theme="apple"] {
+  --design-control-radius: 999px;
+  --glass-fill: rgba(255, 255, 255, .64);
+  --glass-edge: rgba(255, 255, 255, .9);
+  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, .85), inset 0 -1px 0 rgba(255, 255, 255, .3), 0 6px 24px rgba(30, 50, 80, .09);
+}
+html[data-theme="apple"] body {
+  background-image: radial-gradient(ellipse at 8% 0%, rgba(115, 176, 255, .18), transparent 48%), radial-gradient(ellipse at 95% 30%, rgba(192, 165, 239, .12), transparent 45%);
+  background-attachment: fixed;
+}
+html[data-theme="apple"] :is(.nav-rail, .top-app-bar, .mobile-topbar, .theme-menu, .events-sort-segmented, .publish-nav) {
+  background: var(--glass-fill);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+html[data-theme="apple"] .nav-rail {
+  top: 12px;
+  bottom: 12px;
+  left: 8px;
+  width: calc(var(--md-sys-rail-width) - 8px);
+  border-radius: 28px;
+}
+html[data-theme="apple"] .top-app-bar {
+  top: 12px;
+  margin: 12px 0 24px;
+  padding: 12px 20px;
+  border-radius: 24px;
+}
+html[data-theme="apple"] .publish-nav { padding: 4px; border-radius: 999px; }
+html[data-theme="apple"] :is(.md-btn--icon, .stance-history-icon-btn, .cluster-expand, .account-secondary, .pm-secondary) {
+  background: var(--glass-fill);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+}
+html[data-theme="apple"] .nav-rail-btn { width: 56px; border-radius: 22px; }
+html[data-theme="apple"] .nav-rail-btn.is-active {
+  background: color-mix(in srgb, var(--accent) 16%, var(--glass-fill));
+  box-shadow: inset 0 1px 0 var(--glass-edge);
+}
+@media (prefers-color-scheme: dark) {
+  html[data-theme="apple"] {
+    --glass-fill: rgba(38, 42, 50, .66);
+    --glass-edge: rgba(255, 255, 255, .16);
+    --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), inset 0 -1px 0 rgba(255, 255, 255, .04), 0 8px 24px rgba(0, 0, 0, .24);
+  }
+}
+@media (max-width: 768px) {
+  html[data-theme="apple"] .nav-rail { width: 80px; }
+  html[data-theme="apple"] .top-app-bar { top: 64px; padding: 12px; }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  html[data-theme="apple"] { --glass-fill: var(--panel-2); --glass-edge: var(--text-meta); }
+  html[data-theme="apple"] :is(.nav-rail, .top-app-bar, .mobile-topbar, .theme-menu, .events-sort-segmented, .publish-nav, .md-btn--icon, .stance-history-icon-btn, .cluster-expand, .account-secondary, .pm-secondary) {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+  }
 }
