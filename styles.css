@@ -4016,7 +4016,7 @@ html[data-theme="apple"] .nav-rail-btn.is-active {
 .cluster-context .cluster-market-signals { margin-top: 14px; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .cluster-card.is-expanded .cluster-overview { display: block; }
 .cluster-card.is-expanded .cluster-summary { max-width: none; }
-.cluster-card.is-expanded .cluster-reason { columns: 2; column-gap: 32px; margin-bottom: 14px; }
+.cluster-card.is-expanded .cluster-reason { margin-bottom: 14px; }
 .cluster-card.is-expanded .cluster-context { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
 .cluster-card.is-expanded .cluster-drivers { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; }
 .cluster-details { margin-top: 18px; padding-top: 16px; }
@@ -4066,7 +4066,6 @@ html[data-theme="apple"] .nav-rail-btn.is-active {
   .cluster-top .stance-mount { grid-column: 1 / -1; max-width: none; }
   .cluster-top .stance-wrap { justify-content: flex-start; }
   .cluster-card.is-expanded .cluster-overview { grid-template-columns: 1fr; gap: 18px; }
-  .cluster-card.is-expanded .cluster-reason { columns: 1; }
   .cluster-card.is-expanded .cluster-drivers { grid-template-columns: 1fr; }
   .stock-panel-head { grid-template-columns: minmax(0, 1fr) auto; }
   .stock-panel-head .md-label { grid-column: 1 / -1; }
