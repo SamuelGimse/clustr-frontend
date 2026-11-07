@@ -1094,24 +1094,16 @@
           <p class="cluster-reason cluster-reason--preview">${util.escapeHtml(
             group.reason || group.summary || ''
           )}</p>
-        ${articleRatingStripHtml(articles)}
-          <div class="cluster-angle-list cluster-angle-list--preview">
-            ${angles
-              .slice(0, 2)
-              .map(
-                a =>
-                  `<div class="cluster-angle">• ${util.escapeHtml(String(a))}</div>`
-              )
-              .join('')}
+          <div class="cluster-overview-footer">
+            ${articleRatingStripHtml(articles)}
+            <button type="button" class="cluster-expand" aria-expanded="false" aria-controls="cluster-details-${index}">
+              <span>Open full analysis</span><span class="cluster-expand-icon" aria-hidden="true">⌄</span>
+            </button>
           </div>
         </div>
-        <button type="button" class="cluster-expand" aria-expanded="false" aria-controls="cluster-details-${index}">
-          <span>Open full analysis</span><span class="cluster-expand-icon" aria-hidden="true">⌄</span>
-        </button>
         <div class="cluster-details" id="cluster-details-${index}" hidden>
         ${marketSignalsHtml(group)}
         ${angles
-          .slice(2)
           .map(
             a =>
               `<div class="cluster-angle">• ${util.escapeHtml(String(a))}</div>`
