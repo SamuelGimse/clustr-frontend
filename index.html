@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=movers-disclosure-1" />
+  <link rel="stylesheet" href="styles.css?v=pro-status-1" />
   <link rel="stylesheet" href="polymarket.css?v=1" />
 </head>
 <body>
@@ -64,6 +64,7 @@
       </span>
     </button>
     <div class="mobile-brand">clustr</div>
+    <span class="pro-badge" data-pro-badge hidden></span>
   </div>
   <div class="nav-backdrop" id="navBackdrop" hidden></div>
 
@@ -169,7 +170,7 @@
     <main class="main" id="main">
       <header class="top-app-bar">
         <div class="top-app-bar-text">
-          <div class="brand">clustr</div>
+          <div class="app-brand-row"><div class="brand">clustr</div><span class="pro-badge" data-pro-badge hidden></span></div>
           <div class="tagline">World events. Mapped to stocks.</div>
         </div>
         <div class="publish-nav" aria-label="Publish navigation">
@@ -297,6 +298,6 @@
   <script src="js/render.js?v=card-spacing-2"></script>
   <script src="js/signal.js?v=repo-exact"></script>
   <script src="js/polymarket.js?v=1"></script>
-  <script src="js/app.js?v=polymarket-1"></script>
+  <script src="js/app.js?v=pro-status-1"></script>
 </body>
 </html>

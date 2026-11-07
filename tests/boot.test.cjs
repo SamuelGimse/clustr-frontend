@@ -19,6 +19,7 @@ async function check({ user = {}, rows = [{ id: 1 }], error = null } = {}) {
     setNav: view => calls.push(`nav:${view}`),
     setBootStage: stage => calls.push(`stage:${stage}`),
     renderAccount: () => calls.push('account'),
+    renderProBadges: () => calls.push('badge'),
     warmGroupsCache: () => {},
     navAdmin: null,
     location: { hash: '', search: '' },
@@ -33,9 +34,11 @@ async function check({ user = {}, rows = [{ id: 1 }], error = null } = {}) {
 
 (async () => {
   const signedIn = await check();
+  assert(signedIn.calls.indexOf('badge') < signedIn.calls.indexOf('paint'));
   assert(signedIn.calls.indexOf('paint') < signedIn.calls.indexOf('end'));
   assert(signedIn.calls.indexOf('nav:events') < signedIn.calls.indexOf('end'));
   const signedOut = await check({ user: null });
+  assert(signedOut.calls.includes('badge'));
   assert(signedOut.calls.indexOf('nav:account') < signedOut.calls.indexOf('end'));
   assert.equal((await check({ rows: [] })).status, 'No publishes yet');
   assert.equal((await check({ error: new Error('Offline') })).status, 'Offline');
