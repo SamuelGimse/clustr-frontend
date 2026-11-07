@@ -562,9 +562,9 @@
     const box = body || host;
     const rect = box.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    // Canvas takes ~62% of body width; height = full body (side scrolls independently)
-    const w = Math.max(240, Math.floor(rect.width * 0.62));
-    const h = Math.max(200, Math.floor(rect.height));
+    const stacked = window.getComputedStyle(box).flexDirection === 'column';
+    const w = Math.max(stacked ? 1 : 240, Math.floor(rect.width * (stacked ? 1 : 0.62)));
+    const h = Math.max(200, Math.floor(stacked ? canvas.getBoundingClientRect().height : rect.height));
     canvas.width = Math.floor(w * dpr);
     canvas.height = Math.floor(h * dpr);
     canvas.style.width = w + 'px';

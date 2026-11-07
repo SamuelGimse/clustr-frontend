@@ -17,6 +17,7 @@
   let moversMode = 'active';
   let weeklyMode = 'clusters';
   let weeklyRenderId = 0;
+  let weeklyTrendDays = [];
   let eventSort = 'impact';
   /** @type {string} */
   let view = 'events';
@@ -92,9 +93,12 @@
     const n = publishes.length;
     const pos = publishIndex + 1;
     if (meta) {
-      meta.textContent = `${p.title || 'Publish'} · ${new Date(
-        p.created_at
-      ).toLocaleString()} · ${currentGroups.length} clusters · ${pos}/${n}`;
+      const escape = window.ClustrUtil.escapeHtml;
+      const date = new Date(p.created_at);
+      const detail = `${currentGroups.length} clusters · ${pos}/${n}`;
+      const desktop = `${p.title || 'Publish'} · ${date.toLocaleString()} · ${detail}`;
+      const mobile = `${p.market || 'Publish'} · ${date.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`;
+      meta.innerHTML = `<span class="publish-meta-desktop">${escape(desktop)}</span><span class="publish-meta-mobile"><span>${escape(mobile)}</span><span>${escape(detail)}</span></span>`;
     }
     // Older = higher index
     if (prevBtn) prevBtn.disabled = publishIndex >= n - 1;
@@ -122,6 +126,7 @@
    */
   function setNav(which) {
     if (which === 'admin' && authState.role !== 'admin') which = 'account';
+    const changed = which !== view;
     view = which;
     const R = window.ClustrRender;
     const MapApi = window.ClustrMap;
@@ -245,6 +250,7 @@
         window.ClustrSignal.renderSignalPage(currentGroups);
       }
     }
+    if (changed && window.matchMedia('(max-width: 768px)').matches) window.scrollTo(0, 0);
   }
 
   function weeklyScore(group) {
@@ -402,6 +408,7 @@
       }
     }
     const orderedDays = [...days.values()].map(point => ({ ...point, scores: [...point.ratings.values()] })).sort((a,b)=>a.day.localeCompare(b.day));
+    weeklyTrendDays = orderedDays;
     const uniqueStories = [...new Set(clusters.flatMap(cluster => [...cluster.stories.keys()]))].length;
     const averageScore = window.ClustrUtil.exponentialMeanRating(clusters.map(cluster => cluster.score));
     const repeatedClusters = clusters.filter(cluster => cluster.days.size > 1).length;
@@ -425,7 +432,7 @@
 
   function weeklyTrendChart(days) {
     if (!days.length) return '<div class="weekly-empty">No trend data for this week.</div>';
-    const W=900,H=270,L=44,R=20,T=24,B=42,x=i=>days.length<2?W/2:L+i*(W-L-R)/(days.length-1),y=v=>T+(10-v)*(H-T-B)/20;
+    const W=Math.max(220,Math.min(900,(document.getElementById('weeklyChart')?.clientWidth || 938)-38)),H=270,L=44,R=20,T=24,B=42,x=i=>days.length<2?W/2:L+i*(W-L-R)/(days.length-1),y=v=>T+(10-v)*(H-T-B)/20;
     const avg=d=>window.ClustrUtil.exponentialMeanRating(d.scores) ?? 0;
     const max=Math.max(1,...days.map(d=>d.clusters));
     const line=days.map((d,i)=>`${i?'L':'M'}${x(i)},${y(avg(d))}`).join(' ');
@@ -1002,6 +1009,13 @@
       });
       renderWeekly();
     });
+  });
+
+  window.addEventListener('resize', () => {
+    if (view === 'weekly' && weeklyMode === 'trends' && weeklyTrendDays.length) {
+      const chart = document.getElementById('weeklyChart');
+      if (chart) chart.innerHTML = weeklyTrendChart(weeklyTrendDays);
+    }
   });
 
   const prevPublishBtn = document.getElementById('prevPublishBtn');

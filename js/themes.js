@@ -139,25 +139,28 @@
     const burger = document.getElementById('burgerBtn');
     const backdrop = document.getElementById('navBackdrop');
     const side = document.getElementById('side');
+    const close = document.getElementById('closeNavBtn');
+    const main = document.getElementById('main');
     if (!burger || !side) return;
+    const mobile = window.matchMedia('(max-width: 768px)');
 
     /**
      * @param {boolean} open
      * @returns {void}
      */
     function setOpen(open) {
+      const wasOpen = document.body.classList.contains('nav-open');
+      open = !!open && mobile.matches;
       document.body.classList.toggle('nav-open', open);
+      side.inert = mobile.matches && !open;
+      if (main) main.inert = open;
       burger.setAttribute('aria-expanded', open ? 'true' : 'false');
       burger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
       if (backdrop) {
-        if (open) {
-          backdrop.hidden = false;
-          backdrop.removeAttribute('hidden');
-        } else {
-          backdrop.hidden = true;
-          backdrop.setAttribute('hidden', '');
-        }
+        backdrop.hidden = !open;
       }
+      if (open) side.querySelector('.nav-rail-btn:not([hidden]):not(.hidden)')?.focus({ preventScroll: true });
+      else if (wasOpen && mobile.matches) burger.focus({ preventScroll: true });
     }
 
     burger.addEventListener('click', e => {
@@ -168,19 +171,29 @@
     if (backdrop) {
       backdrop.addEventListener('click', () => setOpen(false));
     }
+    if (close) close.addEventListener('click', () => setOpen(false));
 
     // Close drawer after choosing a primary nav item on mobile
     side.querySelectorAll('.nav-rail-btn:not(#themeBtn)').forEach(btn => {
       btn.addEventListener('click', () => {
-        if (window.matchMedia('(max-width: 768px)').matches) {
+        if (mobile.matches) {
           setOpen(false);
         }
       });
     });
 
     window.addEventListener('keydown', e => {
-      if (e.key === 'Escape') setOpen(false);
+      if (!document.body.classList.contains('nav-open')) return;
+      if (e.key === 'Escape') { e.preventDefault(); setOpen(false); }
+      if (e.key === 'Tab') {
+        const buttons = [...side.querySelectorAll('button:not(:disabled), a[href], input, select, [tabindex="0"]')].filter(el => el.getClientRects().length && !el.closest('[hidden], .hidden'));
+        const first = buttons[0], last = buttons[buttons.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+      }
     });
+    mobile.addEventListener('change', () => setOpen(false));
+    setOpen(false);
   }
 
   window.ClustrThemes = { applyTheme, initTheme, isLightTheme, initMobileNav };
