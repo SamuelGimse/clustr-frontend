@@ -13,6 +13,10 @@ function normalizeSymbol(symbol) {
     .toUpperCase();
 }
 
+function isQuoteSymbol(symbol) {
+  return /^[A-Z0-9^][A-Z0-9.^:=/\-]{0,31}$/.test(normalizeSymbol(symbol));
+}
+
 function formatPct(value, digits = 2) {
   if (value == null || Number.isNaN(Number(value))) return '';
   const n = Number(value);
@@ -25,12 +29,22 @@ function formatMoney(value, digits = 2) {
 }
 
 function exponentialMeanRating(values) {
-  const ratings = (values || []).map(Number).filter(value => Number.isFinite(value) && value >= -10 && value <= 10 && value !== 0);
+  const ratings = (values || []).filter(value => value != null && String(value).trim() !== '').map(Number).filter(value => Number.isFinite(value) && value >= -10 && value <= 10);
   if (!ratings.length) return null;
   const impact = ratings.reduce((sum, value) => sum + Math.sign(value) * Math.pow(3, Math.abs(value)), 0) / ratings.length;
   if (Math.abs(impact) < 1e-12) return 0;
-  const score = Math.sign(impact) * Math.log(Math.abs(impact)) / Math.log(3);
+  const score = Math.sign(impact) * Math.max(0, Math.log(Math.abs(impact)) / Math.log(3));
   return Math.max(-10, Math.min(10, Number(score.toFixed(1))));
+}
+
+function numericStance(value) {
+  if (value == null || String(value).trim() === '') return null;
+  const score = Number(value);
+  return Number.isFinite(score) && Math.abs(score) <= 10 ? score : null;
+}
+
+function stanceCategory(score) {
+  return score == null ? null : score > 0 ? 'constructive' : score < 0 ? 'cautious' : 'watch';
 }
 
 function deltaSincePublish(publishPrice, livePrice) {
@@ -99,9 +113,12 @@ function tradingViewUrl(symbol) {
 window.ClustrUtil = {
   sleep,
   normalizeSymbol,
+  isQuoteSymbol,
   formatPct,
   formatMoney,
   exponentialMeanRating,
+  numericStance,
+  stanceCategory,
   deltaSincePublish,
   toneClass,
   escapeHtml,

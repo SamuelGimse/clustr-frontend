@@ -4,10 +4,11 @@
 
 (function () {
   const U = () => window.ClustrUtil;
+  let renderGeneration = 0;
 
   function articleRatingHtml(article) {
-    const rating = Number(article && (article.rating ?? article.score));
-    if (!Number.isInteger(rating) || rating < -10 || rating > 10) return '';
+    const rating = U().numericStance(article && (article.rating ?? article.score));
+    if (rating == null) return '';
     const tone = rating > 0 ? 'positive' : rating < 0 ? 'negative' : 'neutral';
     const value = `${rating > 0 ? '+' : ''}${rating}`;
     return `<span class="article-rating article-rating--${tone}" aria-label="Article rating ${value}" title="Each rating point represents 3× directional impact">Rating <strong>${value}</strong></span>`;
@@ -64,7 +65,7 @@
       conflict_event_share: 'Conflict event share', satellite_hotspots_24h: 'Satellite hotspots'
     };
     return `<section class="cluster-market-signals" aria-label="Dated market data"><div class="cluster-market-signals-head"><strong>Market data</strong><span>Context only · does not change news scores</span></div><div class="cluster-market-signals-list">${signals.map(item => {
-      const value = Number(item.value);
+      const value = item.value == null ? NaN : Number(item.value);
       const formatted = Number.isFinite(value) ? `${value > 0 && String(item.metric).endsWith('_change_pct') ? '+' : ''}${value.toFixed(item.unit === 'detections' ? 0 : 1)}${item.unit === '%' ? '%' : ''}` : '—';
       return `<div class="cluster-market-signal"><span>${util.escapeHtml(item.source || '')} · ${util.escapeHtml(labels[item.metric] || item.metric || '')}</span><strong>${formatted}</strong><small>${util.escapeHtml(item.region || '')} · observed ${util.escapeHtml(String(item.observed_at || '').slice(0, 10))}</small></div>`;
     }).join('')}</div></section>`;
@@ -98,21 +99,23 @@
 
   function groupRating(group) {
     const ratings = (group && group.articles || []).map(article => article.rating ?? article.score);
-    return U().exponentialMeanRating(ratings) ?? Number(group && (group.stance_score ?? group.cluster_score));
+    return U().exponentialMeanRating(ratings) ?? U().numericStance(group && (group.stance_score ?? group.cluster_score));
   }
 
   function clusterScoreHtml(group) {
     const score = groupRating(group);
     if (!Number.isFinite(score) || score < -10 || score > 10) return `<div class="cluster-score cluster-score--neutral cluster-score--missing" role="status" aria-label="Cluster rating unavailable"><span class="cluster-score-value">—</span><span class="cluster-score-label">NO SCORES</span></div>`;
-    const tone = score >= 2 ? 'positive' : score <= -2 ? 'negative' : 'neutral';
-    const value = `${score > 0 ? '+' : ''}${Math.round(score)}`;
+    const category = U().stanceCategory(score);
+    const tone = category === 'constructive' ? 'positive' : category === 'cautious' ? 'negative' : 'neutral';
+    const value = `${score > 0 ? '+' : ''}${Number.isInteger(score) ? score : score.toFixed(1)}`;
     const intensity = score === 0 ? '0%' : `${(100 * Math.pow(3, Math.abs(score) - 10)).toFixed(2)}%`;
-    const label = score >= 2 ? '▲ POS' : score <= -2 ? '▼ NEG' : '● NEU';
+    const label = tone === 'positive' ? '▲ POS' : tone === 'negative' ? '▼ NEG' : '● NEU';
     return `<div class="cluster-score cluster-score--${tone}" title="Exponential mean article rating; each point is 3× impact: ${value}" role="img" aria-label="Cluster rating ${value}, ${label}"><span class="cluster-score-value">${value}</span><span class="cluster-score-label">${label}</span><span class="cluster-score-meter" aria-hidden="true"><i style="--w:${score < 0 ? intensity : '0%'}"></i><i style="--w:${score > 0 ? intensity : '0%'}"></i></span></div>`;
   }
 
   function articleRatingStripHtml(articles) {
-    const rated = (articles || []).filter(article => Number.isInteger(Number(article.rating ?? article.score)) && Number(article.rating ?? article.score) >= -10 && Number(article.rating ?? article.score) <= 10).slice(0, 6);
+    const valid = (articles || []).filter(article => U().numericStance(article.rating ?? article.score) != null);
+    const rated = valid.slice(0, 6);
     if (!rated.length) return `<div class="cluster-news-ratings cluster-news-ratings--missing" role="status"><span class="cluster-news-ratings-label">ARTICLE SCORES</span><span class="cluster-news-rating-missing">No ratings in this publish</span></div>`;
     const badges = rated.map(article => {
       const rating = Number(article.rating ?? article.score);
@@ -120,8 +123,8 @@
       const value = `${rating > 0 ? '+' : ''}${rating}`;
       return `<span class="cluster-news-rating cluster-news-rating--${tone}" title="${U().escapeHtml(article.title || 'Article rating')}">${value}</span>`;
     }).join('');
-    const extra = (articles || []).filter(article => Number.isInteger(Number(article.rating ?? article.score)) && Number(article.rating ?? article.score) >= -10 && Number(article.rating ?? article.score) <= 10).length - rated.length;
-    return `<div class="cluster-news-ratings" aria-label="Article ratings"><span class="cluster-news-ratings-label">NEWS</span>${badges}${extra > 0 ? `<span class="cluster-news-rating-more">+${extra}</span>` : ''}</div>`;
+    const extra = valid.length - rated.length;
+    return `<div class="cluster-news-ratings" aria-label="Article ratings"><span class="cluster-news-ratings-label">NEWS</span>${badges}${extra > 0 ? `<span class="cluster-news-rating-more">${extra} more articles</span>` : ''}</div>`;
   }
 
   /**
@@ -130,25 +133,28 @@
    * @returns {Promise<number|null>}
    */
   async function averageSincePublish(list) {
-    const stocks = list || [];
-    if (!stocks.length || !window.ClustrQuotes) return null;
+    return (await basketSincePublish(list)).average;
+  }
 
-    const slice = stocks.slice(0, 12);
-    const symbols = slice.map(s => s.symbol).filter(Boolean);
-    const quotes = await window.ClustrQuotes.getQuotes(symbols);
+  async function basketSincePublish(list, asOf) {
+    const stocks = [...new Map((list || []).map((stock, i) => [U().normalizeSymbol(stock.symbol) || `unresolved-${i}`, stock])).values()];
+    const result = { average: null, priced: 0, total: stocks.length };
+    if (!stocks.length || !window.ClustrQuotes) return result;
+    const quotes = await window.ClustrQuotes.getQuotes(stocks.map(stock => stock.symbol).filter(U().isQuoteSymbol));
     const deltas = [];
-
-    for (const s of slice) {
+    for (const s of stocks) {
       const pub = s.priceAtPublish ?? s.price;
-      if (pub == null || Number(pub) === 0) continue;
+      if (pub == null || !Number.isFinite(Number(pub)) || Number(pub) <= 0) continue;
       const live = quotes[U().normalizeSymbol(s.symbol)];
-      if (!live || live.price == null) continue;
+      if (!live || live.price == null || !Number.isFinite(Number(live.price)) || Number(live.price) <= 0) continue;
+      if (Number.isFinite(Date.parse(live.asOf)) && Date.parse(live.asOf) < Date.parse(asOf)) continue;
       deltas.push(
         ((Number(live.price) - Number(pub)) / Number(pub)) * 100
       );
     }
-    if (!deltas.length) return null;
-    return deltas.reduce((a, b) => a + b, 0) / deltas.length;
+    result.priced = deltas.length;
+    if (deltas.length) result.average = deltas.reduce((a, b) => a + b, 0) / deltas.length;
+    return result;
   }
 
   /**
@@ -166,9 +172,9 @@
    * @param {string} clusterName
    * @returns {Array<Object>}
    */
-  function stanceHistoryForCluster(clusterName) {
+  function stanceHistoryForCluster(clusterName, context) {
     if (window.ClustrApi && typeof window.ClustrApi.localStanceHistory === 'function') {
-      return window.ClustrApi.localStanceHistory(clusterName);
+      return window.ClustrApi.localStanceHistory(clusterName, context);
     }
     return [];
   }
@@ -178,27 +184,47 @@
    * @returns {number}
    */
   function stanceScore(stance) {
-    const numeric = Number(stance);
-    if (Number.isFinite(numeric) && numeric >= -10 && numeric <= 10) return numeric;
-    const s = String(stance || 'watch').toLowerCase();
-    if (s === 'constructive') return 5;
-    if (s === 'cautious') return -5;
-    return 0;
+    return U().numericStance(stance);
   }
 
   function historyRowScore(row) {
-    return stanceScore(row.stanceScore ?? row.stance_score ?? row.cluster_score ?? row.stance);
+    return stanceScore(row.stanceScore ?? row.stance_score ?? row.cluster_score);
+  }
+
+  function weeklyVelocity(history, asOf) {
+    const valid = history.filter(row => historyRowScore(row) != null && Number.isFinite(Date.parse(row.date)));
+    const cutoff = Date.parse(asOf) || Math.max(...valid.map(row => Date.parse(row.date)));
+    if (!Number.isFinite(cutoff)) return null;
+    const dayOf = timestamp => {
+      const parts = Object.fromEntries(new Intl.DateTimeFormat('en', { timeZone: 'Europe/Oslo', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(timestamp).map(part => [part.type, part.value]));
+      return Date.UTC(+parts.year, +parts.month - 1, +parts.day) / 86400000;
+    };
+    const end = dayOf(cutoff), daily = new Map();
+    for (const row of valid.slice().sort((a, b) => Date.parse(a.date) - Date.parse(b.date))) {
+      const day = dayOf(Date.parse(row.date));
+      if (day >= end - 6 && Date.parse(row.date) <= cutoff) daily.set(day, historyRowScore(row));
+    }
+    const rows = [...daily];
+    if (rows.length < 3) return null;
+    const meanX = rows.reduce((sum, row) => sum + row[0] - end, 0) / rows.length;
+    const meanY = rows.reduce((sum, row) => sum + row[1], 0) / rows.length;
+    const slope = rows.reduce((sum, row) => sum + (row[0] - end - meanX) * (row[1] - meanY), 0) / rows.reduce((sum, row) => sum + (row[0] - end - meanX) ** 2, 0);
+    return { slope, delta: rows.at(-1)[1] - rows[0][1], count: rows.length };
   }
 
   function stanceMiniHtml(group) {
     const app = window.ClustrApp;
     const publish = app?.getPublishes?.()[app?.getPublishIndex?.() ?? 0];
     const cutoff = Date.parse(publish?.created_at || '') || Infinity;
-    const rows = stanceHistoryForCluster(group.name)
-      .filter(row => Number.isFinite(Date.parse(row.date)) && Date.parse(row.date) <= cutoff)
+    const history = stanceHistoryForCluster(group.name, group.__historyScope);
+    const rows = history
+      .filter(row => historyRowScore(row) != null && Number.isFinite(Date.parse(row.date)) && Date.parse(row.date) <= cutoff)
       .slice().sort((a, b) => Date.parse(a.date) - Date.parse(b.date)).slice(-30);
     const esc = U().escapeHtml;
-    const heading = '<div class="stance-mini-head"><span>Stance history</span><span>' +
+    const velocity = weeklyVelocity(history, publish?.created_at);
+    const direction = !velocity || Math.abs(velocity.slope) < 0.05 ? 'flat' : velocity.slope > 0 ? 'up' : 'down';
+    const velocityHtml = `<div class="weekly-velocity weekly-velocity--${direction}" title="Linear slope of the latest numeric score per Oslo calendar day over the last 7 days. Requires 3 observed days. Descriptive, not a forecast."><span>7-day velocity</span>${velocity ? `<strong>${direction === 'up' ? '↗' : direction === 'down' ? '↘' : '→'} ${velocity.slope >= 0 ? '+' : ''}${velocity.slope.toFixed(2)} pts/day</strong><span>Δ ${velocity.delta >= 0 ? '+' : ''}${velocity.delta.toFixed(1)} pts · ${velocity.count}/7 days</span>` : '<span>Needs 3 scored days</span>'}</div>`;
+    const heading = velocityHtml + '<div class="stance-mini-head"><span>Stance history</span><span>' +
       (rows.length ? `${rows.length} publish${rows.length === 1 ? '' : 'es'}` : 'No history yet') + '</span></div>';
     if (!rows.length) return `<div class="stance-mini">${heading}<p class="stance-mini-empty">History appears as this cluster is published over time.</p></div>`;
     const first = Date.parse(rows[0].date), last = Date.parse(rows[rows.length - 1].date);
@@ -225,7 +251,7 @@
    * @param {Array<Object>} history
    * @returns {Promise<Array<Object>>}
    */
-  async function attachDefaultReturns(history) {
+  async function attachDefaultReturns(history, context = {}) {
     // Price line is one step ahead of stance:
     // - each publish i uses next publish's default snapshot prices as the "forward" price
     // - the last publish uses live quotes
@@ -233,15 +259,19 @@
       return history.map(h => ({ ...h, defaultRet: null, priceBasis: null }));
     }
 
+    const app = window.ClustrApp;
+    const selected = app?.getPublishes?.()[app?.getPublishIndex?.() ?? 0];
+    const newest = app?.getPublishes?.().find(p => p.market === (context.market || selected?.market));
+    const useLatestQuote = !newest || Date.parse(context.asOf || selected?.created_at) >= Date.parse(newest.created_at);
     const symSet = new Set();
-    for (const h of history) {
+    for (const h of useLatestQuote ? history.slice(-1) : []) {
       for (const s of h.defaults || []) {
         if (s.symbol) symSet.add(U().normalizeSymbol(s.symbol));
       }
     }
 
     let quotes = {};
-    if (window.ClustrQuotes) {
+    if (window.ClustrQuotes && symSet.size) {
       try {
         quotes = await window.ClustrQuotes.getQuotes([...symSet]);
       } catch (err) {
@@ -268,10 +298,10 @@
       let priceBasis = 'next';
 
       if (isLast) {
-        priceBasis = 'live';
+        priceBasis = useLatestQuote ? 'latest quote' : 'unavailable';
         for (const sym of Object.keys(startMap)) {
           const live = quotes[sym];
-          if (live && live.price != null) endMap[sym] = Number(live.price);
+          if (live && live.price != null && (!Number.isFinite(Date.parse(live.asOf)) || Date.parse(live.asOf) >= Date.parse(h.date))) endMap[sym] = Number(live.price);
         }
       } else {
         endMap = priceMapFromDefaults(history[i + 1].defaults);
@@ -289,7 +319,7 @@
         deltas.length > 0
           ? deltas.reduce((a, b) => a + b, 0) / deltas.length
           : null;
-      return { ...h, defaultRet, sampleN: deltas.length, priceBasis };
+      return { ...h, defaultRet, sampleN: deltas.length, totalN: (h.defaults || []).length, priceBasis };
     });
   }
 
@@ -302,7 +332,7 @@
     const buckets = { constructive: [], watch: [], cautious: [] };
     for (const row of enriched) {
       if (row.defaultRet == null) continue;
-      const k = row.stance;
+      const k = U().stanceCategory(historyRowScore(row)) || row.stance;
       if (buckets[k]) buckets[k].push(row.defaultRet);
     }
     const avg = arr =>
@@ -311,35 +341,8 @@
     const watch = avg(buckets.watch);
     const cautious = avg(buckets.cautious);
 
-    let insight = 'Not enough default prices to score stance vs returns.';
-    if (constructive != null || cautious != null) {
-      if (
-        constructive != null &&
-        cautious != null &&
-        constructive > cautious + 0.15
-      ) {
-        insight =
-          'Defaults did better after Constructive stamps than Cautious — stance and basket mostly agree.';
-      } else if (
-        constructive != null &&
-        cautious != null &&
-        cautious > constructive + 0.15
-      ) {
-        insight =
-          'Defaults held up better under Cautious stamps than Constructive — stance may be lagging price.';
-      } else if (constructive != null && constructive > 0.2) {
-        insight =
-          'When stance was Constructive, cluster defaults are up vs those publish prints.';
-      } else if (cautious != null && cautious < -0.2) {
-        insight =
-          'Cautious periods line up with softer default-basket performance vs publish prices.';
-      } else {
-        insight =
-          'Stance and default-basket moves are mixed — treat stance as context, not a timer.';
-      }
-    }
-
-    return { constructive, watch, cautious, insight };
+    const insight = 'Equal-weight returns to the next cluster publish; the newest interval uses the latest available quote. Intervals differ in length. These averages are descriptive, not cumulative performance.';
+    return { constructive, watch, cautious, insight, counts: Object.fromEntries(Object.entries(buckets).map(([key, values]) => [key, values.length])) };
   }
 
   /**
@@ -383,34 +386,22 @@
     const rows = enriched || [];
     if (!rows.length) return;
 
-    // X labels = publish dates + trailing "Live"
-    // Stance plots on publish dates; price plots ONE STEP AHEAD
-    // (outcome of publish i appears at x of publish i+1 / Live)
-    const dateLabels = rows.map(r => {
-      if (!r.date) return '';
-      try {
-        return new Date(r.date).toLocaleDateString(undefined, {
-          month: 'short',
-          day: 'numeric'
-        });
-      } catch {
-        return String(r.date).slice(0, 10);
-      }
-    });
-    const labels = dateLabels.concat(['Live']);
+    // Use elapsed time, with each return placed at its interval endpoint.
+    const timestamps = rows.map(row => Date.parse(row.date));
+    const lastTime = rows.at(-1).priceBasis === 'latest quote' ? Math.max(Date.now(), timestamps.at(-1) + 1) : timestamps.at(-1);
 
-    // Stance only on publish columns (null on Live)
-    const stanceData = rows.map(historyRowScore).concat([null]);
+    // Missing numeric scores stay null rather than becoming categorical estimates.
+    const stanceData = rows.map((row, i) => ({ x: timestamps[i], y: historyRowScore(row) }));
 
-    // Price series shifted +1: index 0 null; index i+1 = return measured from publish i
-    const retData = [null];
+    // Put each return at the next publish timestamp, or at the latest-quote endpoint.
+    const retData = [];
     for (let i = 0; i < rows.length; i++) {
       const v = rows[i].defaultRet;
       retData.push(
-        v != null && Number.isFinite(v) ? v : null
+        { x: timestamps[i + 1] ?? lastTime, y: v != null && Number.isFinite(v) ? v : null, source: rows[i] }
       );
     }
-    const returnRange = symmetricReturnRange(retData);
+    const returnRange = symmetricReturnRange(retData.map(point => point.y));
 
     const accent =
       getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() ||
@@ -440,7 +431,6 @@
     const chart = new window.Chart(canvas.getContext('2d'), {
       type: 'line',
       data: {
-        labels,
         datasets: [
           {
             label: 'Stance',
@@ -453,29 +443,30 @@
             pointRadius: 5,
             pointHoverRadius: 7,
             borderWidth: 2,
-            tension: 0.25,
-            spanGaps: true
+            tension: 0,
+            spanGaps: false
           },
           {
-            label: 'Defaults → next / live %',
+            label: 'Defaults → next publish / latest quote %',
             data: retData,
             yAxisID: 'yRet',
             borderColor: accent,
-            backgroundColor: accent + '22',
+            backgroundColor: 'transparent',
             pointBackgroundColor: accent,
             pointRadius: 4,
             borderWidth: 2,
             borderDash: [5, 4],
-            tension: 0.25,
-            spanGaps: true,
+            tension: 0,
+            spanGaps: false,
             fill: false
           }
         ]
       },
       options: {
         responsive: true,
+        parsing: false,
         maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
+        interaction: { mode: 'nearest', axis: 'x', intersect: false },
         plugins: {
           legend: {
             display: true,
@@ -487,35 +478,15 @@
           },
           tooltip: {
             callbacks: {
-              afterBody(items) {
-                const i = items[0] && items[0].dataIndex;
-                if (i == null) return '';
-                const lines = [];
-                if (i < rows.length && rows[i]) {
-                  const score = rows[i].stanceScore ?? rows[i].stance_score ?? rows[i].cluster_score;
-                  lines.push('Stance: ' + (score == null ? (rows[i].stance || '—') : `${Number(score) > 0 ? '+' : ''}${score}`));
-                }
-                // Price is one step ahead: at index i shows outcome of rows[i-1]
-                const src = i >= 1 ? rows[i - 1] : null;
-                if (src && src.defaultRet != null) {
-                  lines.push(
-                    (src.priceBasis === 'live'
-                      ? 'Defaults→live: '
-                      : 'Defaults→next: ') +
-                      (src.defaultRet >= 0 ? '+' : '') +
-                      Number(src.defaultRet).toFixed(2) +
-                      '%'
-                  );
-                }
-                if (i === labels.length - 1) lines.push('Live price point');
-                return lines;
-              }
+              title: items => items[0] ? new Date(items[0].parsed.x).toLocaleString() : '',
+              label: item => item.datasetIndex === 0 ? `Stance: ${item.parsed.y ?? 'unavailable'}` : `Defaults → ${item.raw.source.priceBasis === 'next' ? 'next publish' : item.raw.source.priceBasis}: ${U().formatPct(item.parsed.y)} · ${item.raw.source.sampleN}/${item.raw.source.totalN} stocks priced`
             }
           }
         },
         scales: {
           x: {
-            ticks: { color: meta, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 },
+            type: 'linear',
+            ticks: { color: meta, maxRotation: 0, autoSkip: true, maxTicksLimit: 6, callback: value => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) },
             grid: { color: border }
           },
           yStance: {
@@ -572,13 +543,13 @@
     let history = [];
     if (window.ClustrApi && typeof window.ClustrApi.fetchStanceHistory === 'function') {
       try {
-        history = await window.ClustrApi.fetchStanceHistory(group.name);
+        history = await window.ClustrApi.fetchStanceHistory(group.name, group.__historyScope);
       } catch (err) {
         console.warn(err);
-        history = stanceHistoryForCluster(group.name);
+        history = stanceHistoryForCluster(group.name, group.__historyScope);
       }
     } else {
-      history = stanceHistoryForCluster(group.name);
+      history = stanceHistoryForCluster(group.name, group.__historyScope);
     }
     if (history.length < 1) {
       return {
@@ -587,7 +558,7 @@
       };
     }
 
-    const enriched = await attachDefaultReturns(history);
+    const enriched = await attachDefaultReturns(history, group.__historyScope);
     const stats = stancePriceStats(enriched);
     const chart = stanceChartShellHtml();
 
@@ -622,6 +593,7 @@
       html: `
       <div class="stance-history-panel">
         <div class="stance-history-title">Stance × cluster defaults</div>
+        ${enriched.some(row => historyRowScore(row) == null) ? '<p class="history-data-note">Missing numeric stance scores are left as gaps; categorical labels are available in the history list.</p>' : ''}
         ${chart}
         <div class="stance-stat-grid">
           <div class="stance-stat">
@@ -629,21 +601,21 @@
             <div class="stance-stat-v ${util.toneClass(
               stats.constructive
             )}">${fmt(stats.constructive)}</div>
-            <div class="stance-stat-h">defaults → live</div>
+            <div class="stance-stat-h">${stats.counts.constructive} intervals · next / latest quote</div>
           </div>
           <div class="stance-stat">
             <div class="stance-stat-k">When Watch</div>
             <div class="stance-stat-v ${util.toneClass(
               stats.watch
             )}">${fmt(stats.watch)}</div>
-            <div class="stance-stat-h">defaults → live</div>
+            <div class="stance-stat-h">${stats.counts.watch} intervals · next / latest quote</div>
           </div>
           <div class="stance-stat">
             <div class="stance-stat-k">When Cautious</div>
             <div class="stance-stat-v ${util.toneClass(
               stats.cautious
             )}">${fmt(stats.cautious)}</div>
-            <div class="stance-stat-h">defaults → live</div>
+            <div class="stance-stat-h">${stats.counts.cautious} intervals · next / latest quote</div>
           </div>
         </div>
         <p class="stance-insight">${util.escapeHtml(stats.insight)}</p>
@@ -692,7 +664,7 @@
     const util = U();
     const score = groupRating(group);
     const hasScore = Number.isFinite(score) && score >= -10 && score <= 10;
-    const stance = hasScore ? (score > 0 ? 'constructive' : score < 0 ? 'cautious' : 'watch') : String(group.stance || 'watch').toLowerCase();
+    const stance = hasScore ? util.stanceCategory(score) : String(group.stance || 'watch').toLowerCase();
     const horizon = String(group.time_horizon || '').toLowerCase();
     const confidence = String(group.confidence || '').toLowerCase();
 
@@ -725,7 +697,7 @@
           </svg>
         </button>
       <div class="stance stance-${util.escapeHtml(stance)}">
-          <div class="stance-title">${hasScore ? `Stance ${score > 0 ? '+' : ''}${Number.isInteger(score) ? score : score.toFixed(1)} · ` : ''}${util.escapeHtml(stanceText.split(' — ')[0])}</div>
+          <div class="stance-title">${util.escapeHtml(stanceText.split(' — ')[0])}</div>
           <div class="stance-sub">${util.escapeHtml(
             [horizonText, confidenceText].filter(Boolean).join(' · ')
           )}</div>
@@ -768,7 +740,7 @@
     for (const g of groups) {
       for (const s of g.list) {
         const sym = U().normalizeSymbol(s.symbol);
-        if (!sym || seen.has(sym)) continue;
+        if (!U().isQuoteSymbol(sym) || seen.has(sym)) continue;
         seen.add(sym);
         chartPool.push(s);
       }
@@ -791,7 +763,7 @@
         ? ` · Debt/EV ${(Number(s.debtToEv) * 100).toFixed(0)}%`
         : '';
     return `
-      <button type="button" class="md-chip md-chip--filter ${tone}" data-symbol="${util.escapeHtml(
+      <button type="button" ${util.isQuoteSymbol(s.symbol) ? '' : 'disabled aria-label="Ticker unavailable"'} class="md-chip md-chip--filter ${tone}" data-symbol="${util.escapeHtml(
         s.symbol || ''
       )}" title="${util.escapeHtml((s.name || s.symbol || '') + debt)}">
         <span class="chip-label">${util.escapeHtml(s.symbol || s.name || '?')}</span>
@@ -812,7 +784,8 @@
     const util = U();
     const livePrice = live?.price ?? null;
     const livePct = live?.changePercent ?? null;
-    const since = util.deltaSincePublish(publishPrice, livePrice);
+    const predatesPublish = Number.isFinite(Date.parse(live?.asOf)) && Date.parse(live.asOf) < Date.parse(stock?.__publishAsOf);
+    const since = predatesPublish ? null : util.deltaSincePublish(publishPrice, livePrice);
     const hasProxy = !!(window.ClustrQuotes && window.ClustrQuotes.isEnabled());
     const signals = stock?.technical_signals;
     const metric = value => Number.isFinite(Number(value)) && value != null ? util.formatPct(value) : '—';
@@ -833,7 +806,7 @@
             <div class="price-sub">${util.formatPct(publishPct) || '—'}</div>
           </div>
           <div class="price-cell">
-            <div class="price-label">Live</div>
+            <div class="price-label">Latest quote</div>
             <div class="price-value">${
               livePrice != null ? util.formatMoney(livePrice) : '—'
             }</div>
@@ -857,6 +830,7 @@
           <div><span>Volume vs prior 20d avg</span><strong>${Number.isFinite(Number(signals?.relativeVolume20d)) && signals?.relativeVolume20d != null ? Number(signals.relativeVolume20d).toFixed(2) + '×' : '—'}</strong></div>
         </div>
         <div class="technical-metrics-note">${signals?.status === 'ok' ? `Completed daily bars through ${util.escapeHtml(signals.asOf || '')}. Traded value is a liquidity proxy, not a spread quote.` : 'Historical price signals unavailable for this stock.'}</div>
+        <div class="quote-asof">${predatesPublish ? 'Quote predates this publication; return unavailable. ' : ''}${live ? live.asOf && Number.isFinite(Date.parse(live.asOf)) ? `Quote as of ${util.escapeHtml(new Date(live.asOf).toLocaleString())}` : 'Quote timestamp unavailable' : 'Quote unavailable or loading'}</div>
       </div>`;
   }
 
@@ -1095,6 +1069,9 @@
    */
   function buildGroupElement(group, index, currentGroups) {
     const util = U();
+    const app = window.ClustrApp;
+    const selected = app?.getPublishes?.()[app?.getPublishIndex?.() ?? 0];
+    group = { ...group, __historyScope: { market: group.market || selected?.market, asOf: selected?.created_at } };
     const { groups: stockGroups, chartPool } = stockBuckets(group);
     const angles = group.opportunity_angles || group.angles || [];
     const articles = group.articles || [];
@@ -1133,15 +1110,9 @@
           </div>
         </div>
         <div class="cluster-stance-preview">${stanceMiniHtml(group)}</div>
+        <div class="cluster-context"><h3>Key drivers & context</h3>${angles.length ? `<ul class="cluster-drivers">${angles.map(a => `<li>${util.escapeHtml(String(a))}</li>`).join('')}</ul>` : '<p class="empty-state">No additional drivers supplied for this publish.</p>'}${marketSignalsHtml(group)}</div>
         </div>
         <div class="cluster-details" id="cluster-details-${index}" hidden>
-        ${marketSignalsHtml(group)}
-        ${angles
-          .map(
-            a =>
-              `<div class="cluster-angle">• ${util.escapeHtml(String(a))}</div>`
-          )
-          .join('')}
 
         <div class="stock-panel">
           <div class="stock-panel-head">
@@ -1159,9 +1130,10 @@
             <button type="button" class="btn-open-map" data-open-map title="Open stock tankekart">Cluster map</button>
             <div class="group-since-publish" aria-live="polite"></div>
           </div>
-          <div class="bubbles-scroll stock-bubbles" role="list"></div>
+          <div class="bubbles-scroll stock-bubbles" role="group" aria-label="Stocks in selected group"></div>
         </div>
 
+        <div class="stock-analysis">
         <div class="price-bar-mount"></div>
         <div class="chart-folder" data-chart-folder="${index}">
           <div class="chart-folder-tabs" role="tablist">
@@ -1172,6 +1144,7 @@
           <div class="chart chart-mode-stance" id="chart-stance-${index}"></div>
           <div class="chart chart-mode-impact is-hidden" id="chart-impact-${index}">${impactTimelineHtml(articles)}</div>
           <div class="chart chart-mode-tv is-hidden" id="chart-tv-${index}"></div>
+        </div>
         </div>
         <div class="related-under-chart"></div>
         <button type="button" class="md-btn md-btn--text toggle-articles">
@@ -1187,9 +1160,9 @@
       </div>
 
       <div class="articles-panel hidden">
-        <div class="article-category-tabs" role="tablist" aria-label="Article categories in ${util.escapeHtml(group.name || 'cluster')}">
-          <button type="button" class="article-category-tab is-active" data-article-category="all" role="tab" aria-selected="true">All <span>${articles.length}</span></button>
-          ${Object.entries(articleCategoryLabels).filter(([category]) => categoryCounts.has(category)).map(([category, label]) => `<button type="button" class="article-category-tab" data-article-category="${category}" role="tab" aria-selected="false">${label} <span>${categoryCounts.get(category)}</span></button>`).join('')}
+        <div class="article-category-tabs" role="group" aria-label="Article categories in ${util.escapeHtml(group.name || 'cluster')}">
+          <button type="button" class="article-category-tab is-active" data-article-category="all" aria-pressed="true">All <span>${articles.length}</span></button>
+          ${Object.entries(articleCategoryLabels).filter(([category]) => categoryCounts.has(category)).map(([category, label]) => `<button type="button" class="article-category-tab" data-article-category="${category}" aria-pressed="false">${label} <span>${categoryCounts.get(category)}</span></button>`).join('')}
         </div>
       <div class="article-grid articles">
         ${articles
@@ -1264,6 +1237,21 @@
       stanceMount && stanceMount.querySelector('[data-stance-history]');
     const historyMount = el.querySelector('.stance-history-mount');
     const stanceAside = el.querySelector('.stance-aside');
+    let historyPanelPromise = null;
+    const getHistoryPanel = () => {
+      if (!historyPanelPromise) historyPanelPromise = stanceHistoryPanelHtml(group).catch(error => { historyPanelPromise = null; throw error; });
+      return historyPanelPromise;
+    };
+    const closeHistoryAside = () => {
+      destroyStanceChart(historyMount?.querySelector('.stance-history-canvas'));
+      if (historyMount) historyMount.innerHTML = '';
+      historyMount?.classList.add('hidden');
+      if (historyMount) historyMount.hidden = true;
+      stanceAside?.classList.remove('is-open');
+      historyBtn?.classList.remove('is-open');
+      historyBtn?.setAttribute('aria-pressed', 'false');
+      if (historyBtn) historyBtn.title = 'Stance history';
+    };
     if (historyBtn && historyMount) {
       historyBtn.addEventListener('click', async () => {
         const open = historyMount.classList.contains('hidden');
@@ -1275,7 +1263,8 @@
           historyMount.hidden = false;
           if (stanceAside) stanceAside.classList.add('is-open');
           try {
-            const panel = await stanceHistoryPanelHtml(group);
+            const panel = await getHistoryPanel();
+            if (!el.isConnected || !stanceAside?.classList.contains('is-open')) return;
             historyMount.innerHTML = panel.html;
             bindStanceHistoryToggle(historyMount);
             const c = historyMount.querySelector('.stance-history-canvas');
@@ -1295,13 +1284,7 @@
             }
           });
         } else {
-          historyMount.innerHTML = '';
-          historyMount.classList.add('hidden');
-          historyMount.hidden = true;
-          if (stanceAside) stanceAside.classList.remove('is-open');
-          historyBtn.classList.remove('is-open');
-          historyBtn.setAttribute('aria-pressed', 'false');
-          historyBtn.title = 'Stance history';
+          closeHistoryAside();
         }
       });
     }
@@ -1327,12 +1310,20 @@
         expandBtn.querySelector('span').textContent = opening
           ? 'Hide analysis'
           : 'View analysis';
+        if (opening) {
+          closeHistoryAside();
+          historyBtn?.removeAttribute('disabled');
+          ensureExpandedContent();
+        } else {
+          articlesPanel.classList.add('hidden');
+          toggleBtn.textContent = `Show articles & scores (${count})`;
+        }
       };
       el.addEventListener('click', event => {
-        if (event.target.closest('.cluster-details, .stance-aside')) return;
+        if (!event.target.closest('.cluster-top, .cluster-overview') || event.target.closest('.cluster-context')) return;
         if (event.target.closest('button, a, input, select, textarea, summary') &&
             !event.target.closest('.cluster-expand')) return;
-        if (window.getSelection()?.toString()) return;
+        if (!event.target.closest('.cluster-expand') && window.getSelection()?.toString()) return;
         toggleDetails();
       });
     }
@@ -1344,7 +1335,7 @@
         for (const option of categoryTabs) {
           const active = option === tab;
           option.classList.toggle('is-active', active);
-          option.setAttribute('aria-selected', String(active));
+          option.setAttribute('aria-pressed', String(active));
         }
         for (const card of articleCards) card.hidden = selected !== 'all' && card.dataset.articleCategory !== selected;
       });
@@ -1360,6 +1351,10 @@
     const relatedMount = el.querySelector('.related-under-chart');
     /** @type {'stance'|'impact'|'tradingview'} */
     let chartMode = 'stance';
+    let stanceMounted = false;
+    let stockRequest = 0;
+    let groupRequest = 0;
+    let expandedInitialized = false;
 
     const findStock = symbol => {
       const s = util.normalizeSymbol(symbol);
@@ -1399,20 +1394,29 @@
           const on = btn.getAttribute('data-chart-mode') === chartMode;
           btn.classList.toggle('is-active', on);
           btn.setAttribute('aria-selected', on ? 'true' : 'false');
+          btn.tabIndex = on ? 0 : -1;
+          btn.id = `chart-tab-${index}-${btn.dataset.chartMode}`;
+          btn.setAttribute('aria-controls', `chart-${btn.dataset.chartMode === 'tradingview' ? 'tv' : btn.dataset.chartMode}-${index}`);
+        });
+        [chartStance, chartImpact, chartTv].forEach((panel, i) => {
+          panel.setAttribute('role', 'tabpanel');
+          panel.setAttribute('aria-labelledby', `chart-tab-${index}-${['stance', 'impact', 'tradingview'][i]}`);
         });
       }
     };
 
     const fillStanceChart = async () => {
-      if (!chartStance) return;
+      if (!chartStance || stanceMounted) return;
       chartStance.innerHTML =
         '<div class="stance-history-empty">Loading stance × defaults…</div>';
       try {
-        const panel = await stanceHistoryPanelHtml(group);
+        const panel = await getHistoryPanel();
+        if (stanceMounted || details.hidden || !el.isConnected) return;
         chartStance.innerHTML = panel.html;
         bindStanceHistoryToggle(chartStance);
         const c = chartStance.querySelector('.stance-history-canvas');
         if (c) mountStanceChart(c, panel.enriched);
+        stanceMounted = true;
       } catch (err) {
         chartStance.innerHTML =
           '<div class="stance-history-empty">Could not load stance history</div>';
@@ -1442,9 +1446,10 @@
 
     const showChart = async (symbol, name) => {
       if (!symbol) return;
+      const request = ++stockRequest;
       activeSymbol = symbol;
       activeName = name || symbol;
-      const stock = findStock(symbol);
+      const stock = { ...findStock(symbol), __publishAsOf: group.__historyScope.asOf };
       const publishPrice = stock.priceAtPublish ?? stock.price ?? null;
       const publishPct =
         stock.changePercentAtPublish ?? stock.changePercent ?? null;
@@ -1467,14 +1472,14 @@
       showRelatedForSymbol(symbol);
       applyChartMode();
 
-      if (chartMode === 'stance') {
-        await fillStanceChart();
-      } else if (chartMode === 'tradingview') {
+      if (chartMode === 'tradingview') {
         fillTradingView(symbol, name || stock.name);
       }
 
       if (window.ClustrQuotes) {
-        const live = await window.ClustrQuotes.getQuote(symbol);
+        let live = null;
+        try { live = await window.ClustrQuotes.getQuote(symbol); } catch (_) {}
+        if (request !== stockRequest) return;
         if (live) {
           priceMount.innerHTML = priceBarHtml(
             symbol,
@@ -1484,6 +1489,9 @@
             live,
             stock
           );
+        } else {
+          const message = priceMount.querySelector('.quote-asof');
+          if (message) message.textContent = 'Quote unavailable; publish snapshot retained.';
         }
       }
     };
@@ -1495,10 +1503,16 @@
           if (mode !== 'stance' && mode !== 'impact' && mode !== 'tradingview') return;
           chartMode = mode;
           applyChartMode();
-          if (!activeSymbol) return;
           if (chartMode === 'stance') fillStanceChart();
-          else if (chartMode === 'tradingview') fillTradingView(activeSymbol, activeName);
+          else if (chartMode === 'tradingview' && activeSymbol) fillTradingView(activeSymbol, activeName);
         });
+      });
+      chartFolder.addEventListener('keydown', event => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key) || !event.target.matches('[role="tab"]')) return;
+        const tabs = [...chartFolder.querySelectorAll('[role="tab"]')];
+        const current = tabs.indexOf(event.target);
+        const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (current + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+        event.preventDefault(); tabs[next].click(); tabs[next].focus();
       });
     }
 
@@ -1507,7 +1521,7 @@
         btn.addEventListener('click', () => {
           const symbol = btn.getAttribute('data-symbol');
           if (!symbol) return;
-          showChart(symbol, btn.getAttribute('title') || symbol);
+          showChart(symbol, findStock(symbol).name || symbol);
         });
       });
     }
@@ -1521,6 +1535,7 @@
      */
     async function updateGroupSincePublish(groupId) {
       if (!sinceEl) return;
+      const request = ++groupRequest;
       const g = stockGroups.find(x => x.id === groupId) || stockGroups[0];
       if (!g || !(g.list || []).length) {
         sinceEl.textContent = '';
@@ -1529,10 +1544,13 @@
       }
       sinceEl.className = 'group-since-publish is-loading';
       sinceEl.textContent = `${g.label} · loading…`;
-      const avg = await averageSincePublish(g.list);
+      let basket;
+      try { basket = await basketSincePublish(g.list, group.__historyScope.asOf); } catch (_) { basket = { average: null, priced: 0, total: g.list.length }; }
+      if (request !== groupRequest || select.value !== g.id) return;
+      const avg = basket.average;
       if (avg == null) {
         sinceEl.className = 'group-since-publish';
-        sinceEl.textContent = `${g.label} · no publish prices`;
+        sinceEl.textContent = `${g.label} · ${basket.priced}/${basket.total} stocks priced · return unavailable`;
         return;
       }
       const tone = util.toneClass(avg);
@@ -1541,28 +1559,30 @@
         g.label
       )}</span> <span class="group-since-value">${util.formatPct(
         avg
-      )}</span> <span class="group-since-hint">since publish</span>`;
+      )}</span> <span class="group-since-hint">since publish · ${basket.priced}/${basket.total} stocks priced · equal weight</span>`;
     }
 
     function renderBubbleGroup(groupId) {
       const g = stockGroups.find(x => x.id === groupId) || stockGroups[0];
       if (!g) {
         bubblesEl.innerHTML = '<span class="stock-empty">No stocks</span>';
+        ++stockRequest;
+        activeSymbol = '';
+        priceMount.innerHTML = '<p class="empty-state">No priced stocks in this group.</p>';
         return;
       }
       bubblesEl.innerHTML = g.list.map(bubbleBtn).join('');
       bindBubbles();
-      // Stagger so many clusters don't stampede the quote edge function
-      const delay = (Number(el.dataset.clusterIndex) || 0) * 350;
-      setTimeout(() => updateGroupSincePublish(g.id), delay);
+      if (!details.hidden) updateGroupSincePublish(g.id);
     }
 
     if (select && stockGroups.length) {
       select.value = defaultGroupId;
       select.addEventListener('change', () => {
         renderBubbleGroup(select.value);
-        const firstBtn = bubblesEl.querySelector('[data-symbol]');
+        const firstBtn = bubblesEl.querySelector('[data-symbol]:not(:disabled)');
         if (firstBtn) firstBtn.click();
+        else { ++stockRequest; activeSymbol = ''; priceMount.innerHTML = '<p class="empty-state">No usable ticker in this group.</p>'; }
       });
       renderBubbleGroup(defaultGroupId);
     } else if (bubblesEl) {
@@ -1570,8 +1590,15 @@
     }
 
     const first = chartPool[0];
-    if (first && first.symbol) {
-      showChart(first.symbol, first.name || first.symbol);
+    async function ensureExpandedContent() {
+      if (chartMode === 'stance') fillStanceChart();
+      if (expandedInitialized) return;
+      expandedInitialized = true;
+      const firstButton = bubblesEl.querySelector('[data-symbol]:not(:disabled)');
+      if (firstButton) showChart(firstButton.dataset.symbol, findStock(firstButton.dataset.symbol).name);
+      else priceMount.innerHTML = '<p class="empty-state">No usable ticker in this group.</p>';
+      updateGroupSincePublish(select.value);
+      applyChartMode();
     }
 
     const openMapBtn = el.querySelector('[data-open-map]');
@@ -1587,6 +1614,9 @@
         if (!sym) return;
         if (window.ClustrApp && typeof window.ClustrApp.openStockMap === 'function') {
           window.ClustrApp.openStockMap(sym);
+        } else if (window.ClustrApp?.showView && window.ClustrMindmap?.openSymbol) {
+          window.ClustrApp.showView('mind');
+          window.ClustrMindmap.openSymbol(sym);
         }
       });
     }
@@ -1602,6 +1632,8 @@
   async function renderEvents(groups, currentGroups) {
     const target = document.getElementById('eventsList');
     if (!target) return;
+    const generation = ++renderGeneration;
+    target.querySelectorAll('.stance-history-canvas').forEach(destroyStanceChart);
     target.innerHTML = '';
     if (!groups.length) {
       target.innerHTML =
@@ -1609,6 +1641,7 @@
       return;
     }
     for (let i = 0; i < groups.length; i++) {
+      if (generation !== renderGeneration) return;
       const el = buildGroupElement(groups[i], i, currentGroups);
       target.appendChild(el);
       requestAnimationFrame(() => el.classList.add('is-visible'));

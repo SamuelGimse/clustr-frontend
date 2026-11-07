@@ -237,20 +237,22 @@
    * @param {string} clusterName
    * @returns {Promise<object[]>}
    */
-  async function fetchStanceHistory(clusterName) {
+  async function fetchStanceHistory(clusterName, context = {}) {
     const name = String(clusterName || '').trim();
     if (!name) return [];
 
-    const local = localStanceHistory(name);
+    const local = localStanceHistory(name, context);
 
     try {
       const publishes = await fetchAllPublishes();
-      const history = stanceHistoryFromPublishes(name, publishes, {});
+      const history = stanceHistoryFromPublishes(name, publishes, {}, context);
       if (history.length) return history;
     } catch (err) {
       console.warn('full stance history', err.message);
     }
 
+    // The legacy view has no reliable market identity. Do not mix markets on fallback.
+    if (historyContext(context).market) return local;
     try {
       const q =
         'cluster_stance_history?cluster_name=eq.' +
@@ -259,7 +261,7 @@
         '&order=created_at.asc';
       const rows = await rest(q);
       if (Array.isArray(rows) && rows.length) {
-        return rows.map(r => {
+        return rows.filter(r => Date.parse(r.created_at) <= historyContext(context).cutoff).map(r => {
           // ONLY cluster defaults — never close links / stocks bag
           const defaults = Array.isArray(r.fixed_stocks) ? r.fixed_stocks : [];
           const seen = new Set();
@@ -296,7 +298,16 @@
    * @param {string} clusterName
    * @returns {object[]}
    */
-  function localStanceHistory(clusterName) {
+  function historyContext(context = {}) {
+    const app = window.ClustrApp;
+    const current = app?.getPublishes?.()[app?.getPublishIndex?.() ?? 0];
+    return {
+      market: String(context.market || current?.market || '').toUpperCase(),
+      cutoff: Date.parse(context.asOf || current?.created_at || '') || Infinity
+    };
+  }
+
+  function localStanceHistory(clusterName, context = {}) {
     const publishes =
       (window.ClustrApp && typeof window.ClustrApp.getPublishes === 'function'
         ? window.ClustrApp.getPublishes()
@@ -305,7 +316,7 @@
       (window.ClustrApp && typeof window.ClustrApp.getGroupsCache === 'function'
         ? window.ClustrApp.getGroupsCache()
         : {}) || {};
-    return stanceHistoryFromPublishes(clusterName, publishes, cache);
+    return stanceHistoryFromPublishes(clusterName, publishes, cache, context);
   }
 
   /**
@@ -315,15 +326,23 @@
    * @param {Object.<string, object[]>} cache
    * @returns {object[]}
    */
-  function stanceHistoryFromPublishes(clusterName, publishRows, cache) {
+  function stanceHistoryFromPublishes(clusterName, publishRows, cache, context = {}) {
     const name = String(clusterName || '').trim().toLowerCase();
     if (!name) return [];
 
+    const scope = historyContext(context);
+    if (!scope.market) {
+      const markets = [...new Set((publishRows || []).map(p => String(p.market || '').toUpperCase()).filter(Boolean))];
+      if (markets.length > 1) return [];
+      scope.market = markets[0] || '';
+    }
     const rows = [];
     const ordered = (publishRows || []).slice().sort((a, b) =>
       String(a.created_at || '').localeCompare(String(b.created_at || ''))
     );
     for (const p of ordered) {
+      if (!Number.isFinite(Date.parse(p.created_at)) || Date.parse(p.created_at) > scope.cutoff) continue;
+      if (scope.market && String(p.market || '').toUpperCase() !== scope.market) continue;
       let groups = cache[p.id] || cache[String(p.id)] || [];
       if (!groups.length) {
         groups = groupsFromPublish(p);
@@ -345,9 +364,10 @@
           priceAtPublish: s.priceAtPublish ?? s.price ?? null
         });
       }
+      const stanceScore = window.ClustrUtil.exponentialMeanRating((match.articles || []).map(article => article.rating ?? article.score)) ?? window.ClustrUtil.numericStance(match.stance_score ?? match.cluster_score);
       rows.push({
-        stance: String(match.stance || 'watch').toLowerCase(),
-        stanceScore: window.ClustrUtil.exponentialMeanRating((match.articles || []).map(article => article.rating ?? article.score)) ?? (Number.isFinite(Number(match.stance_score ?? match.cluster_score)) ? Number(match.stance_score ?? match.cluster_score) : null),
+        stance: window.ClustrUtil.stanceCategory(stanceScore) || String(match.stance || 'watch').toLowerCase(),
+        stanceScore,
         confidence: String(match.confidence || '').toLowerCase(),
         horizon: String(match.time_horizon || '').toLowerCase(),
         date: p.created_at || '',

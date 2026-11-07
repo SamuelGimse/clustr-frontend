@@ -2124,7 +2124,7 @@ html[data-theme="dark"] .article-rating--negative {
   display: none;
 }
 .cluster-card.is-expanded .cluster-summary {
-  max-width: 85ch;
+  max-width: none;
 }
 .cluster-overview-footer {
   display: flex;
@@ -2136,6 +2136,7 @@ html[data-theme="dark"] .article-rating--negative {
 .cluster-summary { cursor: pointer; }
 .cluster-overview { min-width: 0; cursor: pointer; }
 .cluster-summary { min-width: 0; }
+.cluster-context { display: none; }
 .cluster-stance-preview { display: none; }
 @media (min-width: 1024px) {
   .cluster-overview {
@@ -3999,4 +4000,49 @@ html[data-theme="apple"] .nav-rail-btn.is-active {
     -webkit-backdrop-filter: none;
     box-shadow: none;
   }
+}
+
+/* Card structure: compact overview, balanced analysis, one stock/chart workspace. */
+.events-list { width: 100%; max-width: 1480px; margin-inline: auto; }
+.cluster-top { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; margin-bottom: 16px; }
+.cluster-name { font-size: 20px; }
+.cluster-reason { line-height: 1.6; }
+.cluster-context { min-width: 0; font-size: 13px; color: var(--text-meta); }
+.cluster-context h3 { margin: 0 0 10px; color: var(--text); font-size: 13px; font-weight: 600; }
+.cluster-drivers { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.cluster-card.is-expanded .cluster-context { display: block; }
+.cluster-layout:has(.stance-aside.is-open) .cluster-stance-preview { display: none; }
+.cluster-layout:has(.stance-aside.is-open) .cluster-overview { display: block; }
+.cluster-context .cluster-market-signals { margin-top: 14px; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.cluster-card.is-expanded .cluster-overview { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+.cluster-card.is-expanded .cluster-summary { max-width: none; }
+.cluster-details { margin-top: 18px; padding-top: 16px; }
+.stock-panel { margin: 0 0 14px; }
+.stock-panel-head { gap: 8px 12px; }
+.group-since-publish { margin-left: 8px; white-space: normal; font-size: 11px; }
+.stock-analysis { display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.stock-analysis > * { min-width: 0; }
+.stock-analysis .price-bar, .stock-analysis .chart-folder { margin: 0; }
+.price-bar-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.technical-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.technical-metrics span, .technical-metrics-note, .quote-asof { color: var(--text-meta); font-size: 11px; }
+.quote-asof { margin-top: 8px; }
+.history-data-note { color: var(--text-meta); font-size: 11px; margin: 4px 0 10px; }
+.technical-metrics strong { overflow-wrap: anywhere; }
+.stock-analysis:has(.price-bar-mount:empty) { grid-template-columns: 1fr; }
+.price-bar-mount:empty { display: none; }
+.weekly-velocity { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border); font-size: 11px; color: var(--text-meta); }
+.weekly-velocity strong { color: var(--text); font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.weekly-velocity--up strong { color: var(--up); }
+.weekly-velocity--down strong { color: var(--down); }
+@media (max-width: 1100px) {
+  .stock-analysis { grid-template-columns: 1fr; }
+  .technical-metrics { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+}
+@media (max-width: 768px) {
+  .cluster-top { grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+  .cluster-top .stance-mount { grid-column: 1 / -1; max-width: none; }
+  .cluster-top .stance-wrap { justify-content: flex-start; }
+  .cluster-card.is-expanded .cluster-overview { grid-template-columns: 1fr; gap: 18px; }
+  .group-since-publish { margin-left: 0; flex-basis: 100%; }
 }

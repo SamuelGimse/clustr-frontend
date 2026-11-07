@@ -2,13 +2,15 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const utilContext = { window: {} };
+vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/util.js'), 'utf8'), utilContext);
 const source = fs.readFileSync(path.join(__dirname, '../js/render.js'), 'utf8');
 const helpers = source.slice(source.indexOf('  function stanceScore('), source.indexOf('  async function attachDefaultReturns('));
 function render(rows, cutoff = '2026-11-07') {
   return vm.runInNewContext(`${helpers}\nstanceMiniHtml({name:'Test'})`, {
     window: { ClustrApp: { getPublishes: () => [{ created_at: cutoff }], getPublishIndex: () => 0 } },
     stanceHistoryForCluster: () => rows,
-    U: () => ({ escapeHtml: value => String(value).replaceAll('<', '&lt;') })
+    U: () => utilContext.window.ClustrUtil
   });
 }
 assert.match(render([]), /No history yet/);
