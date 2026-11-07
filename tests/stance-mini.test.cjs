@@ -2,30 +2,20 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const utilContext = { window: {} };
-vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/util.js'), 'utf8'), utilContext);
-const source = fs.readFileSync(path.join(__dirname, '../js/render.js'), 'utf8');
-const helpers = source.slice(source.indexOf('  function stanceScore('), source.indexOf('  async function attachDefaultReturns('));
-function render(rows, cutoff = '2026-11-07') {
-  return vm.runInNewContext(`${helpers}\nstanceMiniHtml({name:'Test'})`, {
-    window: { ClustrApp: { getPublishes: () => [{ created_at: cutoff }], getPublishIndex: () => 0 } },
-    stanceHistoryForCluster: () => rows,
-    U: () => utilContext.window.ClustrUtil
-  });
-}
-assert.match(render([]), /No history yet/);
-const one = render([{ date: '2026-11-01', stanceScore: 2 }]);
-assert.match(one, /1 publish</);
-assert(!one.includes('<polyline'));
-const series = render([
-  { date: '2026-11-06', stanceScore: 10 },
-  { date: '2026-11-01', stanceScore: -10 },
-  { date: '2026-11-08', stanceScore: -5 },
-  { date: 'invalid', stanceScore: 4 }
-]);
-assert.match(series, /2 publishes/);
-assert.match(series, /16.0,82.0 384.0,14.0/);
-assert.match(series, /latest score 10/);
-assert(!series.includes('NaN'));
-assert.match(render(Array.from({ length: 40 }, (_, i) => ({ date: new Date(Date.UTC(2026, 8, i + 1)).toISOString(), stanceScore: 0 }))), /30 publishes/);
-console.log('Stance preview checks passed: empty, single point, chronology, date cutoff and 30-point limit.');
+const context = {window:{}};
+vm.createContext(context);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/util.js'),'utf8'),context);
+let source = fs.readFileSync(path.join(__dirname,'../js/render.js'),'utf8');
+source=source.replace('  window.ClustrRender = {','  window.renderVelocity=weeklyVelocityHtml;\n  window.ClustrRender = {');
+vm.runInContext(source,context);
+context.window.ClustrApp={getPublishes:()=>[{created_at:'2026-11-07T18:00:00Z'}],getPublishIndex:()=>0};
+context.window.ClustrApi={localStanceHistory:()=>[]};
+assert.match(context.window.renderVelocity({name:'Test'}),/Needs 3 scored days/);
+context.window.ClustrApi.localStanceHistory=()=>[-5,-3,-1].map((stanceScore,i)=>({date:`2026-11-0${i+1}`,stanceScore}));
+const html=context.window.renderVelocity({name:'Test'});
+assert.match(html,/7-day velocity/);
+assert.match(html,/\+2.00 pts\/day/);
+assert(!html.includes('<svg'));
+assert(!html.includes('stance-mini-chart'));
+assert(!html.includes('−10 to +10'));
+console.log('Overview checks passed: weekly velocity retained; small sparkline removed.');
