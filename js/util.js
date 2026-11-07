@@ -73,7 +73,10 @@ function isLightTheme() {
       'forest-mist',
       'sea-foam'
     ]);
-  const t = document.documentElement.getAttribute('data-theme') || 'dark';
+  const t = document.documentElement.getAttribute('data-theme') || 'apple';
+  if (t === 'apple' || t === 'material') {
+    return !window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
   return light.has(t);
 }
 

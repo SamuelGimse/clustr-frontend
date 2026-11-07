@@ -3,13 +3,32 @@
  */
 
 (function () {
-  const cfg = window.ClustrConfig || {};
-  const THEMES = cfg.THEMES || ['dark'];
+  const DEFAULT_THEME = 'apple';
   const STORAGE_KEY = 'clustr-theme';
 
   const root = document.documentElement;
   const themeBtn = document.getElementById('themeBtn');
   const themeMenu = document.getElementById('themeMenu');
+
+  function installDesignSystemChoices() {
+    if (!themeMenu || themeMenu.querySelector('.theme-menu-group')) return;
+
+    const current = themeMenu.querySelector('[data-theme="dark"]');
+    if (current) {
+      current.setAttribute('data-theme', 'clustr');
+      current.textContent = 'Clustr';
+    }
+
+    const group = document.createElement('div');
+    group.className = 'theme-menu-group';
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-label', 'Design systems');
+    group.innerHTML =
+      '<p class="theme-menu-heading">Design systems</p>' +
+      '<button type="button" data-theme="apple" role="menuitem">Apple</button>' +
+      '<button type="button" data-theme="material" role="menuitem">Google Material</button>';
+    themeMenu.prepend(group);
+  }
 
   /**
    * @returns {boolean}
@@ -45,9 +64,10 @@
    * @returns {void}
    */
   function applyTheme(name) {
-    // Apply the clicked theme id; only fall back if empty
-    const theme = (name || '').trim() || 'dark';
-    root.setAttribute('data-theme', theme);
+    const theme = (name || '').trim() || DEFAULT_THEME;
+    // Clustr is the renamed legacy dark design, kept byte-for-byte compatible.
+    const appliedTheme = theme === 'clustr' ? 'dark' : theme;
+    root.setAttribute('data-theme', appliedTheme);
     try {
       localStorage.setItem(STORAGE_KEY, theme);
     } catch (e) {
@@ -73,14 +93,18 @@
    * @returns {void}
    */
   function initTheme() {
-    let saved = 'dark';
+    let saved = DEFAULT_THEME;
     try {
-      saved = localStorage.getItem(STORAGE_KEY) || 'dark';
+      saved = localStorage.getItem(STORAGE_KEY) || DEFAULT_THEME;
+      // Dark was the former implicit default; make the new Apple design the default.
+      if (saved === 'dark') saved = DEFAULT_THEME;
     } catch (e) {
       /* ignore */
     }
     applyTheme(saved);
   }
+
+  installDesignSystemChoices();
 
   if (themeBtn && themeMenu) {
     themeBtn.addEventListener('click', e => {
