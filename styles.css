@@ -2114,6 +2114,18 @@ html[data-theme="dark"] .article-rating--negative {
   display: block;
   overflow: visible;
 }
+.cluster-card.is-expanded .cluster-layout,
+.cluster-card.is-expanded .cluster-overview {
+  display: block;
+}
+.cluster-card.is-expanded .cluster-stance-preview,
+.cluster-card.is-expanded .stance-aside,
+.cluster-card.is-expanded [data-stance-history] {
+  display: none;
+}
+.cluster-card.is-expanded .cluster-summary {
+  max-width: 85ch;
+}
 .cluster-overview-footer {
   display: flex;
   align-items: center;
