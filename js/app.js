@@ -794,59 +794,43 @@
     } else if (status) status.textContent = 'No publishes yet';
   }
 
-  const INTRO_HEADLINES = [
-    { t: 'US strikes risk Strait of Hormuz', tag: 'Geopolitics' },
-    { t: 'Fed holds rates — markets reprice', tag: 'Macro' },
-    { t: 'Defense contracts surge this week', tag: 'Contracts' },
-    { t: 'AI chip demand outruns supply', tag: 'Tech' },
-    { t: 'Oil jumps on shipping risk', tag: 'Energy' },
-    { t: 'Pharma breakthrough clears phase 3', tag: 'Health' }
-  ];
+  function setBootStage(stage, message) {
+    const sub = document.getElementById('introSub');
+    if (sub) sub.textContent = message;
+    boot?.querySelectorAll('.boot-step').forEach((step, index) => {
+      step.classList.toggle('is-current', index === stage);
+      step.classList.toggle('is-complete', index < stage);
+      if (index === stage) step.setAttribute('aria-current', 'step');
+      else step.removeAttribute('aria-current');
+    });
+  }
 
-  /**
-   * Cinematic intro — charts, news, clusters — no terminal spam.
-   * @returns {Promise<void>}
-   */
   async function runBoot() {
     if (!boot) return;
-    const util = window.ClustrUtil;
-    const fill = document.getElementById('introFill');
-    const sub = document.getElementById('introSub');
-    const eventsHost = document.getElementById('introEvents');
-
+    boot.classList.add('boot-screen--glass');
+    boot.innerHTML = `
+      <div class="boot-ambient" aria-hidden="true"></div>
+      <div class="boot-orbit boot-orbit--outer" aria-hidden="true"></div>
+      <div class="boot-orbit boot-orbit--inner" aria-hidden="true"></div>
+      <div class="boot-panel">
+        <div class="boot-mark" aria-hidden="true">
+          <svg viewBox="0 0 100 100" fill="none"><g stroke="currentColor" stroke-width="1.5"><path d="M50 50 50 16M50 50 80 33M50 50 80 67M50 50 50 84M50 50 20 67M50 50 20 33"/></g><g fill="currentColor"><circle class="boot-dot" cx="50" cy="16" r="6"/><circle class="boot-dot" cx="80" cy="33" r="6"/><circle class="boot-dot" cx="80" cy="67" r="6"/><circle class="boot-dot" cx="50" cy="84" r="6"/><circle class="boot-dot" cx="20" cy="67" r="6"/><circle class="boot-dot" cx="20" cy="33" r="6"/><circle cx="50" cy="50" r="10"/></g></svg>
+        </div>
+        <h1 class="boot-wordmark">clustr</h1>
+        <p class="boot-tagline">A clearer view of the market.</p>
+        <div class="boot-loader" aria-hidden="true"><span></span></div>
+        <p class="boot-status" id="introSub" role="status">Restoring your session…</p>
+        <ol class="boot-steps" aria-label="Loading stages"><li class="boot-step is-current">Session</li><li class="boot-step">Market data</li><li class="boot-step">Ready</li></ol>
+      </div>
+      <p class="boot-caption" aria-hidden="true">WORLD EVENTS. CONNECTED.</p>`;
     document.documentElement.classList.add('boot-lock');
     boot.classList.remove('hidden', 'is-leaving');
+    boot.removeAttribute('aria-live');
     boot.setAttribute('aria-busy', 'true');
     boot.classList.add('is-live');
-    if (fill) fill.style.width = '8%';
-
-    // Spawn floating news cards
-    if (eventsHost) {
-      eventsHost.innerHTML = '';
-      INTRO_HEADLINES.forEach((h, i) => {
-        const card = document.createElement('div');
-        card.className = 'intro-news';
-        card.style.setProperty('--i', String(i));
-        card.innerHTML = `<span class="intro-news-tag">${h.tag}</span><span class="intro-news-t">${h.t}</span>`;
-        eventsHost.appendChild(card);
-      });
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      await window.ClustrUtil.sleep(450);
     }
-
-    const steps = [
-      { p: 22, msg: 'Reading global event streams…' },
-      { p: 40, msg: 'Clustering catalysts…' },
-      { p: 58, msg: 'Linking US equity exposure…' },
-      { p: 76, msg: 'Attaching stance & horizon…' },
-      { p: 92, msg: 'Snapshotting the signal map…' },
-      { p: 100, msg: 'Enter Clustr' }
-    ];
-
-    for (const step of steps) {
-      if (fill) fill.style.width = `${step.p}%`;
-      if (sub) sub.textContent = step.msg;
-      await util.sleep(380);
-    }
-    await util.sleep(320);
   }
 
   /**
@@ -859,7 +843,7 @@
     boot.setAttribute('aria-busy', 'false');
     document.documentElement.classList.remove('boot-lock');
     const util = window.ClustrUtil;
-    await util.sleep(750);
+    await util.sleep(window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 300);
     boot.classList.add('hidden');
     boot.classList.remove('is-live');
   }
@@ -875,21 +859,23 @@
       if (navAdmin) navAdmin.classList.toggle('hidden', authState.role !== 'admin');
       if (!authState.user) {
         await bootP;
-        await endBoot();
         setNav('account');
         if (authState.authError) renderAccount(authState.authError);
+        setBootStage(2, 'Your workspace is ready');
+        await endBoot();
         return;
       }
+      setBootStage(1, 'Loading your market workspace…');
       // Load data while the sequence runs so enter feels instant
       const dataP = window.ClustrApi.fetchPublishes(100);
-      await bootP;
-      publishes = await dataP;
+      const [, loadedPublishes] = await Promise.all([bootP, dataP]);
+      publishes = loadedPublishes;
       publishIndex = 0;
-      await endBoot();
-
       if (location.hash === '#/polymarket') setNav('polymarket');
       if (!publishes.length) {
         if (status) status.textContent = 'No publishes yet';
+        setBootStage(2, 'Your workspace is ready');
+        await endBoot();
         return;
       }
 
@@ -899,6 +885,8 @@
       else if (location.hash === '#/admin' && authState.role === 'admin') setNav('admin');
       else if (location.hash === '#/account' || new URLSearchParams(location.search).has('checkout')) setNav('account');
       else setNav('events');
+      setBootStage(2, 'Your workspace is ready');
+      await endBoot();
     } catch (err) {
       console.error(err);
       await endBoot();

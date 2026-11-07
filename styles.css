@@ -1236,7 +1236,7 @@ html.boot-lock body {
   height: 100%;
 }
 
-/* ========== Cinematic intro (markets × events × clusters) ========== */
+/* ========== Startup ========== */
 .boot-screen {
   position: fixed;
   inset: 0;
@@ -1244,8 +1244,8 @@ html.boot-lock body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #05070d;
-  color: #eef2f8;
+  background: var(--bg);
+  color: var(--text);
   overflow: hidden;
   transition: opacity 0.75s ease, visibility 0.75s ease, transform 0.75s ease;
 }
@@ -1257,6 +1257,110 @@ html.boot-lock body {
 }
 .boot-screen.hidden {
   display: none !important;
+}
+.boot-screen:not(.boot-screen--glass) > * { visibility: hidden; }
+.boot-screen:not(.boot-screen--glass)::after {
+  content: '';
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border);
+  border-top-color: var(--text);
+  border-radius: 50%;
+  animation: boot-spin 1s linear infinite;
+}
+.boot-screen--glass {
+  isolation: isolate;
+  transition: opacity 300ms ease, visibility 300ms ease, transform 300ms ease;
+}
+.boot-screen--glass.is-leaving { transform: scale(1.015); }
+.boot-ambient {
+  position: absolute;
+  inset: -25%;
+  z-index: -2;
+  background: radial-gradient(ellipse at 30% 30%, color-mix(in srgb, var(--text) 12%, transparent), transparent 45%), radial-gradient(ellipse at 75% 65%, color-mix(in srgb, var(--text-meta) 18%, transparent), transparent 50%);
+  animation: boot-ambient-drift 12s ease-in-out infinite alternate;
+}
+.boot-orbit {
+  position: absolute;
+  z-index: -1;
+  width: min(780px, 110vw);
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in srgb, var(--text) 7%, transparent);
+  border-radius: 50%;
+  animation: boot-spin 36s linear infinite;
+}
+.boot-orbit::after {
+  content: '';
+  position: absolute;
+  top: 14%;
+  left: 14%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 40%, transparent);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--text) 20%, transparent);
+}
+.boot-orbit--inner { width: min(580px, 85vw); animation-direction: reverse; animation-duration: 24s; }
+.boot-panel {
+  position: relative;
+  width: min(400px, calc(100vw - 40px));
+  padding: 38px 32px 28px;
+  text-align: center;
+  background: var(--glass-card, var(--panel));
+  border: 1px solid var(--glass-edge, var(--border));
+  border-radius: 32px;
+  box-shadow: var(--glass-shadow, var(--md-sys-elevation-2));
+  backdrop-filter: blur(28px) saturate(110%);
+  -webkit-backdrop-filter: blur(28px) saturate(110%);
+  animation: boot-reveal 600ms cubic-bezier(.16, 1, .3, 1) both;
+}
+.boot-mark {
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 18px;
+  border-radius: 24px;
+  padding: 10px;
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  color: var(--text);
+}
+.boot-mark svg { display: block; width: 100%; height: 100%; }
+.boot-dot { transform-box: fill-box; transform-origin: center; animation: boot-node-breathe 2.4s ease-in-out infinite; }
+.boot-dot:nth-child(2) { animation-delay: 120ms; }
+.boot-dot:nth-child(3) { animation-delay: 240ms; }
+.boot-dot:nth-child(4) { animation-delay: 360ms; }
+.boot-dot:nth-child(5) { animation-delay: 480ms; }
+.boot-dot:nth-child(6) { animation-delay: 600ms; }
+.boot-wordmark { margin: 0; font: 650 48px/1.1 var(--font-sans); letter-spacing: -.055em; color: var(--text); }
+.boot-tagline { margin: 12px 0 30px; font-size: 14px; color: var(--text-meta); }
+.boot-loader { position: relative; overflow: hidden; height: 3px; margin: 0 32px; border-radius: 999px; background: color-mix(in srgb, var(--text) 10%, transparent); }
+.boot-loader span { display: block; width: 40%; height: 100%; border-radius: inherit; background: var(--text); animation: boot-loading-sweep 1.5s cubic-bezier(.4, 0, .2, 1) infinite; }
+.boot-status { min-height: 20px; margin: 16px 0 24px; font-size: 12px; color: var(--text-meta); }
+.boot-steps { display: flex; justify-content: center; gap: 20px; list-style: none; margin: 0; padding: 16px 0 0; border-top: 1px solid var(--border); }
+.boot-step { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 500; color: var(--text-meta); }
+.boot-step::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--border); }
+.boot-step.is-current { color: var(--text); }
+.boot-step.is-current::before, .boot-step.is-complete::before { background: var(--text); }
+.boot-caption { position: absolute; bottom: max(24px, env(safe-area-inset-bottom)); margin: 0; color: var(--text-meta); font-size: 9px; letter-spacing: .2em; }
+@keyframes boot-spin { to { transform: rotate(360deg); } }
+@keyframes boot-loading-sweep { from { transform: translateX(-110%); } to { transform: translateX(360%); } }
+@keyframes boot-node-breathe { 0%, 100% { opacity: .45; transform: scale(.82); } 50% { opacity: 1; transform: scale(1); } }
+@keyframes boot-ambient-drift { to { transform: translate3d(4%, -3%, 0) scale(1.08); } }
+@keyframes boot-reveal { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+@media (max-width: 480px) {
+  .boot-panel { padding: 30px 24px 24px; border-radius: 28px; }
+  .boot-wordmark { font-size: 42px; }
+  .boot-steps { gap: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .boot-screen, .boot-screen--glass { transition: none; }
+  .boot-screen:not(.boot-screen--glass)::after,
+  .boot-screen--glass * { animation: none !important; }
+  .boot-screen--glass.is-leaving { transform: none; }
+  .boot-loader span { width: 100%; opacity: .5; }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .boot-panel { background: var(--panel-2); backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 .intro-bg {
   position: absolute;
