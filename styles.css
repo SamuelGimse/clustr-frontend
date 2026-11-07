@@ -4018,19 +4018,25 @@ html[data-theme="apple"] .nav-rail-btn.is-active {
 .cluster-card.is-expanded .cluster-summary { max-width: none; }
 .cluster-card.is-expanded .cluster-reason { columns: 2; column-gap: 32px; margin-bottom: 14px; }
 .cluster-card.is-expanded .cluster-context { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
-.cluster-card.is-expanded .cluster-drivers { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); column-gap: 32px; }
+.cluster-card.is-expanded .cluster-drivers { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; }
 .cluster-details { margin-top: 18px; padding-top: 16px; }
 .stock-panel { margin: 0 0 14px; }
-.stock-panel-head { gap: 8px 12px; }
-.group-since-publish { margin-left: 8px; white-space: normal; font-size: 11px; }
+.stock-panel-head { display: grid; grid-template-columns: auto minmax(0, 240px) auto minmax(0, 1fr); gap: 12px; }
+.stock-panel-head .md-label { margin: 0; }
+.stock-panel-head .stock-group-select { width: 100%; min-width: 0; }
+.group-since-publish { margin-left: 0; white-space: normal; font-size: 11px; }
 .stock-analysis { display: flex; flex-direction: column; gap: 14px; }
 .stock-analysis > * { min-width: 0; }
 .stock-analysis > .stock-sidebar, .stock-analysis > .chart-folder { width: 100%; }
+.stock-sidebar { container-type: inline-size; }
 .stock-sidebar .related-under-chart:has(.related-empty) { display: none; }
 .stock-sidebar .related-under-chart:not(:empty) { margin-top: 12px; }
-.stock-sidebar .price-bar { display: grid; grid-template-columns: minmax(270px, 1fr) minmax(0, 2fr); gap: 10px 24px; }
+.stock-sidebar .price-bar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; padding: 16px; }
 .stock-sidebar .price-bar-title { grid-column: 1 / -1; margin: 0; }
-.stock-sidebar .technical-metrics { margin: 0; padding: 0; border: 0; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.stock-sidebar .price-bar-grid, .stock-sidebar .technical-metrics { display: contents; }
+.stock-sidebar .price-cell, .stock-sidebar .technical-metrics > div { display: grid; grid-template-rows: 32px 22px 16px; gap: 2px; min-width: 0; align-content: start; }
+.stock-sidebar .price-label, .stock-sidebar .technical-metrics span { line-height: 16px; }
+.stock-sidebar .price-value, .stock-sidebar .technical-metrics strong { font-size: 15px; line-height: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .stock-sidebar .technical-metrics-note, .stock-sidebar .quote-asof { grid-column: 1 / -1; margin: 0; }
 .stock-analysis .price-bar, .stock-analysis .chart-folder { margin: 0; }
 .price-bar-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
@@ -4039,15 +4045,20 @@ html[data-theme="apple"] .nav-rail-btn.is-active {
 .quote-asof { margin-top: 8px; }
 .history-data-note { color: var(--text-meta); font-size: 11px; margin: 4px 0 10px; }
 .technical-metrics strong { overflow-wrap: anywhere; }
-.stock-analysis:has(.price-bar-mount:empty) { grid-template-columns: 1fr; }
 .price-bar-mount:empty { display: none; }
 .weekly-velocity { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 11px; color: var(--text-meta); }
 .weekly-velocity strong { color: var(--text); font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .weekly-velocity--up strong { color: var(--up); }
 .weekly-velocity--down strong { color: var(--down); }
+@container (min-width: 640px) {
+  .stock-sidebar .price-bar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@container (min-width: 1200px) {
+  .stock-sidebar .price-bar { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+}
 @media (max-width: 1100px) {
-  .stock-sidebar .price-bar { grid-template-columns: 1fr; }
-  .stock-sidebar .technical-metrics { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+  .stock-panel-head { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .stock-panel-head .group-since-publish { grid-column: 1 / -1; }
   .technical-metrics { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
 }
 @media (max-width: 768px) {
@@ -4056,6 +4067,8 @@ html[data-theme="apple"] .nav-rail-btn.is-active {
   .cluster-top .stance-wrap { justify-content: flex-start; }
   .cluster-card.is-expanded .cluster-overview { grid-template-columns: 1fr; gap: 18px; }
   .cluster-card.is-expanded .cluster-reason { columns: 1; }
-  .stock-sidebar .technical-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cluster-card.is-expanded .cluster-drivers { grid-template-columns: 1fr; }
+  .stock-panel-head { grid-template-columns: minmax(0, 1fr) auto; }
+  .stock-panel-head .md-label { grid-column: 1 / -1; }
   .group-since-publish { margin-left: 0; flex-basis: 100%; }
 }
