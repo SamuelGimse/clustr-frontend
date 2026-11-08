@@ -884,7 +884,7 @@
       R.renderCountryArticles(scopedGroups(), null);
     }
 
-    if (MapApi && typeof MapApi.render === 'function') {
+    if (view === 'map' && MapApi && typeof MapApi.render === 'function') {
       MapApi.render(scopedGroups(), {
         onCountry: country => {
           R.highlightCountryCard(country);
