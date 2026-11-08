@@ -934,6 +934,7 @@
       publishIndex = 0;
       if (location.hash === '#/polymarket') setNav('polymarket');
       if (!publishes.length) {
+        if (location.hash === '#/connections') setNav('connections');
         if (status) status.textContent = 'No publishes yet';
         setBootStage(2, 'Your workspace is ready');
         await endBoot();

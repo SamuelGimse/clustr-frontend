@@ -46,6 +46,7 @@ async function check({ user = {}, rows = [{ id: 1 }], error = null, hash = '' } 
   assert(signedOut.calls.includes('badge'));
   assert(signedOut.calls.indexOf('nav:account') < signedOut.calls.indexOf('end'));
   assert.equal((await check({ rows: [] })).status, 'No publishes yet');
+  assert((await check({ rows: [], hash: '#/connections' })).calls.includes('nav:connections'));
   assert.equal((await check({ error: new Error('Offline') })).status, 'Offline');
   console.log('Boot checks passed: signed in, signed out, empty data, fetch failure.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

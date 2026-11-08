@@ -1,6 +1,6 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {buildGraph,layout,safeUrl}=require('../connections/connections');
+const {buildGraph,layout,safeUrl,matches}=require('../connections/connections');
 const {simulation}=require('../connections/canvas');
 test('connection renderer loads before app boot and navigation entry is present',()=>{
   const fs=require('node:fs'),path=require('node:path');
@@ -40,4 +40,69 @@ test('unsafe source links, unresolved tickers and missing scores are handled wit
   assert.equal(graph.nodes.find(n=>n.type==='news').url,'');
   assert.equal(safeUrl('javascript:alert(1)'), '');
   assert.deepEqual(buildGraph([]),{nodes:[],edges:[]});
+});
+test('one edge preserves default and evidenced exposure without alias duplicates',()=>{
+  const stock={symbol:'NVDA'};
+  const graph=buildGraph([{name:'AI',mentioned_stocks:[stock],fixed_stocks:[stock],stocks:[stock]},
+    {name:'Legacy',direct_stocks:[stock],fixed_stocks:[stock]}]);
+  assert.equal(graph.nodes.filter(n=>n.type==='stock').length,1);
+  assert.equal(graph.edges.length,2);
+  assert.deepEqual(graph.edges[0].kinds,['Mentioned','Default exposure']);
+  assert.equal(graph.edges[0].kind,'Mentioned');
+  assert.deepEqual(graph.edges[1].kinds,['Default exposure','Direct link']);
+  assert.equal(graph.edges[1].kind,'Direct link');
+});
+test('news tracking parameters deduplicate but different article identities remain separate',()=>{
+  const graph=buildGraph([{articles:[
+    {link:'https://example.com/news?id=1&utm_source=a#story'},
+    {link:'https://example.com/news?utm_source=b&id=1'},
+    {link:'https://example.com/news?id=2'}]}]);
+  assert.equal(graph.nodes.filter(n=>n.type==='news').length,2);
+  assert.equal(graph.edges.length,2);
+  assert.equal(safeUrl('https://user:secret@example.com/news'),'');
+});
+test('malformed reports and invalid scores cannot fabricate scored opportunities',()=>{
+  assert.deepEqual(buildGraph({groups:[]}),{nodes:[],edges:[]});
+  const graph=buildGraph([null,{score:false,stocks:{},articles:[null]},
+    {stance_score:20,cluster_score:'-3'}, {stance_score:' ',score:0}]);
+  assert.deepEqual(graph.nodes.map(n=>n.score),[null,-3,0]);
+});
+test('search supports company names, news sources, summaries and type filtering',()=>{
+  const graph=buildGraph([{name:'AI',stocks:[{symbol:'NVDA',name:'NVIDIA'}],
+    articles:[{title:'Investment',source:'Example Wire',short_summary:'New datacenter capacity'}]}]);
+  assert.equal(graph.nodes.filter(n=>matches(n,'NVIDIA','stock')).length,1);
+  assert.equal(graph.nodes.filter(n=>matches(n,'example wire','news')).length,1);
+  assert.equal(graph.nodes.filter(n=>matches(n,'datacenter','news')).length,1);
+  assert.equal(graph.nodes.filter(n=>matches(n,'NVDA','cluster')).length,0);
+});
+test('GPU adapter rejection falls back and gestures do not select accidentally',async()=>{
+  const vm=require('node:vm'),fs=require('node:fs');
+  let disconnected=false,cancelled=false;
+  const ctx=new Proxy({},{get:()=>()=>{}});
+  const labels={getContext:()=>ctx,addEventListener(){},setPointerCapture(){}};
+  const pixels={width:1200,height:800},backend={};
+  const container={querySelector:s=>s==='.cx-pixels'?pixels:s==='.cx-labels'?labels:backend,
+    getBoundingClientRect:()=>({width:1200,height:800})};
+  const sandbox={navigator:{gpu:{requestAdapter:async()=>{throw Error('Unavailable');}}},
+    window:{matchMedia:()=>({matches:true}),devicePixelRatio:1},
+    ResizeObserver:class{observe(){}disconnect(){disconnected=true;}},
+    requestAnimationFrame:()=>1,cancelAnimationFrame:()=>{cancelled=true;},
+    getComputedStyle:()=>({color:'white'})};
+  sandbox.window.ClustrConnections={matches};
+  vm.runInNewContext(fs.readFileSync(require.resolve('../connections/canvas'),'utf8'),sandbox);
+  const graph=buildGraph([{name:'AI'}]);let selections=0;
+  const scene=sandbox.window.ClustrGraphCanvas.mount(container,graph,layout(graph.nodes),()=>selections++);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(backend.textContent,'Canvas 2D');
+  labels.onpointerdown({pointerId:1,offsetX:600,offsetY:218});
+  labels.onpointerdown({pointerId:2,offsetX:700,offsetY:218});
+  labels.onpointermove({pointerId:2,offsetX:800,offsetY:218});
+  labels.onpointerup({pointerId:2,offsetX:800,offsetY:218});
+  labels.onpointerup({pointerId:1,offsetX:600,offsetY:218});
+  assert.equal(selections,0);
+  scene.reset();
+  labels.onpointerdown({pointerId:3,offsetX:600,offsetY:218});
+  labels.onpointerup({pointerId:3,offsetX:600,offsetY:218});
+  assert.equal(selections,1);
+  scene.destroy();assert.ok(disconnected&&cancelled);
 });
