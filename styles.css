@@ -1225,6 +1225,16 @@ body { isolation: isolate; }
   padding: 0 24px 48px;
 }
 
+/* Shared edges for page content and its scope/sort controls. */
+.main > :is(.view-toolbar, .page-brand-bar, .plan-access-banner, #status, #eventsView, #signalsView, #daysView, #weeklyView, #atlasView, #dashboardView, #connectionsView, #watchlistView, #stocksView, #polymarketView, #proFeatureView) {
+  width: 100%;
+  max-width: 1540px;
+  margin-inline: auto;
+  min-width: 0;
+}
+.main #dashboardView .dash-shell { max-width: none; padding-inline: 0; }
+.main > :is(#weeklyView, #atlasView) { padding-inline: 0; }
+
 /* ========== Top app bar ========== */
 .top-app-bar {
   display: flex;
