@@ -5,10 +5,11 @@ const path = require('node:path');
 const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '../js/watchlist.js'), 'utf8');
 
-function session() {
+function session(document) {
   const storage = new Map(), cloud = new Map(), calls = [], events = [];
   let token = 'Alice', hook = null;
   const window = {
+    document,
     ClustrConfig: { SUPABASE_URL: 'https://example.invalid', SUPABASE_ANON_KEY: 'public' },
     ClustrAuth: { accessToken: () => token },
     localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },
@@ -228,4 +229,26 @@ test('Overview prioritizes watched clusters and refreshes its dropdown immediate
   s.api.setScope('all');refresh();assert.match(root.innerHTML,/<option value="A unrelated"/);
   assert.equal(loads,1);assert.equal(groups[1].mentioned_stocks.length,1);
   delete global.window;
+});
+
+
+test('Compact scope toggle, hidden link menu and keyboard dismissal keep filter state in sync', async () => {
+  const handlers={}, savedCount={}, note={}, count={}, retry={};
+  let focused=false;
+  const menu={hidden:true,open:false,querySelector:()=>({focus(){focused=true;}}),removeAttribute(){this.open=false;}};
+  const buttons=['all','watchlist'].map(value=>({dataset:{watchScope:value},setAttribute(name,value){this[name]=value;},querySelector:()=>savedCount}));
+  const inputs=['mentioned','close','related','defaults','movers'].map(type=>({dataset:{watchLink:type}}));
+  const links={querySelectorAll:()=>inputs};
+  const nodes={'[data-watch-menu]':menu,'[data-watch-links-count]':count,'[data-watch-note]':note,'[data-watch-links]':links,'[data-watch-refresh]':retry};
+  const bar={querySelector:selector=>nodes[selector],querySelectorAll:()=>buttons};
+  const document={getElementById:()=>bar,querySelectorAll:()=>[],querySelector:()=>menu,addEventListener:(type,fn)=>{handlers[type]=fn;}};
+  const s=session(document);await s.api.init({id:'Alice'});await s.api.setSaved('NVDA','US',true);
+  assert.equal(menu.hidden,true);assert.equal(savedCount.textContent,'1');assert.equal(buttons[1].disabled,false);assert.equal(buttons[0]['aria-pressed'],'true');
+  handlers.click({target:{closest:selector=>selector==='[data-watch-scope]'?buttons[1]:null}});
+  assert.equal(s.api.isFiltered(),true);assert.equal(menu.hidden,false);assert.equal(note.textContent,'');assert.equal(buttons[1]['aria-pressed'],'true');assert.equal(buttons[0]['aria-pressed'],'false');
+  handlers.change({target:{matches:()=>false,closest:()=>({dataset:{watchLink:'defaults'},checked:false})}});
+  assert.equal(count.textContent,'4/5');assert.equal(inputs[3].checked,false);
+  menu.open=true;handlers.keydown({key:'Escape'});assert.equal(menu.open,false);assert(focused);
+  menu.open=true;handlers.click({target:{closest:()=>null}});assert.equal(menu.open,false);
+  menu.open=true;s.api.setScope('all');assert.equal(menu.open,false);assert.equal(menu.hidden,true);
 });
