@@ -97,7 +97,8 @@
       const date = new Date(p.created_at);
       const detail = `${currentGroups.length} clusters · ${pos}/${n}`;
       const desktop = `${p.title || 'Publish'} · ${date.toLocaleString()} · ${detail}`;
-      const mobile = `${p.market || 'Publish'} · ${date.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`;
+      const mobile = `${p.market || 'Publish'} · ${date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} · ${pos}/${n}`;
+      meta.title = desktop;
       meta.innerHTML = `<span class="publish-meta-desktop">${escape(desktop)}</span><span class="publish-meta-mobile"><span>${escape(mobile)}</span><span>${escape(detail)}</span></span>`;
     }
     // Older = higher index
@@ -126,6 +127,7 @@
    */
   function setNav(which) {
     if (which === 'admin' && authState.role !== 'admin') which = 'account';
+    closeEventSortMenu();
     const changed = which !== view;
     view = which;
     const R = window.ClustrRender;
@@ -918,10 +920,38 @@
     }
   }
 
+  function closeEventSortMenu() {
+    document.getElementById('eventSortOptions')?.classList.remove('is-open');
+    document.getElementById('eventSortToggle')?.setAttribute('aria-expanded', 'false');
+  }
+
+  function initEventSortMenu() {
+    const toggle = document.getElementById('eventSortToggle');
+    const options = document.getElementById('eventSortOptions');
+    if (!toggle || !options) return;
+    toggle.addEventListener('click', event => {
+      event.stopPropagation();
+      const open = options.classList.toggle('is-open');
+      toggle.setAttribute('aria-expanded', String(open));
+      if (open) options.querySelector('[data-event-sort]')?.focus({ preventScroll: true });
+    });
+    document.addEventListener('click', event => {
+      if (!event.target.closest('#eventSortOptions, #eventSortToggle')) closeEventSortMenu();
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && options.classList.contains('is-open')) {
+        closeEventSortMenu();
+        toggle.focus();
+      }
+    });
+  }
+
   if (navPolymarket) navPolymarket.addEventListener('click', () => setNav('polymarket'));
   if (navEvents) navEvents.addEventListener('click', () => setNav('events'));
   document.querySelectorAll('[data-event-sort]').forEach(button => button.addEventListener('click', async () => {
     eventSort = button.getAttribute('data-event-sort') || 'impact';
+    closeEventSortMenu();
+    if (window.matchMedia('(max-width: 768px)').matches) document.getElementById('eventSortToggle')?.focus({ preventScroll: true });
     document.querySelectorAll('[data-event-sort]').forEach(item => {
       const active = item === button;
       item.classList.toggle('is-active', active);
@@ -1047,5 +1077,6 @@
   /** @deprecated */
   window.EventlineApp = window.ClustrApp;
 
+  initEventSortMenu();
   init();
 })();

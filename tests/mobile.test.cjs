@@ -37,6 +37,18 @@ assert.equal(side.inert, false); assert.equal(main.inert, false); assert.equal(b
 media.matches = true; listeners.resize(); assert.equal(side.inert, true);
 
 const app = read('app.js');
+const sortClasses = new Set();
+const sortEvents = {};
+const sortAttrs = {};
+const sortToggle = { addEventListener: (name, fn) => { sortEvents.toggle = fn; }, setAttribute: (name, value) => { sortAttrs[name] = value; }, focus: () => { sortEvents.focused = true; } };
+const sortOptions = { querySelector: () => ({ focus: () => { sortEvents.optionFocused = true; } }), classList: { toggle: name => { if (sortClasses.has(name)) { sortClasses.delete(name); return false; } sortClasses.add(name); return true; }, remove: name => sortClasses.delete(name), contains: name => sortClasses.has(name) } };
+const sortContext = { document: { getElementById: id => id === 'eventSortToggle' ? sortToggle : sortOptions, addEventListener: (name, fn) => { sortEvents[name] = fn; } } };
+vm.createContext(sortContext);
+vm.runInContext(app.slice(app.indexOf('  function closeEventSortMenu()'), app.indexOf("  if (navPolymarket) navPolymarket.addEventListener")) + '\ninitEventSortMenu();', sortContext);
+sortEvents.toggle({ stopPropagation() {} }); assert.equal(sortAttrs['aria-expanded'], 'true');
+assert(sortEvents.optionFocused);
+sortEvents.click({ target: { closest: () => null } }); assert.equal(sortAttrs['aria-expanded'], 'false');
+sortEvents.toggle({ stopPropagation() {} }); sortEvents.keydown({ key: 'Escape' }); assert.equal(sortAttrs['aria-expanded'], 'false'); assert(sortEvents.focused);
 const metaContext = { window: {}, document: { getElementById: id => id === 'prevPublishBtn' ? prev : next }, publishes: [{ title: '<unsafe>', market: '<US>', created_at: '2026-11-06T15:00:00Z' }, { title: 'Older', market: 'NO', created_at: '2026-11-05T15:00:00Z' }], currentGroups: [{}, {}], publishIndex: 0, meta: {} };
 const prev = {}, next = {};
 vm.createContext(metaContext);
@@ -53,7 +65,7 @@ metaContext.publishes = []; vm.runInContext('setMeta()', metaContext);
 assert.equal(metaContext.meta.textContent, ''); assert.equal(prev.disabled, true); assert.equal(next.disabled, true);
 let phone = true;
 const scrolls = [];
-const navigation = { view: 'events', currentGroups: [], authState: { role: 'pro' }, location: { hash: '' }, renderAccount() {}, window: { matchMedia: () => ({ matches: phone }), scrollTo: (...args) => scrolls.push(args) } };
+const navigation = { view: 'events', currentGroups: [], authState: { role: 'pro' }, location: { hash: '' }, renderAccount() {}, closeEventSortMenu() {}, window: { matchMedia: () => ({ matches: phone }), scrollTo: (...args) => scrolls.push(args) } };
 for (const name of ['navEvents', 'navMap', 'navDays', 'navSignal', 'navMind', 'navWeekly', 'navAccount', 'navAdmin', 'navPolymarket', 'polymarketView', 'eventsView', 'mapView', 'daysView', 'signalView', 'mindView', 'weeklyView', 'accountView', 'adminView']) navigation[name] = null;
 vm.createContext(navigation);
 vm.runInContext(app.slice(app.indexOf('  function setNav('), app.indexOf('  function weeklyScore(')), navigation);
