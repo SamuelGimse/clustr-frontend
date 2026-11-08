@@ -95,7 +95,9 @@ test('GPU adapter rejection falls back and gestures do not select accidentally',
   const container={querySelector:s=>s==='.cx-pixels'?pixels:s==='.cx-labels'?labels:backend,
     getBoundingClientRect:()=>({width:1200,height:800})};
   const sandbox={navigator:{gpu:{requestAdapter:async()=>{throw Error('Unavailable');}}},
-    window:{matchMedia:()=>({matches:true}),devicePixelRatio:1},
+    window:{matchMedia:()=>({matches:true,addEventListener(){},removeEventListener(){}}),devicePixelRatio:1},
+    document:{addEventListener(){},removeEventListener(){}},
+    IntersectionObserver:class{observe(){}disconnect(){}},
     ResizeObserver:class{observe(){}disconnect(){disconnected=true;}},
     requestAnimationFrame:()=>1,cancelAnimationFrame:()=>{cancelled=true;},
     getComputedStyle:()=>({color:'white'})};
@@ -115,6 +117,13 @@ test('GPU adapter rejection falls back and gestures do not select accidentally',
   labels.onpointerdown({pointerId:3,offsetX:600,offsetY:218});
   labels.onpointerup({pointerId:3,offsetX:600,offsetY:218});
   assert.equal(selections,1);
+  labels.onpointerdown({pointerId:4,offsetX:600,offsetY:218});
+  labels.onpointermove({pointerId:4,offsetX:680,offsetY:268});
+  labels.onpointerup({pointerId:4,offsetX:680,offsetY:268});
+  assert.equal(selections,1,'dragging a node must not select it');
+  labels.onpointerdown({pointerId:5,offsetX:680,offsetY:268});
+  labels.onpointerup({pointerId:5,offsetX:680,offsetY:268});
+  assert.equal(selections,2,'node hit target follows the dragged position');
   scene.destroy();assert.ok(disconnected&&cancelled);
 });
 test('network windows are exactly 24, 48 or 72 hours ending at the selected report',()=>{
@@ -175,4 +184,23 @@ test('Network details use the newest saved price, paired change and distinct lin
 test('Unavailable and wrong-market prices remain unavailable; zero article impact remains zero',()=>{
   const graph=buildGraph([{name:'Unknown',stocks:[{symbol:'UNKNOWN',priceAtPublish:true},{symbol:'ZERO',priceAtPublish:0},{symbol:'NEG',priceAtPublish:-1},{symbol:'WRONG',market:'NO',priceAtPublish:50}],articles:[{title:'Zero',rating:0},{title:'Invalid',rating:11}]}],'US');
   assert(graph.nodes.filter(node=>node.type==='stock').every(node=>node.price===null));assert(!graph.nodes.some(node=>node.label==='WRONG'));assert.equal(graph.nodes.find(node=>node.label==='Zero').score,0);assert.equal(graph.nodes.find(node=>node.label==='Invalid').score,null);
+});
+
+test('ambient motion stays bounded, continues after settling and leaves the layout unchanged',()=>{
+  const {motionPositions}=require('../connections/canvas');
+  const positions=new Float32Array([100,200,600,400,900,650]),before=positions.slice();
+  const first=motionPositions(positions,0),later=motionPositions(positions,120);
+  assert.notDeepEqual(first,later);
+  assert.deepEqual(positions,before);
+  for(let t=0;t<600;t+=7){const points=motionPositions(positions,t);for(let i=0;i<points.length;i++)assert(Math.abs(points[i]-positions[i])<=9.001);}
+  assert.equal(motionPositions(new Float32Array(),1).length,0);
+});
+
+test('moving a node updates its anchor without moving unrelated nodes or accepting invalid input',()=>{
+  const graph=buildGraph([{name:'AI',stocks:[{symbol:'NVDA'}]}]);
+  const engine=simulation(graph,layout(graph.nodes)),before=engine.positions.slice();
+  engine.move(0,350,275);assert.equal(engine.positions[0],350);assert.equal(engine.positions[1],275);
+  assert.deepEqual(engine.positions.slice(2),before.slice(2));
+  engine.move(0,NaN,100);engine.move(-1,1,1);assert.equal(engine.positions[0],350);
+  for(let i=0;i<200;i++)engine.step();assert([...engine.positions].every(Number.isFinite));
 });

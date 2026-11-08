@@ -159,18 +159,29 @@
     const trail=[];
     host.innerHTML = `<header class="cx-hero"><div><p class="cx-eyebrow">CLUSTR MARKET / CONNECTIONS · ${escape(publish?.market || 'REPORT')}</p><h1>Everything is <em>connected.</em></h1><p>Explore the links between events, companies and source stories.</p></div><div class="cx-counts">${['cluster','stock','news'].map(type=>`<div><b>${graph.nodes.filter(n=>n.type===type).length}</b><span>${type==='news'?'stories':type+'s'}</span></div>`).join('')}</div></header>
       <div class="cx-tools"><label>Find a connection<input type="search" placeholder="Cluster, ticker, company or headline…" aria-label="Search connections"></label><div><button type="button" data-action="out" aria-label="Zoom out">−</button><button type="button" data-action="in" aria-label="Zoom in">+</button><button type="button" data-action="reset">All connections</button></div></div>
-      <section class="cx-picker cx-cluster-picker"><div class="cx-picker-head"><h2>Clusters</h2><small>Choose a cluster to see its connections</small></div><div class="cx-clusters cx-picker-list" role="group" aria-label="Choose a cluster"></div></section>
-      <div class="cx-workspace"><div class="cx-map"><div class="cx-map-caption">01 / THE NETWORK <span>Tap any node to follow its connections</span></div><div class="cx-scroll"><svg class="cx-svg" viewBox="0 0 1200 800" aria-label="Cluster, stock and news network"></svg></div><div class="cx-legend"><span>● Cluster</span><span>◆ Stock</span><span>○ News</span><span>┄ Default exposure</span></div></div><aside class="cx-inspector" aria-label="Selected connection details"><div class="cx-inspector-body"></div></aside></div>
-      <section class="cx-picker cx-watch-picker"><div class="cx-picker-head"><h2 class="cx-watch-title">Watchlist</h2><input type="search" data-watchlist-search aria-label="Search watchlist stocks" placeholder="Search ticker or company…" autocomplete="off"></div><div class="cx-stock-list cx-picker-list" role="group" aria-label="Choose a watchlist stock"></div></section>`;
+      <div class="cx-explorer"><section class="cx-picker cx-cluster-picker"><div class="cx-picker-head"><h2>Clusters</h2><small>Choose a cluster to see its connections</small></div><div class="cx-clusters cx-picker-list" role="group" aria-label="Choose a cluster"></div></section>
+      <div class="cx-workspace"><div class="cx-map"><div class="cx-map-caption">01 / THE NETWORK <span>Tap any node to follow its connections</span><button type="button" data-action="fullscreen" aria-label="Enter fullscreen network" aria-pressed="false">Fullscreen ⛶</button></div><div class="cx-scroll"><svg class="cx-svg" viewBox="0 0 1200 800" aria-label="Cluster, stock and news network"></svg></div><div class="cx-legend"><span>● Cluster</span><span>◆ Stock</span><span>○ News</span><span>┄ Default exposure</span></div></div><aside class="cx-inspector" aria-label="Selected connection details"><div class="cx-inspector-body"></div></aside></div>
+      <section class="cx-picker cx-watch-picker"><div class="cx-picker-head"><h2 class="cx-watch-title">Watchlist</h2><input type="search" data-watchlist-search aria-label="Search watchlist stocks" placeholder="Search ticker or company…" autocomplete="off"></div><div class="cx-stock-list cx-picker-list" role="group" aria-label="Choose a watchlist stock"></div></section></div>`;
     const svg=host.querySelector('svg'), inspector=host.querySelector('.cx-inspector-body'), index=host.querySelector('.cx-clusters');
+    const map=host.querySelector('.cx-explorer'),fullscreenButton=host.querySelector('[data-action="fullscreen"]');
+    const isFullscreen=()=>document.fullscreenElement===map||map.classList.contains('cx-fullscreen');
+    function syncFullscreen(){const active=isFullscreen();fullscreenButton.textContent=active?'Exit fullscreen ⛶':'Fullscreen ⛶';fullscreenButton.setAttribute('aria-label',active?'Exit fullscreen network':'Enter fullscreen network');fullscreenButton.setAttribute('aria-pressed',String(active));}
+    async function toggleFullscreen(){
+      if(document.fullscreenElement===map)await document.exitFullscreen();
+      else if(map.classList.contains('cx-fullscreen'))map.classList.remove('cx-fullscreen');
+      else{try{if(!map.requestFullscreen)throw Error('Unavailable');await map.requestFullscreen();}catch{map.classList.add('cx-fullscreen');}}
+      syncFullscreen();fullscreenButton.focus({preventScroll:true});
+    }
+    map.onfullscreenchange=syncFullscreen;
+
     const byId=new Map(graph.nodes.map(n=>[n.id,n]));
     const period=document.createElement('label');period.className='cx-period';period.textContent='Time range';
     const days=document.createElement('select');days.setAttribute('aria-label','Network time range');days.innerHTML='<option value="1">Last 1 day</option><option value="2">Last 2 days</option><option value="3">Last 3 days</option>';days.value=String(options.days||1);days.onchange=()=>options.onDays?.(days.value);days.disabled=!options.onDays;period.append(days);host.querySelector('.cx-tools').append(period);
-    const scope=document.createElement('p');scope.className='cx-scope';scope.setAttribute('role','status');scope.textContent=options.scope||'Selected report only';host.querySelector('.cx-cluster-picker').before(scope);
+    const scope=document.createElement('p');scope.className='cx-scope';scope.setAttribute('role','status');scope.textContent=options.scope||'Selected report only';host.querySelector('.cx-explorer').before(scope);
     if(options.retry){const retry=document.createElement('button');retry.type='button';retry.textContent='Retry';retry.onclick=options.retry;scope.append(' ',retry);}
     const browse=document.createElement('select');browse.setAttribute('aria-label','Browse connection types');browse.innerHTML='<option value="">All nodes</option><option value="cluster">Clusters</option><option value="stock">Stocks</option><option value="news">News</option>';host.querySelector('.cx-tools').append(browse);
     browse.onchange=()=>{type=browse.value;selected=null;currentFocus=null;trail.length=0;paint();};
-    const announce=document.createElement('p');announce.className='cx-announcement';announce.setAttribute('role','status');announce.setAttribute('aria-live','polite');host.querySelector('.cx-cluster-picker').before(announce);
+    const announce=document.createElement('p');announce.className='cx-announcement';announce.setAttribute('role','status');announce.setAttribute('aria-live','polite');host.querySelector('.cx-explorer').before(announce);
     const savedItems=root.ClustrWatchlist?.getItems?.();
     const watchItems=Array.isArray(savedItems)?savedItems.filter(stock=>String(stock.market||'US').toUpperCase()===String(publish?.market||'US').toUpperCase()):graph.nodes.filter(node=>node.type==='stock').map(node=>({symbol:node.label,name:node.name}));
     if(!Array.isArray(savedItems))host.querySelector('.cx-watch-title').textContent='Stocks';
@@ -236,12 +247,13 @@
       if(trail.length)inspector.insertAdjacentHTML('afterbegin','<button type="button" data-action="back">← Back to previous node</button>');
     }
     host.onclick=event=>{const target=event.target.closest('[data-node],[data-action]');if(!target||!host.contains(target))return;
+      if(target.dataset.action==='fullscreen'){toggleFullscreen();return;}
       if(target.dataset.action==='watchlist'){root.ClustrApp?.showView('watchlist');return;}
       if(target.dataset.node)selectNode(target.dataset.node);
       else if(target.dataset.action==='back'){const previous=trail.pop();if(previous)selectNode(previous,false);}
       else {if(target.dataset.action==='reset'){selected=null;currentFocus=null;trail.length=0;zoom=1;query='';type='';browse.value='';host.querySelector('input').value='';currentScene?.reset();paint();}else {const amount=target.dataset.action==='in'?.2:-.2;zoom=Math.max(.7,Math.min(2.5,zoom+amount));currentScene?.zoom(amount);}svg.style.width=`${zoom*100}%`;}
     };
-    host.onkeydown=event=>{if(event.key==='Escape'&&event.target===stockSearch){event.preventDefault();stockQuery='';stockSearch.value='';paintStocks();return;}if(event.key==='Escape'){event.preventDefault();host.querySelector('[data-action="reset"]').click();host.querySelector('input').focus();}else if(event.target.matches('g[data-node]')&&['Enter',' '].includes(event.key)){event.preventDefault();selectNode(event.target.dataset.node);}};
+    host.onkeydown=event=>{if(event.key==='Escape'&&isFullscreen()){event.preventDefault();event.stopPropagation();toggleFullscreen();return;}if(event.key==='Escape'&&event.target===stockSearch){event.preventDefault();stockQuery='';stockSearch.value='';paintStocks();return;}if(event.key==='Escape'){event.preventDefault();host.querySelector('[data-action="reset"]').click();host.querySelector('input').focus();}else if(event.target.matches('g[data-node]')&&['Enter',' '].includes(event.key)){event.preventDefault();selectNode(event.target.dataset.node);}};
     host.querySelector('input').oninput=event=>{query=event.target.value.trim().toLowerCase();selected=null;currentFocus=null;trail.length=0;paint();};
     const focusNode=options.focusLabel?graph.nodes.find(node=>node.type==='cluster'&&node.label===options.focusLabel):byId.get(options.focusId);
     if(focusNode)selectNode(focusNode.id,false);else paint();
