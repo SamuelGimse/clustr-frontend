@@ -98,7 +98,7 @@
   }
 
   function groupRating(group) {
-    const ratings = (group && group.articles || []).map(article => article.rating ?? article.score);
+    const ratings = (group && group.articles || []);
     return U().articleImpactScore(ratings) ?? U().numericStance(group && (group.stance_score ?? group.cluster_score));
   }
 
@@ -110,7 +110,15 @@
     const value = `${score > 0 ? '+' : ''}${Number.isInteger(score) ? score : score.toFixed(1)}`;
     const intensity = score === 0 ? '0%' : `${(100 * Math.pow(3, Math.abs(score) - 10)).toFixed(2)}%`;
     const label = tone === 'positive' ? '▲ POS' : tone === 'negative' ? '▼ NEG' : '● NEU';
-    return `<div class="cluster-score cluster-score--${tone}" title="Exponential mean article rating; each point is 3× impact: ${value}" role="img" aria-label="Cluster rating ${value}, ${label}"><span class="cluster-score-value">${value}</span><span class="cluster-score-label">${label}</span><span class="cluster-score-meter" aria-hidden="true"><i style="--w:${score < 0 ? intensity : '0%'}"></i><i style="--w:${score > 0 ? intensity : '0%'}"></i></span></div>`;
+    return `<div class="cluster-score cluster-score--${tone}" title="Exponential mean impact; confirmed reports of the same event count once. Each point is 3× impact: ${value}" role="img" aria-label="Cluster rating ${value}, ${label}"><span class="cluster-score-value">${value}</span><span class="cluster-score-label">${label}</span><span class="cluster-score-meter" aria-hidden="true"><i style="--w:${score < 0 ? intensity : '0%'}"></i><i style="--w:${score > 0 ? intensity : '0%'}"></i></span></div>`;
+  }
+
+  function sameEventHtml(article, articles) {
+    if (!article.event_id) return '';
+    const reports = articles.filter(other => other.event_id === article.event_id);
+    if (reports.length < 2) return '';
+    const esc = U().escapeHtml;
+    return `<details class="same-event"><summary>Same event ×${reports.length}</summary><p>These ${reports.length} reports count once in the cluster score, using their median rating.</p><ul>${reports.map(a => `<li><strong>${esc(a.source || 'Source')}</strong> · ${esc(a.title || '')}</li>`).join('')}</ul></details>`;
   }
 
   function articleRatingStripHtml(articles) {
@@ -1210,6 +1218,7 @@
             a => `
           <article class="md-card md-card--outlined article-card" data-article-category="${articleCategory(a)}">
             <h3 class="article-title">${util.escapeHtml(a.title || '')}</h3>
+            ${sameEventHtml(a, articles)}
             <div class="article-meta">
               ${util.escapeHtml(a.source || '')}
               ${

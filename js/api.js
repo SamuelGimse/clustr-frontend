@@ -448,7 +448,7 @@
           priceAtPublish: prices[sym] ?? null
         });
       }
-      const stanceScore = window.ClustrUtil.articleImpactScore((match.articles || []).map(article => article.rating ?? article.score)) ?? window.ClustrUtil.numericStance(match.stance_score ?? match.cluster_score);
+      const stanceScore = window.ClustrUtil.articleImpactScore(match.articles || []) ?? window.ClustrUtil.numericStance(match.stance_score ?? match.cluster_score);
       rows.push({
         stance: window.ClustrUtil.stanceCategory(stanceScore) || String(match.stance || 'watch').toLowerCase(),
         stanceScore,

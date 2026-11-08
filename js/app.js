@@ -62,7 +62,7 @@
   let publishChart = null;
 
   function eventClusterScore(group) {
-    const ratings = (group.articles || []).map(article => article.rating ?? article.score);
+    const ratings = (group.articles || []);
     const articleScore = window.ClustrUtil.articleImpactScore(ratings);
     const storedScore = Number(group.stance_score ?? group.cluster_score ?? group.impact_score);
     return articleScore ?? (Number.isFinite(storedScore) ? storedScore : 0);
@@ -315,7 +315,7 @@
   }
 
   function weeklyScore(group) {
-    const articleScore = window.ClustrUtil.articleImpactScore((group.articles || []).map(a => a.rating ?? a.score));
+    const articleScore = window.ClustrUtil.articleImpactScore(group.articles || []);
     if (articleScore != null) return articleScore;
     const value = Number(group.stance_score ?? group.cluster_score ?? group.impact_score);
     return Number.isFinite(value) && value >= -10 && value <= 10 && value !== 0 ? value : null;

@@ -8,8 +8,25 @@ vm.createContext(context);
 vm.runInContext(read('util.js'), context);
 const util = context.window.ClustrUtil;
 let renderSource = read('render.js');
-vm.runInContext(renderSource.replace('  window.ClustrRender = {', '  window.audit = {clusterScoreHtml, stanceHtml, historyRowScore, basketSincePublish, weeklyVelocity, attachDefaultReturns, mountStanceChart, renderRelatedClusters};\n  window.ClustrRender = {'), context);
+vm.runInContext(renderSource.replace('  window.ClustrRender = {', '  window.audit = {sameEventHtml, clusterScoreHtml, stanceHtml, historyRowScore, basketSincePublish, weeklyVelocity, attachDefaultReturns, mountStanceChart, renderRelatedClusters};\n  window.ClustrRender = {'), context);
 const audit = context.window.audit;
+const duplicate = { rating: -4, event_id: 'recall', source: '<Source>', title: 'Recall' };
+const independent = { rating: 4, event_id: 'approval' };
+assert.equal(util.articleImpactScore([...Array(20).fill(duplicate), independent]), 0);
+assert.equal(util.articleImpactScore([{rating:0,event_id:'a'},{rating:2,event_id:'a'}]), 1);
+assert.equal(util.articleImpactScore([{rating:2},{rating:2}]), 2);
+assert.match(audit.clusterScoreHtml({articles:[duplicate,duplicate,independent]}), /Cluster rating 0/);
+assert.match(audit.sameEventHtml(duplicate,[duplicate,duplicate,independent]), /Same event ×2/);
+assert.match(audit.sameEventHtml(duplicate,[duplicate,duplicate]), /&lt;Source&gt;/);
+assert.equal(audit.sameEventHtml(independent,[duplicate,independent]), '');
+const taxonomy = require('../js/cluster-taxonomy.js');
+assert.equal(taxonomy.clusterScore([duplicate,duplicate,independent]), 0);
+const [mergedEvents] = taxonomy.mergeGroups([
+  {name:'AI', articles:[{link:'https://a.test/recall',rating:-4,event_id:'event:0'},{link:'https://b.test/recall',rating:-4,event_id:'event:0'}]},
+  {name:'Artificial Intelligence', articles:[{link:'https://a.test/approval',rating:4,event_id:'event:0'}]}
+]);
+assert.equal(mergedEvents.cluster_score,0);
+assert.equal(mergedEvents.event_count,2);
 const relatedPanel = { innerHTML: '', querySelectorAll: () => [] };
 audit.renderRelatedClusters('Related clusters', [
   { name: '<Positive>', articles: [{ rating: 5 }] },

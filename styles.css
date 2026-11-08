@@ -2729,6 +2729,11 @@ html[data-theme="sea-foam"]
 }
 .article-category-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .article-card[hidden] { display: none !important; }
+.same-event { margin: 8px 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); background: var(--panel); font-size: 13px; }
+.same-event summary { cursor: pointer; font-weight: 650; }
+.same-event p, .same-event ul { margin: 8px 0 0; }
+.same-event ul { padding-left: 18px; }
+.same-event li + li { margin-top: 6px; }
 .cluster-market-signals { margin: 12px 0; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel-2); }
 .cluster-market-signals-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; margin-bottom: 9px; font-size: 12px; }
 .cluster-market-signals-head span { color: var(--text-meta); }

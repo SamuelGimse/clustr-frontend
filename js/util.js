@@ -38,6 +38,21 @@ function exponentialMeanRating(values) {
 }
 
 function articleImpactScore(values) {
+  if ((values || []).some(value => value && typeof value === 'object')) {
+    const events = new Map();
+    for (const [index, article] of values.entries()) {
+      const rating = numericStance(article && typeof article === 'object' ? article.rating ?? article.score : article);
+      if (rating == null) continue;
+      const key = article?.event_id || `article:${index}`;
+      if (!events.has(key)) events.set(key, []);
+      events.get(key).push(rating);
+    }
+    values = [...events.values()].map(ratings => {
+      ratings.sort((a, b) => a - b);
+      const mid = Math.floor(ratings.length / 2);
+      return ratings.length % 2 ? ratings[mid] : (ratings[mid - 1] + ratings[mid]) / 2;
+    });
+  }
   const valid = (values || []).filter(value => value != null && String(value).trim() !== '' && Number.isFinite(Number(value)) && Math.abs(Number(value)) <= 10);
   return valid.length ? exponentialMeanRating(valid.filter(value => Number(value) !== 0)) ?? 0 : null;
 }

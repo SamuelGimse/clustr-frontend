@@ -98,7 +98,7 @@
   }
 
   function scoreHtml(group) {
-    const score = (U().articleImpactScore || U().exponentialMeanRating)((group.articles || []).map(a => a.rating ?? a.score)) ?? U().numericStance(group.stance_score ?? group.cluster_score);
+    const score = U().articleImpactScore(group.articles || []) ?? U().numericStance(group.stance_score ?? group.cluster_score);
     const value = score == null ? '—' : `${score > 0 ? '+' : ''}${Number.isInteger(score) ? score : score.toFixed(1)}`;
     return `<span class="stocks-impact stocks-impact--${U().stanceCategory(score) || 'watch'}" title="Cluster impact at its latest linked publish" aria-label="Cluster impact ${score == null ? 'unavailable' : value}">${value}</span>`;
   }
