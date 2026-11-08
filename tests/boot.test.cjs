@@ -11,6 +11,7 @@ async function check({ user = {}, rows = [{ id: 1 }], error = null, hash = '' } 
   const context = {
     window: {
       ClustrAuth: { restore: async () => ({ user, role: 'free' }) },
+      ClustrThemes: { setAccess: role => calls.push(`theme:${role}`) },
       ClustrConnections: { hide() {}, render() {} },
       ClustrApi: { fetchPublishes: async () => { if (error) throw error; return rows; } }
     },

@@ -10,6 +10,9 @@
   const root = document.documentElement;
   const themeMenu = document.getElementById('themeMenu');
   const wallpaperToggle = document.getElementById('wallpaperToggle');
+  const proButtons = [...(themeMenu?.querySelectorAll('[data-pro-theme]') || [])];
+  const proThemes = new Set(proButtons.map(button => button.getAttribute('data-theme')));
+  let proAccess = false;
 
   /**
    * @returns {boolean}
@@ -44,17 +47,16 @@
    * @param {string} name
    * @returns {void}
    */
-  function applyTheme(name) {
+  function applyTheme(name, persist = true) {
     const theme = (name || '').trim() || DEFAULT_THEME;
+    if (proThemes.has(theme) && !proAccess) return;
     // Clustr is the renamed legacy dark design, kept byte-for-byte compatible.
     const appliedTheme = theme === 'clustr' ? 'dark' : theme === 'apple-light' ? 'apple' : theme === 'material-light' ? 'material' : theme;
     root.setAttribute('data-theme', appliedTheme);
     if (theme === 'apple-light' || theme === 'material-light') root.setAttribute('data-color-mode', 'light');
     else root.removeAttribute('data-color-mode');
-    try {
-      localStorage.setItem(STORAGE_KEY, theme);
-    } catch (e) {
-      /* ignore */
+    if (persist) {
+      try { localStorage.setItem(STORAGE_KEY, theme); } catch (e) { /* ignore */ }
     }
 
     if (themeMenu) {
@@ -84,7 +86,20 @@
     } catch (e) {
       /* ignore */
     }
-    applyTheme(saved);
+    applyTheme(proThemes.has(saved) ? DEFAULT_THEME : saved, false);
+  }
+
+  function setAccess(role) {
+    proAccess = role === 'pro' || role === 'admin';
+    proButtons.forEach(button => {
+      button.disabled = !proAccess;
+      button.setAttribute('aria-label', `${button.textContent.trim()}, Pro theme`);
+      button.title = proAccess ? 'Pro theme' : 'Available with Pro';
+    });
+    let saved;
+    try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) { /* ignore */ }
+    if (proAccess && proThemes.has(saved)) applyTheme(saved, false);
+    if (!proAccess && proThemes.has(saved)) applyTheme(DEFAULT_THEME, false);
   }
 
   function setWallpaper(enabled) {
@@ -196,7 +211,7 @@
     }
   }
 
-  window.ClustrThemes = { applyTheme, initTheme, isLightTheme, initMobileNav };
+  window.ClustrThemes = { applyTheme, initTheme, setAccess, isLightTheme, initMobileNav };
   /** @deprecated */
   window.EventlineThemes = window.ClustrThemes;
 

@@ -72,3 +72,45 @@ test('Theme picker shows only the requested choices and light variants stay ligh
   context.window.ClustrThemes.applyTheme('minimal-dark');
   assert.equal(context.window.ClustrUtil.isLightTheme(), false);
 });
+
+test('Pro theme badges follow subscription access and keep the saved choice', () => {
+  const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+  const html = read('index.html');
+  const proIds = [...html.matchAll(/<button[^>]+data-theme="([^"]+)"[^>]+data-pro-theme[^>]*>/g)].map(match => match[1]);
+  assert.deepEqual(proIds, ['pure-black', 'crt', 'dos-amber', 'grassy-hill', 'aqua-classic', 'aurora-glass', 'old-school-rpg']);
+  const buttons = proIds.map(theme => ({
+    theme, textContent: theme, disabled: true, classList: { toggle() {} },
+    getAttribute(name) { return name === 'data-theme' ? this.theme : null; },
+    setAttribute() {}, addEventListener() {}
+  }));
+  const menu = { querySelectorAll(selector) { return selector === '[data-pro-theme]' ? buttons : buttons; } };
+  const attributes = new Map();
+  const storage = new Map([['clustr-theme', 'pure-black']]);
+  const context = {
+    document: {
+      documentElement: {
+        getAttribute: name => attributes.get(name) || null,
+        setAttribute: (name, value) => attributes.set(name, value),
+        removeAttribute: name => attributes.delete(name)
+      },
+      getElementById: id => id === 'themeMenu' ? menu : null,
+      querySelectorAll: () => []
+    },
+    localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },
+    window: { matchMedia: () => ({ matches: true }) }
+  };
+  vm.createContext(context);
+  vm.runInContext(read('js/util.js'), context);
+  vm.runInContext(read('js/themes.js'), context);
+  assert.equal(attributes.get('data-theme'), 'apple');
+  assert.equal(storage.get('clustr-theme'), 'pure-black');
+  context.window.ClustrThemes.applyTheme('crt');
+  assert.equal(attributes.get('data-theme'), 'apple');
+  context.window.ClustrThemes.setAccess('pro');
+  assert.equal(attributes.get('data-theme'), 'pure-black');
+  assert.ok(buttons.every(button => !button.disabled));
+  context.window.ClustrThemes.setAccess('free');
+  assert.equal(attributes.get('data-theme'), 'apple');
+  assert.ok(buttons.every(button => button.disabled));
+  assert.equal(storage.get('clustr-theme'), 'pure-black');
+});

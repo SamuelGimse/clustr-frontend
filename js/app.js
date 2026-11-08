@@ -915,6 +915,7 @@
     try {
       const bootP = runBoot();
       authState = await window.ClustrAuth.restore();
+      window.ClustrThemes.setAccess(authState.role);
       renderProBadges();
       if (navAdmin) navAdmin.classList.toggle('hidden', authState.role !== 'admin');
       if (!authState.user) {
