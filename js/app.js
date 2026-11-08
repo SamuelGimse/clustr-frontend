@@ -35,6 +35,7 @@
   const weeklyView = document.getElementById('weeklyView');
   const stocksView = document.getElementById('stocksView');
   const atlasView = document.getElementById('atlasView');
+  const dashboardView = document.getElementById('dashboardView');
   const polymarketView = document.getElementById('polymarketView');
   const navPolymarket = document.getElementById('navPolymarket');
   const accountView = document.getElementById('accountView');
@@ -48,6 +49,7 @@
   const navMind = document.getElementById('navMind');
   const navWeekly = document.getElementById('navWeekly');
   const navAtlas = document.getElementById('navAtlas');
+  const navDashboard = document.getElementById('navDashboard');
   const navAccount = document.getElementById('navAccount');
   const navAdmin = document.getElementById('navAdmin');
   let authState = { session: null, user: null, role: 'free', plan: null };
@@ -137,7 +139,7 @@
     const R = window.ClustrRender;
     const MapApi = window.ClustrMap;
 
-    [navEvents, navStocks, navMap, navDays, navSignal, navMind, navWeekly, navAtlas, navAccount, navAdmin, navPolymarket].forEach(b => {
+    [navDashboard, navEvents, navStocks, navMap, navDays, navSignal, navMind, navWeekly, navAtlas, navAccount, navAdmin, navPolymarket].forEach(b => {
       if (b) {
         b.classList.remove('is-active');
         b.setAttribute('aria-current', 'false');
@@ -153,12 +155,19 @@
     if (weeklyView) weeklyView.classList.add('hidden');
     if (stocksView) stocksView.classList.add('hidden');
     if (atlasView) atlasView.classList.add('hidden');
+    if (dashboardView) dashboardView.classList.add('hidden');
     if (accountView) accountView.classList.add('hidden');
     if (adminView) adminView.classList.add('hidden');
     if (which !== 'stocks') window.ClustrStocks?.leave();
 
-    if (which !== 'polymarket' && which !== 'atlas' && ['#/polymarket', '#/atlas'].includes(location.hash)) history.replaceState(null, '', location.pathname + location.search);
-    if (which === 'polymarket') {
+    if (which !== 'polymarket' && which !== 'atlas' && which !== 'dashboard' && ['#/polymarket', '#/atlas', '#/dashboard'].includes(location.hash)) history.replaceState(null, '', location.pathname + location.search);
+    if (which === 'dashboard') {
+      history.replaceState(null, '', '#/dashboard');
+      navDashboard?.classList.add('is-active');
+      navDashboard?.setAttribute('aria-current', 'page');
+      dashboardView?.classList.remove('hidden');
+      window.ClustrDashboard?.render(dashboardView, setNav);
+    } else if (which === 'polymarket') {
       navPolymarket?.classList.add('is-active');
       navPolymarket?.setAttribute('aria-current', 'page');
       polymarketView?.classList.remove('hidden');
@@ -831,6 +840,7 @@
   async function refreshPublishes() {
     window.ClustrApi.invalidatePublishHistory?.();
     window.ClustrAtlas?.invalidate();
+    window.ClustrDashboard?.invalidate();
     publishes = await window.ClustrApi.fetchPublishes(100);
     publishIndex = 0;
     if (publishes.length) {
@@ -930,6 +940,7 @@
       if (location.hash === '#/polymarket') setNav('polymarket');
       else if (location.hash === '#/admin' && authState.role === 'admin') setNav('admin');
       else if (location.hash === '#/atlas') setNav('atlas');
+      else if (location.hash === '#/dashboard') setNav('dashboard');
       else if (location.hash === '#/account' || new URLSearchParams(location.search).has('checkout')) setNav('account');
       else setNav('events');
       setBootStage(2, 'Your workspace is ready');
@@ -985,6 +996,7 @@
   if (navMap) navMap.addEventListener('click', () => setNav('map'));
   if (navWeekly) navWeekly.addEventListener('click', () => setNav('weekly'));
   if (navAtlas) navAtlas.addEventListener('click', () => setNav('atlas'));
+  if (navDashboard) navDashboard.addEventListener('click', () => setNav('dashboard'));
   if (navAccount) navAccount.addEventListener('click', () => setNav('account'));
   if (navAdmin) navAdmin.addEventListener('click', () => setNav('admin'));
   if (navMind) navMind.addEventListener('click', () => setNav('mind'));

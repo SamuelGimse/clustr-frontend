@@ -66,7 +66,7 @@ assert.equal(metaContext.meta.textContent, ''); assert.equal(prev.disabled, true
 let phone = true;
 const scrolls = [];
 const navigation = { view: 'events', currentGroups: [], authState: { role: 'pro' }, location: { hash: '', pathname: '/', search: '' }, history: { replaceState(_state, _title, url) { navigation.location.hash = url.startsWith('#') ? url : ''; } }, renderAccount() {}, closeEventSortMenu() {}, window: { matchMedia: () => ({ matches: phone }), scrollTo: (...args) => scrolls.push(args) } };
-for (const name of ['navEvents', 'navStocks', 'navMap', 'navDays', 'navSignal', 'navMind', 'navWeekly', 'navAtlas', 'navAccount', 'navAdmin', 'navPolymarket', 'polymarketView', 'eventsView', 'mapView', 'daysView', 'signalView', 'mindView', 'weeklyView', 'stocksView', 'atlasView', 'accountView', 'adminView']) navigation[name] = null;
+for (const name of ['navDashboard', 'navEvents', 'navStocks', 'navMap', 'navDays', 'navSignal', 'navMind', 'navWeekly', 'navAtlas', 'navAccount', 'navAdmin', 'navPolymarket', 'polymarketView', 'eventsView', 'mapView', 'daysView', 'signalView', 'mindView', 'weeklyView', 'stocksView', 'atlasView', 'dashboardView', 'accountView', 'adminView']) navigation[name] = null;
 vm.createContext(navigation);
 vm.runInContext(app.slice(app.indexOf('  function setNav('), app.indexOf('  function weeklyScore(')), navigation);
 vm.runInContext("setNav('account')", navigation); assert.deepEqual(scrolls, [[0, 0]]);
@@ -83,6 +83,12 @@ navigation.navAtlas = { classList: { add() {}, remove() {} }, setAttribute() {} 
 navigation.atlasView = { classList: { add() {}, remove() {} } };
 navigation.window.ClustrAtlas = { render: () => atlasRenders++ };
 vm.runInContext("setNav('atlas')", navigation); assert.equal(atlasRenders, 1); assert.equal(navigation.location.hash, '#/atlas');
+vm.runInContext("setNav('events')", navigation); assert.equal(navigation.location.hash, '');
+let dashboardRenders = 0;
+navigation.navDashboard = { classList: { add() {}, remove() {} }, setAttribute() {} };
+navigation.dashboardView = { classList: { add() {}, remove() {} } };
+navigation.window.ClustrDashboard = { render: () => dashboardRenders++ };
+vm.runInContext("setNav('dashboard')", navigation); assert.equal(dashboardRenders, 1); assert.equal(navigation.location.hash, '#/dashboard');
 vm.runInContext("setNav('events')", navigation); assert.equal(navigation.location.hash, '');
 let chartWidth = 280;
 const trend = { document: { getElementById: () => ({ clientWidth: chartWidth }) }, window: metaContext.window };
