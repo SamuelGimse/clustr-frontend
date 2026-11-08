@@ -182,7 +182,7 @@
   function paint(root, summary) {
     const esc = window.ClustrUtil.escapeHtml;
     if (!summary) {
-      root.innerHTML = `<div class="dash-shell"><header class="dash-header"><div><p class="dash-kicker">CLUSTR / OVERVIEW</p><h1>Dashboard</h1></div></header><div class="dash-empty">No approved ${esc(market)} publishes are available yet.</div></div>`;
+      root.innerHTML = `<div class="dash-shell"><header class="dash-header"><div><p class="dash-kicker">CLUSTR MARKET / OVERVIEW</p><h1>Dashboard</h1></div></header><div class="dash-empty">No approved ${esc(market)} publishes are available yet.</div></div>`;
       return;
     }
     const date = new Date(summary.latest.created_at).toLocaleString('en', { timeZone: 'America/New_York', dateStyle: 'medium', timeStyle: 'short' });
@@ -190,7 +190,7 @@
     const latestDay = summary.days.at(-1);
     const metric = (label, value, note) => `<div class="dash-metric"><span>${label}</span><strong>${value}</strong><small>${note}</small></div>`;
     const clusterRow = theme => `<div class="dash-list-row"><span class="dash-score dash-score--${tone(theme.score)}">${scoreText(theme.score)}</span><div><strong>${esc(theme.name)}</strong><small>${theme.articles} stories · ${theme.sources} sources</small></div><span class="dash-delta">${theme.delta == null ? 'New' : `${theme.delta > 0 ? '+' : ''}${theme.delta} shift`}</span></div>`;
-    root.innerHTML = `<div class="dash-shell"><header class="dash-header"><div><p class="dash-kicker">CLUSTR / OVERVIEW</p><h1>Dashboard</h1><p>Latest approved ${esc(market)} report · ${esc(date)} · ${summary.reports} reports in history</p></div></header>
+    root.innerHTML = `<div class="dash-shell"><header class="dash-header"><div><p class="dash-kicker">CLUSTR MARKET / OVERVIEW</p><h1>Dashboard</h1><p>Latest approved ${esc(market)} report · ${esc(date)} · ${summary.reports} reports in history</p></div></header>
       <div class="dash-metrics">${metric('Clusters in latest report', summary.themes.length, `${latestDay.positive} positive · ${latestDay.negative} negative`)}${metric('Distinct stories', summary.stories, `${summary.rated} rated on −10 to +10`)}${metric('Stocks connected', summary.stocks.length, 'Linked to latest clusters')}${metric('News sources', summary.sourceCount, 'In the latest report')}</div>
       <div class="dash-grid">${trendPanel(summary, esc)}<section class="dash-panel"><div class="dash-panel-head"><div><p class="dash-kicker">DIRECTION</p><h2>News balance</h2></div><span>Latest report per US market day · up to 14 days</span></div><div class="dash-balance">${summary.days.map(day => {
         const total = day.positive + day.negative;

@@ -7,7 +7,7 @@
 
   const banner = document.createElement('aside');
   banner.className = 'install-banner';
-  banner.setAttribute('aria-label', 'Install Clustr');
+  banner.setAttribute('aria-label', 'Install Clustr Market');
   banner.innerHTML = '<strong>Install app</strong><button type="button" class="install-open" aria-expanded="false" aria-controls="installHelp">Install app</button><button type="button" class="install-close" aria-label="Dismiss install banner">&#215;</button>';
   const help = document.createElement('p');
   help.id = 'installHelp';
@@ -16,8 +16,8 @@
   help.setAttribute('role', 'status');
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
   help.textContent = ios
-    ? 'In Safari, tap Share, then Add to Home Screen. Enable Open as Web App if shown, then tap Add. Open Clustr from its new Home Screen icon.'
-    : 'Open your browser menu and choose Install app or Add to Home Screen. Then open Clustr from its new icon.';
+    ? 'In Safari, tap Share, then Add to Home Screen. Enable Open as Web App if shown, then tap Add. Open Clustr Market from its new Home Screen icon.'
+    : 'Open your browser menu and choose Install app or Add to Home Screen. Then open Clustr Market from its new icon.';
   document.body.prepend(banner, help);
   const install = banner.querySelector('.install-open');
   let prompt = null;

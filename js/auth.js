@@ -19,7 +19,7 @@
         auth: { flowType: 'pkce', storageKey: key, persistSession: true, autoRefreshToken: false, detectSessionInUrl: false }
       });
     }
-    if (!oauthClient) throw new Error('Google sign-in could not initialize. Reload Clustr and try again.');
+    if (!oauthClient) throw new Error('Google sign-in could not initialize. Reload Clustr Market and try again.');
     return oauthClient;
   }
   async function subscription(user, token) {

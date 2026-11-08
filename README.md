@@ -1,14 +1,14 @@
-# Clustr frontend
+# Clustr Market frontend
 
-Static Clustr application copied from the supplied frontend project. Configure its public Supabase URL and anon key in `js/config.js`, then serve this directory as a static site.
+Static Clustr Market application. Configure its public Supabase URL and anon key in `js/config.js`, then serve this directory as a static site.
 
-Clustr uses Supabase email/password authentication. Free accounts are limited by database policy to the previous trading day; Pro unlocks live and historical publishes with a 99 NOK/month Stripe subscription. The matching RLS migration and Edge Function setup are tracked in the private `clustr-backend` repository TODO and must be deployed before protected live data and billing are available.
+Clustr Market uses Supabase email/password authentication. Free accounts are limited by database policy to the previous trading day; Pro unlocks live and historical publishes with a 99 NOK/month Stripe subscription. The matching RLS migration and Edge Function setup are tracked in the private `clustr-backend` repository TODO and must be deployed before protected live data and billing are available.
 
 Administrators can start a full publish from Account while the private `clustr-backend` service is running locally on port 3001. The backend checks the Supabase admin role before it runs the pipeline.
 
 ## iPhone Home Screen app
 
-Open https://samuelgimse.github.io/clustr-frontend/ in Safari, choose Share > Add to Home Screen, enable Open as Web App if offered, and tap Add. Launch Clustr from that icon to use it without Safari's address/search bar. If an older shortcut still opens Safari, remove that shortcut and add it again after the update is live. Normal Safari links still show browser controls; external article links may open the browser.
+Open https://clustrmarket.com/ in Safari, choose Share > Add to Home Screen, enable Open as Web App if offered, and tap Add. Launch Clustr Market from that icon to use it without Safari's address/search bar. If an older shortcut still opens Safari, remove that shortcut and add it again after the update is live. Normal Safari links still show browser controls; external article links may open the browser.
 
 The manifest and icons use project-relative paths for GitHub Pages. Existing safe-area padding is enabled by viewport-fit=cover; pinch zoom remains available. There is no offline/service-worker cache: live data and authentication still require a network connection. Admin publishing still requires the configured local backend and is not moved onto the iPhone.
 

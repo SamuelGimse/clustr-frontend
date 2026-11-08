@@ -629,7 +629,7 @@
       content.innerHTML = `<p>${window.ClustrUtil.escapeHtml(authState.user.email || '')}</p><form id="passwordForm" class="account-form"><label>New password<input name="password" type="password" minlength="8" autocomplete="new-password" required></label><button class="account-primary" type="submit">Update password</button></form>`;
       return;
     }
-    title.textContent = 'Your Clustr account';
+    title.textContent = 'Your Clustr Market account';
     const permanent = isPermanentPro();
     content.innerHTML = `<div class="account-profile"><span>${window.ClustrUtil.escapeHtml(authState.user.email || '')}</span><span class="account-plan-badge">${authState.role === 'admin' ? 'PRO · ADMIN' : permanent ? 'PERMANENT PRO' : authState.role === 'pro' ? 'PRO · ACTIVE' : 'FREE'}</span></div>` +
       (authState.role === 'admin' ? `<section class="account-plan"><h2>Pro is active</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p><p class="account-plan-note">Your admin account includes permanent Pro access. No subscription is required.</p></section>` : authState.role === 'pro' ? `<section class="account-plan"><h2>${permanent ? 'Permanent Pro' : 'Pro is active'}</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p>${permanent ? '<p class="account-plan-note">Your Pro access has no expiry date and no recurring payments.</p>' : authState.plan?.current_period_end ? `<p class="account-plan-note">Current period ends ${new Date(authState.plan.current_period_end).toLocaleDateString()}.</p>` : ''}${authState.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage subscription</button>' : ''}</section>` :
@@ -867,7 +867,7 @@
         <div class="boot-mark" aria-hidden="true">
           <svg viewBox="0 0 100 100" fill="none"><g stroke="currentColor" stroke-width="1.5"><path d="M50 50 50 16M50 50 80 33M50 50 80 67M50 50 50 84M50 50 20 67M50 50 20 33"/></g><g fill="currentColor"><circle class="boot-dot" cx="50" cy="16" r="6"/><circle class="boot-dot" cx="80" cy="33" r="6"/><circle class="boot-dot" cx="80" cy="67" r="6"/><circle class="boot-dot" cx="50" cy="84" r="6"/><circle class="boot-dot" cx="20" cy="67" r="6"/><circle class="boot-dot" cx="20" cy="33" r="6"/><circle cx="50" cy="50" r="10"/></g></svg>
         </div>
-        <h1 class="boot-wordmark">clustr</h1>
+        <h1 class="boot-wordmark">Clustr Market</h1>
         <p class="boot-tagline">A clearer view of the market.</p>
         <div class="boot-loader" aria-hidden="true"><span></span></div>
         <p class="boot-status" id="introSub" role="status">Restoring your session…</p>

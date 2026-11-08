@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "Clustr",
-  "short_name": "Clustr",
+  "name": "Clustr Market",
+  "short_name": "Clustr Market",
   "description": "World events mapped to stocks.",
   "lang": "en",
   "start_url": "./#/events",
