@@ -33,6 +33,8 @@
   const signalView = document.getElementById('signalView');
   const mindView = document.getElementById('mindView');
   const weeklyView = document.getElementById('weeklyView');
+  const watchlistView = document.getElementById('watchlistView');
+  const navWatchlist = document.getElementById('navWatchlist');
   const stocksView = document.getElementById('stocksView');
   const atlasView = document.getElementById('atlasView');
   const dashboardView = document.getElementById('dashboardView');
@@ -131,16 +133,21 @@
    * @param {'events'|'map'|'days'|'signal'|'mind'|'admin'} which
    * @returns {void}
    */
+  function scopedGroups(groups = currentGroups, market = publishes[publishIndex]?.market || 'US') {
+    return window.ClustrWatchlist?.filterGroups(groups, market) || groups;
+  }
+
   function setNav(which) {
     window.ClustrConnections?.hide();
     if (which === 'admin' && authState.role !== 'admin') which = 'account';
     closeEventSortMenu();
     const changed = which !== view;
     view = which;
+    window.ClustrWatchlist?.setView(which);
     const R = window.ClustrRender;
     const MapApi = window.ClustrMap;
 
-    [navDashboard, navEvents, navStocks, navMap, navDays, navSignal, navMind, navWeekly, navAtlas, navAccount, navAdmin, navPolymarket].forEach(b => {
+    [navWatchlist, navDashboard, navEvents, navStocks, navMap, navDays, navSignal, navMind, navWeekly, navAtlas, navAccount, navAdmin, navPolymarket].forEach(b => {
       if (b) {
         b.classList.remove('is-active');
         b.setAttribute('aria-current', 'false');
@@ -154,6 +161,7 @@
     if (signalView) signalView.classList.add('hidden');
     if (mindView) mindView.classList.add('hidden');
     if (weeklyView) weeklyView.classList.add('hidden');
+    if (watchlistView) watchlistView.classList.add('hidden');
     if (stocksView) stocksView.classList.add('hidden');
     if (atlasView) atlasView.classList.add('hidden');
     if (dashboardView) dashboardView.classList.add('hidden');
@@ -161,7 +169,7 @@
     if (adminView) adminView.classList.add('hidden');
     if (which !== 'stocks') window.ClustrStocks?.leave();
 
-    if (which !== 'polymarket' && which !== 'atlas' && which !== 'dashboard' && which !== 'connections' && ['#/polymarket', '#/atlas', '#/dashboard', '#/connections'].includes(location.hash)) history.replaceState(null, '', location.pathname + location.search);
+    if (which !== 'watchlist' && which !== 'polymarket' && which !== 'atlas' && which !== 'dashboard' && which !== 'connections' && ['#/watchlist', '#/polymarket', '#/atlas', '#/dashboard', '#/connections'].includes(location.hash)) history.replaceState(null, '', location.pathname + location.search);
     if (which === 'connections') {
       history.replaceState(null, '', '#/connections');
       window.ClustrConnections?.mount(currentGroups, publishes[publishIndex]);
@@ -183,6 +191,7 @@
         navEvents.setAttribute('aria-current', 'page');
       }
       if (eventsView) eventsView.classList.remove('hidden');
+      if (changed && R) { R.renderEvents(sortEventClusters(scopedGroups()), scopedGroups()); refreshMovers(); }
     } else if (which === 'map') {
       if (navMap) {
         navMap.classList.add('is-active');
@@ -190,10 +199,10 @@
       }
       if (mapView) mapView.classList.remove('hidden');
       if (MapApi && R) {
-        MapApi.render(currentGroups, {
+        MapApi.render(scopedGroups(), {
           onCountry: country => {
             R.highlightCountryCard(country);
-            R.renderCountryArticles(currentGroups, country);
+            R.renderCountryArticles(scopedGroups(), country);
           }
         });
         if (typeof MapApi.invalidate === 'function') {
@@ -210,7 +219,7 @@
       if (Mind) {
         const el = document.getElementById('mindmap');
         if (el) {
-          Mind.render(currentGroups, el, {
+          Mind.render(scopedGroups(), el, {
             publishes: publishes,
             onSelect: payload => {
               if (!payload) return;
@@ -236,6 +245,12 @@
           setTimeout(() => Mind.invalidate && Mind.invalidate(), 40);
         }
       }
+    } else if (which === 'watchlist') {
+      history.replaceState(null, '', '#/watchlist');
+      navWatchlist?.classList.add('is-active');
+      navWatchlist?.setAttribute('aria-current', 'page');
+      watchlistView?.classList.remove('hidden');
+      window.ClustrWatchlist?.mount(watchlistView);
     } else if (which === 'stocks') {
       navStocks?.classList.add('is-active');
       navStocks?.setAttribute('aria-current', 'page');
@@ -273,6 +288,7 @@
         navDays.setAttribute('aria-current', 'page');
       }
       if (daysView) daysView.classList.remove('hidden');
+      renderReportDays();
     } else if (which === 'signal') {
       if (navSignal) {
         navSignal.classList.add('is-active');
@@ -280,7 +296,7 @@
       }
       if (signalView) signalView.classList.remove('hidden');
       if (window.ClustrSignal) {
-        window.ClustrSignal.renderSignalPage(currentGroups);
+        window.ClustrSignal.renderSignalPage(scopedGroups());
       }
     }
     if (changed && window.matchMedia('(max-width: 768px)').matches) window.scrollTo(0, 0);
@@ -357,7 +373,7 @@
         try { groupsCache[key] = await window.ClustrApi.loadGroupsForPublish(pub); }
         catch (err) { console.warn('weekly cluster load', pub.id, err.message); groupsCache[key] = []; }
       }
-      return { publish: pub, groups: groupsCache[key] || [] };
+      return { publish: pub, groups: scopedGroups(groupsCache[key] || [], pub.market) };
     }));
     let savedSummaries = [];
     let summaryError = '';
@@ -387,7 +403,7 @@
         if (rows.length) return rows.map(row => `<section class="weekly-ai-digest"><div class="weekly-ai-digest-head"><span>DAILY MARKET BRIEF</span><time>${window.ClustrUtil.escapeHtml(row.summary_date)}</time></div><h2>${market === 'NO' ? 'Norway' : 'United States'}</h2><p>${window.ClustrUtil.escapeHtml(row.summary)}</p><small>Generated with ${window.ClustrUtil.escapeHtml(row.model || 'local Ollama')}</small></section>`);
         return [`<section class="weekly-ai-digest weekly-ai-digest-empty"><div class="weekly-ai-digest-head"><span>DAILY MARKET BRIEF</span><span>${market}</span></div><h2>${market === 'NO' ? 'Norway' : 'United States'}</h2><p>${summaryError ? `Could not load the saved summary: ${window.ClustrUtil.escapeHtml(summaryError)}` : 'No daily digest is saved in this seven-day window yet. It is created after a publish with same-day stories and a successful Ollama summary run.'}</p></section>`];
       });
-      aiSummary.innerHTML = `<div class="weekly-ai-heading"><div><span>AI SUMMARIES</span><h2>Daily market briefs</h2></div><p>Saved daily briefs from the rolling seven-day window</p></div><div class="weekly-ai-digest-grid">${digests.join('')}</div>`;
+      aiSummary.innerHTML = window.ClustrWatchlist?.isFiltered() ? '<p class="weekly-ai-cluster-note">Watchlist scope: summaries for linked clusters are shown below.</p>' : `<div class="weekly-ai-heading"><div><span>AI SUMMARIES</span><h2>Daily market briefs</h2></div><p>Saved daily briefs from the rolling seven-day window</p></div><div class="weekly-ai-digest-grid">${digests.join('')}</div>`;
     }
     const byCluster = new Map();
     for (const { publish, groups } of data) {
@@ -738,7 +754,7 @@
   function onMoverPick(symbol) {
     const R = window.ClustrRender;
     if (!R) return;
-    const clusters = R.clustersForSymbol(currentGroups, symbol);
+    const clusters = R.clustersForSymbol(scopedGroups(), symbol);
     if (!clusters.length) return;
     setNav('events');
     jumpToCluster(clusters[0].name);
@@ -750,7 +766,7 @@
   function refreshMovers() {
     const R = window.ClustrRender;
     if (R && typeof R.renderMoversStrip === 'function') {
-      R.renderMoversStrip(currentGroups, moversMode, onMoverPick);
+      R.renderMoversStrip(scopedGroups(), moversMode, onMoverPick);
     }
     document.querySelectorAll('[data-movers-mode]').forEach(btn => {
       btn.classList.toggle(
@@ -786,7 +802,7 @@
     }
   }
 
-  async function paintCurrent() {
+  async function paintCurrent(reuse = false) {
     const R = window.ClustrRender;
     const MapApi = window.ClustrMap;
     if (!R) {
@@ -795,11 +811,7 @@
     }
 
     const p = publishes[publishIndex];
-    if (window.ClustrApi.loadGroupsForPublish) {
-      currentGroups = await window.ClustrApi.loadGroupsForPublish(p);
-    } else {
-      currentGroups = [];
-    }
+    if (!reuse) currentGroups = window.ClustrApi.loadGroupsForPublish ? await window.ClustrApi.loadGroupsForPublish(p) : [];
     if (p && p.id != null) {
       groupsCache[p.id] = currentGroups;
       groupsCache[String(p.id)] = currentGroups;
@@ -807,12 +819,12 @@
     setMeta();
     refreshMovers();
 
-    await R.renderEvents(sortEventClusters(currentGroups), currentGroups);
+    await R.renderEvents(sortEventClusters(scopedGroups()), scopedGroups());
 
     if (typeof R.renderCountryPanel === 'function') {
-      R.renderCountryPanel(currentGroups, country => {
+      R.renderCountryPanel(scopedGroups(), country => {
         R.highlightCountryCard(country);
-        R.renderCountryArticles(currentGroups, country);
+        R.renderCountryArticles(scopedGroups(), country);
         if (MapApi && typeof MapApi.focusCountry === 'function') {
           MapApi.focusCountry(country);
         }
@@ -820,25 +832,19 @@
     }
 
     if (typeof R.renderCountryArticles === 'function') {
-      R.renderCountryArticles(currentGroups, null);
+      R.renderCountryArticles(scopedGroups(), null);
     }
 
     if (MapApi && typeof MapApi.render === 'function') {
-      MapApi.render(currentGroups, {
+      MapApi.render(scopedGroups(), {
         onCountry: country => {
           R.highlightCountryCard(country);
-          R.renderCountryArticles(currentGroups, country);
+          R.renderCountryArticles(scopedGroups(), country);
         }
       });
     }
 
-    if (typeof R.renderDaysList === 'function') {
-      R.renderDaysList(publishes, publishIndex, idx => {
-        publishIndex = idx;
-        paintCurrent();
-        setNav('events');
-      });
-    }
+    if (view === 'days') renderReportDays();
   }
 
   async function refreshPublishes() {
@@ -915,6 +921,7 @@
     try {
       const bootP = runBoot();
       authState = await window.ClustrAuth.restore();
+      await window.ClustrWatchlist?.init(authState.user);
       window.ClustrThemes.setAccess(authState.role);
       renderProBadges();
       if (navAdmin) navAdmin.classList.toggle('hidden', authState.role !== 'admin');
@@ -935,6 +942,7 @@
       if (location.hash === '#/polymarket') setNav('polymarket');
       if (!publishes.length) {
         if (location.hash === '#/connections') setNav('connections');
+        if (location.hash === '#/watchlist') setNav('watchlist');
         if (status) status.textContent = 'No publishes yet';
         setBootStage(2, 'Your workspace is ready');
         await endBoot();
@@ -945,6 +953,7 @@
       warmGroupsCache(14);
       if (location.hash === '#/polymarket') setNav('polymarket');
       else if (location.hash === '#/admin' && authState.role === 'admin') setNav('admin');
+      else if (location.hash === '#/watchlist') setNav('watchlist');
       else if (location.hash === '#/atlas') setNav('atlas');
       else if (location.hash === '#/dashboard') setNav('dashboard');
       else if (location.hash === '#/connections') setNav('connections');
@@ -987,6 +996,7 @@
 
   if (navPolymarket) navPolymarket.addEventListener('click', () => setNav('polymarket'));
   if (navEvents) navEvents.addEventListener('click', () => setNav('events'));
+  navWatchlist?.addEventListener('click', () => setNav('watchlist'));
   if (navStocks) navStocks.addEventListener('click', () => setNav('stocks'));
   document.querySelectorAll('[data-event-sort]').forEach(button => button.addEventListener('click', async () => {
     eventSort = button.getAttribute('data-event-sort') || 'impact';
@@ -998,7 +1008,7 @@
       item.setAttribute('aria-pressed', String(active));
     });
     const R = window.ClustrRender;
-    if (R) await R.renderEvents(sortEventClusters(currentGroups), currentGroups);
+    if (R) await R.renderEvents(sortEventClusters(scopedGroups()), scopedGroups());
   }));
   if (navMap) navMap.addEventListener('click', () => setNav('map'));
   if (navWeekly) navWeekly.addEventListener('click', () => setNav('weekly'));
@@ -1107,10 +1117,43 @@
     });
   });
 
+  let reportRevision = 0;
+  async function renderReportDays() {
+    const revision = ++reportRevision;
+    if (!daysView) return;
+    daysView.textContent = 'Loading reports…';
+    try {
+      if (window.ClustrWatchlist?.isFiltered()) {
+        const pending = publishes.filter(publish => !groupsCache[publish.id]);
+        await Promise.all(Array.from({ length: Math.min(4, pending.length) }, async () => {
+          while (pending.length && revision === reportRevision) {
+            const publish = pending.shift();
+            groupsCache[publish.id] = await window.ClustrApi.loadGroupsForPublish(publish);
+          }
+        }));
+      }
+      if (revision !== reportRevision) return;
+      const rows = publishes.map((publish, index) => ({ publish, index })).filter(row => !window.ClustrWatchlist?.isFiltered() || scopedGroups(groupsCache[row.publish.id] || [], row.publish.market).length);
+      if (!rows.length) { daysView.textContent = 'No reports match your watchlist. Add stocks or choose All stocks.'; return; }
+      window.ClustrRender.renderDaysList(rows.map(row => row.publish), rows.findIndex(row => row.index === publishIndex), index => {
+        publishIndex = rows[index].index; paintCurrent(); setNav('events');
+      });
+    } catch { if (revision === reportRevision) daysView.innerHTML = '<p role="alert">Could not load reports. Reopen Reports to retry.</p>'; }
+  }
+
+  window.addEventListener('clustr:watchlist-change', event => {
+    if (!publishes.length || (!event.detail.scopeChanged && !window.ClustrWatchlist?.isFiltered())) return;
+    if (view === 'stocks') { window.ClustrStocks?.refreshScope(); return; }
+    const target = view;
+    paintCurrent(true).then(() => { if (view === target && !['events', 'watchlist', 'account', 'admin'].includes(target)) setNav(target); });
+  });
+
   window.ClustrApp = {
     jumpToCluster,
     showView: setNav,
-    getGroups: () => currentGroups,
+    getGroups: () => scopedGroups(),
+    getAllGroups: () => currentGroups,
+    getGroupsCache: () => groupsCache,
     getPublishes: () => publishes,
     getPublishIndex: () => publishIndex,
     stepPublish

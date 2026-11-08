@@ -41,6 +41,8 @@ async function check({ user = {}, rows = [{ id: 1 }], error = null, hash = '' } 
   assert(signedIn.calls.indexOf('nav:events') < signedIn.calls.indexOf('end'));
   assert((await check({ hash: '#/events' })).calls.includes('nav:events'));
   assert((await check({ hash: '#/dashboard' })).calls.includes('nav:dashboard'));
+  assert((await check({ hash: '#/watchlist' })).calls.includes('nav:watchlist'));
+  assert((await check({ rows: [], hash: '#/watchlist' })).calls.includes('nav:watchlist'));
   assert((await check({ hash: '#/connections' })).calls.includes('nav:connections'));
   const signedOut = await check({ user: null });
   assert(signedOut.calls.includes('badge'));

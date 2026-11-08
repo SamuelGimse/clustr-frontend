@@ -765,9 +765,9 @@
 
     return `
       <div class="price-bar" data-price-symbol="${util.escapeHtml(symbol)}">
-        <div class="price-bar-title">${util.escapeHtml(symbol)}${
+        <div class="price-bar-title"><span>${util.escapeHtml(symbol)}${
           name ? ' — ' + util.escapeHtml(name) : ''
-        }</div>
+        }</span>${window.ClustrWatchlist?.button({ symbol, name }, stock?.__market || 'US') || ''}</div>
         <div class="price-bar-grid">
           <div class="price-cell">
             <div class="price-label">At publish</div>
@@ -1425,7 +1425,7 @@
       const request = ++stockRequest;
       activeSymbol = symbol;
       activeName = name || symbol;
-      const stock = { ...findStock(symbol), __publishAsOf: group.__historyScope.asOf };
+      const stock = { ...findStock(symbol), __publishAsOf: group.__historyScope.asOf, __market: group.__historyScope.market || group.market };
       const publishPrice = stock.priceAtPublish ?? stock.price ?? null;
       const publishPct =
         stock.changePercentAtPublish ?? stock.changePercent ?? null;
@@ -1732,11 +1732,7 @@
             new Date(p.created_at).toLocaleString()
           )}</div>
         </div>
-        <div class="day-s">${(
-          (window.ClustrApp && window.ClustrApp.getGroupsCache &&
-            (window.ClustrApp.getGroupsCache()[p.id] || []).length) ||
-          0
-        )} clusters</div>
+        <div class="day-s">${(window.ClustrWatchlist?.filterGroups(window.ClustrApp?.getGroupsCache?.()[p.id] || [], p.market) || window.ClustrApp?.getGroupsCache?.()[p.id] || []).length} clusters</div>
       </button>`
       )
       .join('');

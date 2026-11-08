@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="styles.css?v=appearance-5" />
   <link rel="stylesheet" href="polymarket.css?v=1" />
   <link rel="stylesheet" href="connections/connections.css?v=3" />
+  <link rel="stylesheet" href="watchlist.css?v=1" />
   <link rel="stylesheet" href="stocks.css?v=glass-and-themes-1" />
   <link rel="stylesheet" href="atlas/atlas.css?v=4" />
   <link rel="stylesheet" href="dashboard/dashboard.css?v=cumulative-2" />
@@ -122,6 +123,7 @@
           </svg>
           <span class="nav-rail-label">Reports</span>
         </button>
+        <button type="button" id="navWatchlist" class="nav-rail-btn" title="My watchlist" aria-label="My watchlist"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.3.9-4.6 4.5 1.1 6.3-5.6-3-5.6 3 1.1-6.3L3 9.6l6.2-.9Z"/></svg><span class="nav-rail-label">Watchlist</span></button>
         <button type="button" id="navAccount" class="nav-rail-btn" title="Account and subscription" aria-label="Account and subscription">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
           <span class="nav-rail-label">Account</span>
@@ -148,6 +150,7 @@
             <span class="pro-badge" data-pro-badge hidden></span>
           </div>
       </div>
+      <div id="watchlistScope" class="watchlist-scope" hidden><div class="watch-scope-controls" role="group" aria-label="Stock scope"><button type="button" data-watch-scope="all" aria-pressed="true">All stocks</button><button type="button" data-watch-scope="watchlist" aria-pressed="false">My watchlist <span>0</span></button></div><button type="button" class="watch-manage" data-watch-manage aria-label="Edit watchlist"><span class="watch-edit-long">Edit watchlist</span><span class="watch-edit-short">Edit</span></button><button type="button" class="watch-retry" data-watch-refresh hidden>Retry</button><span class="watchlist-note" data-watch-note role="status"></span></div>
       <header class="top-app-bar">
         <button type="button" id="burgerBtn" class="burger-btn" aria-label="Open menu" aria-expanded="false" aria-controls="side"><span class="burger-lines" aria-hidden="true"><span></span><span></span><span></span></span></button>
         <div class="publish-nav" aria-label="Publish navigation">
@@ -257,6 +260,7 @@
       <section id="atlasView" class="hidden atlas-page" aria-label="Cluster Atlas"></section>
       <section id="dashboardView" class="hidden dashboard-page" aria-label="Dashboard"></section>
       <section id="connectionsView" class="hidden" aria-label="Connected market explorer"></section>
+      <section id="watchlistView" class="hidden watchlist-page" aria-label="My watchlist"></section>
       <section id="stocksView" class="hidden stocks-page" aria-label="Stocks and linked clusters"></section>
       <section id="polymarketView" class="hidden" aria-label="Polymarket questions and odds"><div id="clustrPolymarket"></div></section>
       <section id="accountView" class="hidden account-page" aria-label="Account and subscription">
@@ -293,18 +297,19 @@
   <script src="js/auth.js?v=admin-publish-live-chart-2"></script>
   <script src="js/cluster-taxonomy.js?v=1"></script>
   <script src="js/api.js?v=atlas-1"></script>
-  <script src="atlas/atlas.js?v=4"></script>
+  <script src="js/watchlist.js?v=1"></script>
+  <script src="atlas/atlas.js?v=watchlist-1"></script>
   <script src="dashboard/regression.js?v=projection-2"></script>
-  <script src="dashboard/dashboard.js?v=cumulative-2"></script>
+  <script src="dashboard/dashboard.js?v=watchlist-1"></script>
   <script src="js/themes.js?v=appearance-5"></script>
   <script src="js/map.js?v=repo-exact"></script>
   <script src="js/mindmap.js?v=mobile-audit-1"></script>
-  <script src="js/render.js?v=atlas-1"></script>
+  <script src="js/render.js?v=watchlist-1"></script>
   <script src="js/signal.js?v=repo-exact"></script>
   <script src="js/polymarket.js?v=1"></script>
-  <script src="js/stocks.js?v=1"></script>
+  <script src="js/stocks.js?v=watchlist-1"></script>
   <script src="connections/canvas.js?v=2"></script>
-  <script src="connections/connections.js?v=3"></script>
-  <script src="js/app.js?v=network-days-1"></script>
+  <script src="connections/connections.js?v=watchlist-1"></script>
+  <script src="js/app.js?v=watchlist-1"></script>
 </body>
 </html>

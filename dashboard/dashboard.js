@@ -203,6 +203,11 @@
       <section class="dash-panel dash-panel--wide"><div class="dash-panel-head"><div><p class="dash-kicker">CHANGE</p><h2>Largest shifts since prior appearance</h2></div><button type="button" data-dash-nav="atlas">Explore history →</button></div><div class="dash-shifts">${summary.shifts.length ? summary.shifts.map(clusterRow).join('') : '<p class="dash-footnote">More report history is needed to compare cluster scores.</p>'}</div></section></div></div>`;
   }
 
+  function scopedSummary() {
+    const groups = window.ClustrWatchlist?.filterGroupMap(cached.groups, cached.publishes) || cached.groups;
+    return buildSummary(cached.publishes, groups, market, window.ClustrUtil, window.ClustrAtlas);
+  }
+
   function watchChartWidth(root) {
     if (typeof ResizeObserver === 'undefined') return;
     resizeObserver?.disconnect();
@@ -210,7 +215,7 @@
     resizeObserver = new ResizeObserver(() => {
       if (!root.clientWidth || root.clientWidth === width || !cached) return;
       width = root.clientWidth;
-      const summary = buildSummary(cached.publishes, cached.groups, market, window.ClustrUtil, window.ClustrAtlas);
+      const summary = scopedSummary();
       const series = summary?.clusterTrends.find(item => item.name === trendCluster);
       const chart = root.querySelector('.dash-impact-chart');
       if (series && chart) chart.outerHTML = impactChart(series, regression.fitRegressions(impactDays(series.days,cumulativeImpact)), window.ClustrUtil.escapeHtml,cumulativeImpact);
@@ -239,7 +244,7 @@
       }
       loading = null;
     }
-    const summary = buildSummary(cached.publishes, cached.groups, market, window.ClustrUtil, window.ClustrAtlas);
+    const summary = scopedSummary();
     paint(root, summary);
     watchChartWidth(root);
     root.onchange = event => {
@@ -248,18 +253,18 @@
       if (!selector && !showFits) return;
       if (selector) trendCluster = selector.value;
       else showAllFits = showFits.checked;
-      paint(root, buildSummary(cached.publishes, cached.groups, market, window.ClustrUtil, window.ClustrAtlas));
+      paint(root, scopedSummary());
       root.querySelector(selector ? '[data-dash-cluster]' : '[data-dash-show-fits]')?.focus({ preventScroll: true });
     };
     root.onclick = event => {
       if(event.target.closest('[data-dash-cumulative]')){
         cumulativeImpact=!cumulativeImpact;
-        paint(root,buildSummary(cached.publishes,cached.groups,market,window.ClustrUtil,window.ClustrAtlas));
+        paint(root,scopedSummary());
         root.querySelector('[data-dash-cumulative]')?.focus({preventScroll:true});
         return;
       }
       const marketButton = event.target.closest('[data-dash-market]');
-      if (marketButton) { market = marketButton.dataset.dashMarket; paint(root, buildSummary(cached.publishes, cached.groups, market, window.ClustrUtil, window.ClustrAtlas)); return; }
+      if (marketButton) { market = marketButton.dataset.dashMarket; paint(root, scopedSummary()); return; }
       const navButton = event.target.closest('[data-dash-nav]');
       if (navButton) onNavigate(navButton.dataset.dashNav);
     };

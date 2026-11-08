@@ -50,7 +50,7 @@ assert(!clusterHtml({ ...articleLink, articles: new Map([['bad', { title: 'Bad',
   await assert.rejects(() => apiContext.window.ClustrApi.fetchPublishesInRange('2026-11-08', '2026-11-01'), /Invalid publish range/);
   const pending = [], painted = [], nodes = Object.fromEntries(['#stocksLoadStatus', '[data-stock-refresh]', '#stocksRange', '#stocksGrid', '#stocksDetail'].map(key => [key, {}]));
   const host = { dataset: {}, attributes: {}, setAttribute(key, value) { this.attributes[key] = value; }, querySelector: key => key === '[data-stock-account]' ? { addEventListener() {} } : nodes[key] };
-  const race = { generation: 0, active: true, root: host, items: [], selected: '', window: { ClustrApi: {} }, DAY: 86400000, Date, console, buildStockIndex, loadWeek: () => new Promise(resolve => pending.push(resolve)), renderGrid: () => painted.push(race.items[0]?.links.values().next().value.publish.id), renderDetail() {} };
+  const race = { generation: 0, active: true, root: host, items: [], selected: '', window: { ClustrApi: {} }, DAY: 86400000, Date, console, buildStockIndex, loadWeek: () => new Promise(resolve => pending.push(resolve)), renderGrid: () => painted.push(race.items[0]?.links.values().next().value.publish.id), renderDetail() {}, filteredItems: () => race.items };
   vm.createContext(race);
   const source = read('js/stocks.js');
   vm.runInContext(source.slice(source.indexOf('  async function load()'), source.indexOf('  function mount(')), race);

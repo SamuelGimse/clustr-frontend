@@ -100,8 +100,12 @@
     };
   }
 
+  let modelScope = '';
   function modelFor(mode) {
-    if (!models.has(mode)) models.set(mode, buildModel(cached.publishes, cached.groups, mode, window.ClustrUtil));
+    const scope = window.ClustrWatchlist?.scopeKey() || 'all';
+    if (scope !== modelScope) { models.clear(); modelScope = scope; }
+    const groups = window.ClustrWatchlist?.filterGroupMap(cached.groups, cached.publishes) || cached.groups;
+    if (!models.has(mode)) models.set(mode, buildModel(cached.publishes, groups, mode, window.ClustrUtil));
     return models.get(mode);
   }
 

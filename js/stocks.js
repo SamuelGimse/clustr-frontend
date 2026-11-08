@@ -120,17 +120,17 @@
 
   function filteredItems() {
     const term = query.trim().toLocaleLowerCase();
-    return items.filter(item => (market === 'all' || item.market === market) && `${item.symbol} ${item.name}`.toLocaleLowerCase().includes(term));
+    return items.filter(item => (window.ClustrWatchlist?.allows(item, item.market) ?? true) && (market === 'all' || item.market === market) && `${item.symbol} ${item.name}`.toLocaleLowerCase().includes(term));
   }
 
   function renderGrid() {
     const results = filteredItems(), esc = U().escapeHtml;
     root.querySelector('#stocksResultCount').textContent = `${results.length} of ${items.length} stocks`;
-    root.querySelector('#stocksGrid').innerHTML = results.length ? results.map(stock => `<button type="button" class="stocks-tile${stock.key === selected ? ' is-selected' : ''}" data-stock-key="${esc(stock.key)}" aria-pressed="${stock.key === selected}" aria-controls="stocksDetail"><span class="stocks-tile-top"><strong>${esc(stock.symbol)}</strong><small>${esc(stock.market)}</small></span><span class="stocks-company">${esc(stock.name)}</span><span class="stocks-tile-meta">${stock.links.size} cluster${stock.links.size === 1 ? '' : 's'} · ${stock.articles.size} article${stock.articles.size === 1 ? '' : 's'}</span></button>`).join('') : '<p class="stocks-empty">No stocks match your search. Try a ticker or company name.</p>';
+    root.querySelector('#stocksGrid').innerHTML = results.length ? results.map(stock => `<div class="stocks-tile-wrap"><button type="button" class="stocks-tile${stock.key === selected ? ' is-selected' : ''}" data-stock-key="${esc(stock.key)}" aria-pressed="${stock.key === selected}" aria-controls="stocksDetail"><span class="stocks-tile-top"><strong>${esc(stock.symbol)}</strong><small>${esc(stock.market)}</small></span><span class="stocks-company">${esc(stock.name)}</span><span class="stocks-tile-meta">${stock.links.size} cluster${stock.links.size === 1 ? '' : 's'} · ${stock.articles.size} article${stock.articles.size === 1 ? '' : 's'}</span></button>${window.ClustrWatchlist?.button(stock, stock.market) || ''}</div>`).join('') : '<p class="stocks-empty">No stocks match your search. Try a ticker or company name.</p>';
   }
 
   function renderDetail() {
-    const stock = items.find(item => item.key === selected), detail = root.querySelector('#stocksDetail');
+    const stock = items.find(item => item.key === selected && (window.ClustrWatchlist?.allows(item, item.market) ?? true)), detail = root.querySelector('#stocksDetail');
     if (!stock) { detail.innerHTML = '<div class="stocks-detail-empty"><h2>Select a stock</h2><p>Explore how its news and cluster relationships connect across the last seven days.</p></div>'; return; }
     const esc = U().escapeHtml, links = linksFor(stock, mode), articleLinks = linksFor(stock, 'articles');
     detail.innerHTML = `<button type="button" class="stocks-back" data-stock-back><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>Back to stocks</button>
@@ -214,7 +214,7 @@
       const result = await loadWeek(window.ClustrApi, start.toISOString(), end.toISOString());
       if (request !== generation || !active) return;
       items = buildStockIndex(result.data);
-      if (!items.some(item => item.key === selected)) { selected = items[0]?.key || ''; root.dataset.detailOpen = 'false'; }
+      if (!filteredItems().some(item => item.key === selected)) { selected = filteredItems()[0]?.key || ''; root.dataset.detailOpen = 'false'; }
       root.querySelector('#stocksRange').textContent = `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} · rolling 7 days · ${result.data.length}/${result.total} publishes`;
       status.textContent = result.failures.length ? result.data.length ? `Some data could not load (${result.failures.length} publishes). Showing available links. Refresh to retry.` : 'No publish details could load. Refresh to retry.' : items.length ? '' : 'No stocks are available in publishes from the last seven days.';
       renderGrid(); renderDetail();
@@ -255,5 +255,10 @@
     active = false; ++generation;
     if (window.history.state?.clustrStockDetail) window.history.back();
   }
-  window.ClustrStocks = { mount, leave };
+  function refreshScope() {
+    if (!active || !root?.querySelector('#stocksGrid')) return;
+    if (!filteredItems().some(item => item.key === selected)) { selected = filteredItems()[0]?.key || ''; root.dataset.detailOpen = 'false'; }
+    renderGrid(); renderDetail();
+  }
+  window.ClustrStocks = { mount, leave, refreshScope };
 })();

@@ -111,6 +111,7 @@
     return result;
   }
   function render(groups, publish, options={}) {
+    groups = root.ClustrWatchlist?.filterGroups(groups, publish?.market || 'US') || groups;
     currentScene?.destroy();
     currentScene=null;
     const host = document.getElementById('connectionsView');
