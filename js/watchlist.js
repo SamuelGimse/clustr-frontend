@@ -169,12 +169,14 @@
     const bar = root.document.getElementById('watchlistScope');
     if (bar) {
       bar.hidden = !user || ['account', 'admin', 'watchlist', 'polymarket'].includes(view);
-      const picker = bar.querySelector('[data-watch-scope-select]');
-      if (picker) {
-        picker.value = scope;
-        const option = picker.querySelector('[value="watchlist"]');
-        option.textContent = `My watchlist (${entries.size})`; option.disabled = !ready;
-      }
+      bar.querySelectorAll('[data-watch-scope]').forEach(control => {
+        const selected = control.dataset.watchScope === scope;
+        control.setAttribute('aria-pressed', String(selected));
+        if (control.dataset.watchScope === 'watchlist') {
+          control.disabled = !ready;
+          control.querySelector('[data-watch-count]').textContent = String(entries.size);
+        }
+      });
       const menu = bar.querySelector('[data-watch-menu]');
       if (menu) { menu.hidden = !isFiltered(); if (bar.hidden || menu.hidden) menu.open = false; }
       const count = bar.querySelector('[data-watch-links-count]');
@@ -246,7 +248,6 @@
       if (event.key === 'Escape' && menu) { menu.open = false; menu.querySelector('summary').focus(); }
     });
     root.document.addEventListener('change', event => {
-      if (event.target.matches('[data-watch-scope-select]')) setScope(event.target.value);
       const link=event.target.closest('[data-watch-link]');if(link)setLinkType(link.dataset.watchLink,link.checked);
     });
     root.document.addEventListener('input', event => { if (event.target.matches('[data-watch-search]')) { search = event.target.value; limit = 12; paintManager(); } });

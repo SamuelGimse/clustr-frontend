@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="styles.css?v=compact-titles-1" />
   <link rel="stylesheet" href="polymarket.css?v=1" />
   <link rel="stylesheet" href="connections/connections.css?v=3" />
-  <link rel="stylesheet" href="watchlist.css?v=toolbar-1" />
+  <link rel="stylesheet" href="watchlist.css?v=scope-toggle-1" />
   <link rel="stylesheet" href="plans.css?v=1" />
   <link rel="stylesheet" href="stocks.css?v=glass-and-themes-1" />
   <link rel="stylesheet" href="atlas/atlas.css?v=4" />
@@ -160,7 +160,7 @@
       </div>
       <div class="view-toolbar">
         <div id="watchlistScope" class="watchlist-scope" hidden>
-          <select class="view-scope-picker" data-watch-scope-select aria-label="Stock scope"><option value="all">All stocks</option><option value="watchlist">My watchlist (0)</option></select>
+          <div class="watch-scope-controls" role="group" aria-label="Stock scope"><button type="button" data-watch-scope="all" aria-pressed="true">All stocks</button><button type="button" data-watch-scope="watchlist" aria-pressed="false">My watchlist <span data-watch-count>0</span></button></div>
           <details class="watch-filter-menu" data-watch-menu hidden>
             <summary><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14"/><path d="M7 3v4M13 8v4M8 13v4"/></svg><span>Links</span><span data-watch-links-count>5/5</span></summary>
             <div class="watch-filter-panel">
@@ -324,7 +324,7 @@
   <script src="js/auth.js?v=facebook-1"></script>
   <script src="js/cluster-taxonomy.js?v=1"></script>
   <script src="js/api.js?v=account-preview-1"></script>
-  <script src="js/watchlist.js?v=toolbar-1"></script>
+  <script src="js/watchlist.js?v=scope-toggle-1"></script>
   <script src="atlas/atlas.js?v=clustrmarket-1"></script>
   <script src="dashboard/regression.js?v=projection-2"></script>
   <script src="dashboard/dashboard.js?v=clustrmarket-1"></script>

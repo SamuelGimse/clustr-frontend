@@ -1,8 +1,11 @@
 .view-toolbar { display:flex; align-items:center; gap:12px; margin:0 0 16px; min-width:0; }
 .watchlist-scope { display:flex; flex:1; align-items:center; gap:8px; min-width:0; }
 .watchlist-scope[hidden], .watch-filter-menu[hidden] { display:none; }
-html[data-theme] .view-toolbar :is(.view-scope-picker, .view-sort-picker select) { height:36px; min-height:36px; min-width:0; padding:0 28px 0 10px; border:1px solid var(--border); border-radius:8px; background:var(--panel); color:var(--text); font:inherit; font-size:12px; cursor:pointer; }
-.view-scope-picker { max-width:200px; }
+html[data-theme] .view-toolbar .view-sort-picker select { height:36px; min-height:36px; min-width:0; padding:0 28px 0 10px; border:1px solid var(--border); border-radius:8px; background:var(--panel); color:var(--text); font:inherit; font-size:12px; cursor:pointer; }
+.watch-scope-controls { display:inline-flex; flex:0 0 auto; align-items:center; gap:2px; padding:2px; border:1px solid var(--border); border-radius:10px; background:transparent; }
+html[data-theme] .watch-scope-controls button { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:30px; margin:0; padding:0 10px; border:0; border-radius:7px; background:transparent; color:var(--text-meta); box-shadow:none; font:inherit; font-size:12px; line-height:1.4; white-space:nowrap; cursor:pointer; }
+html[data-theme] .watch-scope-controls button[aria-pressed="true"] { background:var(--panel-2); color:var(--text); }
+.watch-scope-controls [data-watch-count] { font-size:10px; font-variant-numeric:tabular-nums; opacity:.75; }
 .watch-filter-menu { position:relative; flex:0 0 auto; }
 .watch-filter-menu summary { display:flex; align-items:center; gap:6px; min-height:36px; padding:0 8px; color:var(--text-meta); font-size:12px; list-style:none; cursor:pointer; }
 .watch-filter-menu summary::-webkit-details-marker { display:none; }
@@ -29,7 +32,7 @@ html[data-theme] .view-toolbar .events-sort-segmented { display:none; }
   .view-toolbar { margin-bottom:12px; }
   .watchlist-scope { position:relative; flex-wrap:wrap; gap:4px; }
   .watch-filter-menu { position:static; }
-  html[data-theme] .view-toolbar .view-scope-picker { height:40px; min-height:40px; max-width:190px; font-size:16px; }
+  html[data-theme] .watch-scope-controls button { min-height:36px; padding:0 8px; font-size:11px; }
   .watch-filter-menu summary { min-height:40px; }
   .watch-filter-panel { left:0; right:auto; width:min(260px,calc(100vw - 32px)); }
   .watch-link-groups label { min-height:40px; }

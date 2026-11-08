@@ -232,20 +232,20 @@ test('Overview prioritizes watched clusters and refreshes its dropdown immediate
 });
 
 
-test('Compact scope picker, hidden link menu and keyboard dismissal keep filter state in sync', async () => {
-  const handlers={}, option={}, note={}, count={}, retry={};
+test('Compact scope toggle, hidden link menu and keyboard dismissal keep filter state in sync', async () => {
+  const handlers={}, savedCount={}, note={}, count={}, retry={};
   let focused=false;
   const menu={hidden:true,open:false,querySelector:()=>({focus(){focused=true;}}),removeAttribute(){this.open=false;}};
-  const picker={querySelector:()=>option};
+  const buttons=['all','watchlist'].map(value=>({dataset:{watchScope:value},setAttribute(name,value){this[name]=value;},querySelector:()=>savedCount}));
   const inputs=['mentioned','close','related','defaults','movers'].map(type=>({dataset:{watchLink:type}}));
   const links={querySelectorAll:()=>inputs};
-  const nodes={'[data-watch-scope-select]':picker,'[data-watch-menu]':menu,'[data-watch-links-count]':count,'[data-watch-note]':note,'[data-watch-links]':links,'[data-watch-refresh]':retry};
-  const bar={querySelector:selector=>nodes[selector]};
+  const nodes={'[data-watch-menu]':menu,'[data-watch-links-count]':count,'[data-watch-note]':note,'[data-watch-links]':links,'[data-watch-refresh]':retry};
+  const bar={querySelector:selector=>nodes[selector],querySelectorAll:()=>buttons};
   const document={getElementById:()=>bar,querySelectorAll:()=>[],querySelector:()=>menu,addEventListener:(type,fn)=>{handlers[type]=fn;}};
   const s=session(document);await s.api.init({id:'Alice'});await s.api.setSaved('NVDA','US',true);
-  assert.equal(menu.hidden,true);assert.equal(option.textContent,'My watchlist (1)');
-  handlers.change({target:{value:'watchlist',matches:()=>true,closest:()=>null}});
-  assert.equal(s.api.isFiltered(),true);assert.equal(menu.hidden,false);assert.equal(note.textContent,'');
+  assert.equal(menu.hidden,true);assert.equal(savedCount.textContent,'1');assert.equal(buttons[1].disabled,false);assert.equal(buttons[0]['aria-pressed'],'true');
+  handlers.click({target:{closest:selector=>selector==='[data-watch-scope]'?buttons[1]:null}});
+  assert.equal(s.api.isFiltered(),true);assert.equal(menu.hidden,false);assert.equal(note.textContent,'');assert.equal(buttons[1]['aria-pressed'],'true');assert.equal(buttons[0]['aria-pressed'],'false');
   handlers.change({target:{matches:()=>false,closest:()=>({dataset:{watchLink:'defaults'},checked:false})}});
   assert.equal(count.textContent,'4/5');assert.equal(inputs[3].checked,false);
   menu.open=true;handlers.keydown({key:'Escape'});assert.equal(menu.open,false);assert(focused);
