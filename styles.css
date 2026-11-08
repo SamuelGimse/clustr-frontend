@@ -4394,20 +4394,20 @@ html[data-theme] .md-btn--icon { padding: 0; }
   --font-sans: "Lucida Grande", "Trebuchet MS", system-ui, sans-serif;
 }
 [data-theme="aurora-glass"] {
-  color-scheme: dark;
-  --md-sys-color-surface: #0b1d3a;
-  --md-sys-color-surface-container: rgba(15, 36, 68, .78);
-  --md-sys-color-surface-container-high: rgba(34, 65, 102, .85);
-  --md-sys-color-surface-container-highest: #315b89;
-  --md-sys-color-on-surface: #f0f7ff;
-  --md-sys-color-on-surface-variant: #afc8e5;
-  --md-sys-color-primary: #9bdcff;
-  --md-sys-color-on-primary: #102947;
-  --md-sys-color-primary-container: #315d84;
-  --md-sys-color-outline: rgba(172, 214, 252, .35);
-  --md-sys-color-outline-variant: #80aed8;
-  --md-sys-color-up: #74e5b7;
-  --md-sys-color-down: #ff9aa7;
+  color-scheme: light;
+  --md-sys-color-surface: #dce8f4;
+  --md-sys-color-surface-container: rgba(250, 253, 255, .94);
+  --md-sys-color-surface-container-high: #e7f1fa;
+  --md-sys-color-surface-container-highest: #d6e6f4;
+  --md-sys-color-on-surface: #182b40;
+  --md-sys-color-on-surface-variant: #4b6177;
+  --md-sys-color-primary: #185a9c;
+  --md-sys-color-on-primary: #fff;
+  --md-sys-color-primary-container: #c8e2fa;
+  --md-sys-color-outline: #6d8cac;
+  --md-sys-color-outline-variant: #b7cfe4;
+  --md-sys-color-up: #23734b;
+  --md-sys-color-down: #b83b4b;
   --font-sans: "Segoe UI", system-ui, sans-serif;
 }
 html:is([data-theme="grassy-hill"], [data-theme="aqua-classic"], [data-theme="aurora-glass"]) body {
@@ -4415,7 +4415,7 @@ html:is([data-theme="grassy-hill"], [data-theme="aqua-classic"], [data-theme="au
 }
 html[data-theme="grassy-hill"][data-wallpaper="on"] body { background-image: url("wallpapers/grassy-hill.png"); }
 html[data-theme="aqua-classic"][data-wallpaper="on"] body { background-image: url("wallpapers/aqua-classic.png"); }
-html[data-theme="aurora-glass"][data-wallpaper="on"] body { background-image: url("wallpapers/aurora-glass.png"); }
+html[data-theme="aurora-glass"][data-wallpaper="on"] body { background-image: linear-gradient(rgba(220, 232, 244, .42), rgba(220, 232, 244, .42)), url("wallpapers/aurora-glass.png"); }
 html:is([data-theme="grassy-hill"], [data-theme="aqua-classic"], [data-theme="aurora-glass"]) .app-halos { display: none; }
 html:is([data-theme="grassy-hill"], [data-theme="aqua-classic"], [data-theme="aurora-glass"]) :is(.md-card, .cluster-card, .dash-panel, .dash-metric, .stocks-cluster, .stocks-browser, .atlas-matrix, .atlas-detail, .weekly-summary > div, .weekly-cluster, .weekly-ai-digest, .weekly-trend-panel, .pm-browser, .pm-detail, .account-shell, .country-panel) {
   background: var(--panel);
@@ -4431,17 +4431,20 @@ html:is([data-theme="grassy-hill"], [data-theme="aqua-classic"], [data-theme="au
   -webkit-backdrop-filter: blur(16px);
 }
 html[data-theme="grassy-hill"] :is(.nav-rail, .mobile-topbar) { background: linear-gradient(180deg, rgba(43, 100, 207, .96), rgba(18, 58, 153, .94)); }
-html[data-theme="grassy-hill"] .nav-rail-btn { color: #eff6ff; }
-html[data-theme="grassy-hill"] .nav-rail-btn.is-active { color: #123b85; background: linear-gradient(#fff, #cde5ff); box-shadow: inset 0 1px #fff, 0 2px 5px rgba(0, 20, 70, .24); }
-html[data-theme="grassy-hill"] :is(.top-app-bar, .theme-menu) { background: linear-gradient(180deg, rgba(255, 255, 255, .95), rgba(210, 232, 251, .93)); }
+html[data-theme="grassy-hill"] :is(.nav-rail-brand, .nav-rail-btn) { color: #eff6ff; }
+html[data-theme="grassy-hill"] .nav-rail-btn.is-active { color: #fff; background: linear-gradient(#81bd52, #3d8528); border: 1px solid #c6dc87; box-shadow: inset 0 1px rgba(255, 255, 255, .55), 0 2px 5px rgba(0, 20, 70, .24); }
+html[data-theme="grassy-hill"] .top-app-bar { background: linear-gradient(#3f85e2, #1c56b8 55%, #174397); color: #fff; }
+html[data-theme="grassy-hill"] .theme-menu { background: linear-gradient(#fff, #d7eaff); }
 html[data-theme="grassy-hill"] :is(.md-btn--tonal, .md-btn--icon, .day-item) { background: linear-gradient(#fff, #d7eaff); border: 1px solid #91b9e8; border-radius: 8px; }
-html[data-theme="aqua-classic"] :is(.nav-rail, .mobile-topbar) { background: linear-gradient(180deg, rgba(247, 250, 252, .96), rgba(185, 210, 229, .94)); }
+html[data-theme="aqua-classic"] :is(.nav-rail, .mobile-topbar) { background: repeating-linear-gradient(180deg, rgba(255, 255, 255, .32) 0 1px, transparent 1px 3px), linear-gradient(#f6f9fc, #b8cddd); }
 html[data-theme="aqua-classic"] .nav-rail-btn.is-active { color: #fff; background: linear-gradient(#74c9f2, #1876bd 55%, #0a5a9f); box-shadow: inset 0 1px rgba(255, 255, 255, .75), 0 2px 6px rgba(10, 63, 108, .25); }
-html[data-theme="aqua-classic"] :is(.top-app-bar, .theme-menu) { background: linear-gradient(180deg, rgba(255, 255, 255, .94), rgba(196, 220, 238, .92)); }
+html[data-theme="aqua-classic"] :is(.top-app-bar, .theme-menu) { background: linear-gradient(#f7fbff, #c5d9e8 55%, #e8f1f7); }
 html[data-theme="aqua-classic"] :is(.md-btn--tonal, .md-btn--icon, .day-item) { background: linear-gradient(#fff, #c9e5f5); border: 1px solid #82b8d8; border-radius: 10px; }
-html[data-theme="aurora-glass"] :is(.nav-rail, .mobile-topbar, .top-app-bar, .theme-menu) { background: linear-gradient(145deg, rgba(38, 72, 112, .76), rgba(7, 24, 56, .82)); }
+html[data-theme="aurora-glass"] :is(.nav-rail, .mobile-topbar, .top-app-bar) { background: linear-gradient(145deg, rgba(55, 104, 157, .88), rgba(10, 32, 72, .9)); color: #f0f7ff; }
+html[data-theme="aurora-glass"] .theme-menu { background: rgba(242, 249, 255, .96); }
+html[data-theme="aurora-glass"] :is(.nav-rail-brand, .nav-rail-btn) { color: #f0f7ff; }
 html[data-theme="aurora-glass"] .nav-rail-btn.is-active { color: #fff; background: linear-gradient(135deg, rgba(117, 208, 254, .48), rgba(61, 112, 214, .54)); box-shadow: inset 0 1px rgba(255, 255, 255, .4), 0 0 12px rgba(79, 177, 255, .35); }
-html[data-theme="aurora-glass"] :is(.md-btn--tonal, .md-btn--icon, .day-item) { background: linear-gradient(180deg, rgba(103, 171, 232, .35), rgba(32, 71, 124, .58)); border: 1px solid rgba(174, 220, 255, .42); border-radius: 10px; }
+html[data-theme="aurora-glass"] :is(.md-btn--tonal, .md-btn--icon, .day-item) { background: linear-gradient(#fff, #d2e6f8); border: 1px solid #8db5d8; border-radius: 10px; }
 .theme-menu button[data-theme="grassy-hill"] { background: linear-gradient(#3080e0 48%, #57b522 49%); color: #fff; --swatch-accent: #fff; }
 .theme-menu button[data-theme="aqua-classic"] { background: linear-gradient(135deg, #f0f7ff, #77c9ed); color: #173149; --swatch-accent: #1476b9; }
 .theme-menu button[data-theme="aurora-glass"] { background: linear-gradient(135deg, #133f6e, #2b7dae); color: #fff; --swatch-accent: #9bdcff; }
@@ -4498,3 +4501,31 @@ html[data-theme="old-school-rpg"] :is(.md-btn--tonal, .md-btn--icon, .day-item) 
 }
 .theme-menu button[data-theme="old-school-rpg"] { background: linear-gradient(135deg, #444634 50%, #ddc989 50%); color: #fff0bd; --swatch-accent: #f5d36f; }
 html[data-theme="pure-black"] :is(button, input, select, textarea, pre, code) { font-family: "FiraCode Nerd Font", "Fira Code", ui-monospace, monospace; }
+
+html:is([data-theme="grassy-hill"], [data-theme="aqua-classic"], [data-theme="aurora-glass"], [data-theme="old-school-rpg"]) {
+  --md-surface-container: var(--panel);
+  --md-on-surface: var(--text);
+  --md-on-surface-variant: var(--text-meta);
+  --md-outline: var(--border);
+  --md-primary: var(--accent);
+}
+html:is([data-theme="grassy-hill"], [data-theme="aqua-classic"], [data-theme="aurora-glass"], [data-theme="old-school-rpg"]) :is(.account-form input, .account-publish-market select) {
+  background: var(--panel-2);
+  border-color: var(--border);
+  color: var(--text);
+}
+html:is([data-theme="grassy-hill"], [data-theme="aqua-classic"], [data-theme="aurora-glass"], [data-theme="old-school-rpg"]) :is(.account-primary, .account-actions .account-primary, .weekly-tab.is-active) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--md-sys-color-on-primary);
+}
+html:is([data-theme="grassy-hill"], [data-theme="aqua-classic"], [data-theme="aurora-glass"], [data-theme="old-school-rpg"]) :is(.account-secondary, .account-actions button:not(.account-primary)) {
+  background: var(--panel-2);
+  border-color: var(--border);
+  color: var(--text);
+}
+html[data-theme="material"][data-color-mode="light"] .account-shell { border-color: transparent; }
+html[data-theme="grassy-hill"] .top-app-bar :is(.brand, .tagline) { color: #fff; }
+html[data-theme="aqua-classic"] :is(.account-primary, .account-actions .account-primary) { background: linear-gradient(#8fddff, #2589c8 52%, #1566aa); border-color: #2b79b0; }
+html[data-theme="aurora-glass"] :is(.md-card, .cluster-card, .dash-panel, .dash-metric, .stocks-cluster, .stocks-browser, .atlas-matrix, .atlas-detail, .weekly-summary > div, .weekly-cluster, .weekly-ai-digest, .weekly-trend-panel, .pm-browser, .pm-detail, .account-shell, .country-panel) { background: rgba(250, 253, 255, .94); }
+html[data-theme="old-school-rpg"] .nav-rail-brand { color: #f2dd9b; }

@@ -61,7 +61,7 @@ test('Theme picker shows only the requested choices and light variants stay ligh
   context.window.ClustrThemes.applyTheme('grassy-hill');
   assert.equal(context.window.ClustrUtil.isLightTheme(), true);
   context.window.ClustrThemes.applyTheme('aurora-glass');
-  assert.equal(context.window.ClustrUtil.isLightTheme(), false);
+  assert.equal(context.window.ClustrUtil.isLightTheme(), true);
   context.window.ClustrThemes.applyTheme('old-school-rpg');
   assert.equal(context.window.ClustrUtil.isLightTheme(), true);
 });
