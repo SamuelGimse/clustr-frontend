@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const atlas = require('../atlas/atlas.js');
-const { buildSummary, linearTrend } = require('../dashboard/dashboard.js');
+const { buildSummary, render, invalidate } = require('../dashboard/dashboard.js');
 
 global.window = {};
 require('../js/util.js');
@@ -40,16 +40,36 @@ test('Dashboard uses the latest report per day and keeps markets separate', () =
   assert.equal(no.days.length, 1);
 });
 
-test('Dashboard trend fits scored report days in calendar time', () => {
-  const days = [
-    { date: '2026-11-01T12:00:00Z', meanScore: -2 },
-    { date: '2026-11-02T12:00:00Z', meanScore: 0 },
-    { date: '2026-11-03T12:00:00Z', meanScore: null },
-    { date: '2026-11-04T12:00:00Z', meanScore: 4 }
-  ];
-  const trend = linearTrend(days);
-  assert.ok(Math.abs(trend.slope - 2) < 1e-10);
-  assert.ok(Math.abs(trend.r2 - 1) < 1e-10);
-  assert.equal(trend.count, 3);
-  assert.equal(linearTrend(days.slice(0, 2)), null);
+test('Cluster trend series never blend clusters or turn missing reports into zero', () => {
+  const publishes = [1, 2, 3, 4].map((id, index) => ({ id, market: id === 4 ? 'NO' : 'US', created_at: `2026-11-0${index + 1}T12:00:00Z` }));
+  const groups = new Map([
+    ['1', [{ name: 'Energy', stance_score: -6 }, { name: 'AI', stance_score: 6 }]],
+    ['2', [{ name: 'Energy', stance_score: -4 }]],
+    ['3', [{ name: 'Energy', stance_score: -2 }, { name: 'AI', stance_score: 0 }]],
+    ['4', [{ name: 'Energy', stance_score: 10 }]]
+  ]);
+  const summary = buildSummary(publishes, groups, 'US', util, atlas);
+  assert.deepEqual(summary.clusterTrends.find(item => item.name === 'Energy').days.map(day => day.score), [-6, -4, -2]);
+  assert.deepEqual(summary.clusterTrends.find(item => item.name === 'AI').days.map(day => day.score), [6, null, 0]);
+  assert.equal(summary.trend, undefined);
+});
+
+test('Dashboard selection, scatter points and all-model comparison remain cluster-specific', async () => {
+  const publishes = [1, 2, 3, 4, 5].map(id => ({ id, market: 'US', created_at: `2026-11-0${id}T12:00:00Z` }));
+  const groups = new Map(publishes.map(publish => [String(publish.id), [{ name: '<Energy>', stance_score: -6 + publish.id }, { name: 'AI', stance_score: 3 + Math.log(publish.id) }]]));
+  window.ClustrApi = { fetchAllPublishes: async () => publishes, loadGroupsForPublish: async publish => groups.get(String(publish.id)) };
+  window.ClustrAtlas = atlas;
+  const root = { innerHTML: '', querySelector: () => ({ focus() {} }) };
+  invalidate(); await render(root, () => {});
+  root.onchange({ target: { closest: selector => selector === '[data-dash-cluster]' ? { value: '<Energy>' } : null } });
+  assert.match(root.innerHTML, /&lt;Energy&gt;: scatter plot of 5 daily cluster impacts/);
+  assert.equal((root.innerHTML.match(/class="dash-observed-dot"/g) || []).length, 5);
+  assert.equal((root.innerHTML.match(/class="dash-fit /g) || []).length, 1);
+  assert.match(root.innerHTML, /class="dash-confidence"/);
+  assert(!root.innerHTML.includes('class="dash-observed"'));
+  root.onchange({ target: { closest: selector => selector === '[data-dash-show-fits]' ? { checked: true } : null } });
+  assert.equal((root.innerHTML.match(/class="dash-fit /g) || []).length, 4);
+  assert.match(root.innerHTML, /Original-scale R²/);
+  root.onclick({ target: { closest: selector => selector === '[data-dash-market]' ? { dataset: { dashMarket: 'NO' } } : null } });
+  assert.match(root.innerHTML, /No approved NO publishes/);
 });
