@@ -620,7 +620,7 @@
     if (!title || !content) return;
     note.textContent = message;
     if (!authState.user) {
-      title.textContent = accountMode === 'signup' ? 'Create your free account' : 'Sign in to Clustr';
+      title.textContent = accountMode === 'signup' ? 'Create your free account' : 'Sign in to Clustr Market';
       content.innerHTML = `<button class="account-secondary" type="button" data-account-action="google">Continue with Google</button><form id="accountForm" class="account-form"><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" minlength="8" autocomplete="${accountMode === 'signup' ? 'new-password' : 'current-password'}" required></label><button class="account-primary" type="submit">${accountMode === 'signup' ? 'Create free account' : 'Sign in'}</button></form><div class="account-actions"><button type="button" data-account-action="switch">${accountMode === 'signup' ? 'Already have an account? Sign in' : 'Create a free account'}</button>${accountMode === 'signin' ? '<button type="button" data-account-action="resend">Resend confirmation email</button><button type="button" data-account-action="reset">Reset password</button>' : ''}</div><p class="account-plan-note">Free includes the previous trading day. Pro unlocks live clusters and full history.</p>`;
       return;
     }

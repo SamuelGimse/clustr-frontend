@@ -13,6 +13,7 @@ test('iPhone Home Screen launch is standalone and supports safe areas and zoom',
   assert.match(html, /<title>Clustr Market<\/title>/);
   assert.match(html, /name="apple-mobile-web-app-title" content="Clustr Market"/);
   assert.doesNotMatch(html, />clustr<|CLUSTR \//);
+  assert.match(fs.readFileSync(path.join(root, 'js/app.js'), 'utf8'), /Sign in to Clustr Market/);
   assert.match(html, /name="apple-mobile-web-app-capable" content="yes"/);
   assert.match(html, /rel="manifest" href="manifest.webmanifest"/);
   assert.match(html, /viewport-fit=cover/);
