@@ -287,7 +287,7 @@
       for (const sym of Object.keys(startMap)) {
         const pub = startMap[sym];
         const fwd = endMap[sym];
-        if (fwd == null || pub == null || pub === 0) continue;
+        if (!Number.isFinite(fwd) || fwd < 0 || !Number.isFinite(pub) || pub <= 0) continue;
         deltas.push(((fwd - pub) / pub) * 100);
       }
 
@@ -350,34 +350,56 @@
     return { min: -ceiling, max: ceiling };
   }
 
+  function stanceChartSeries(enriched, { cumulativeStance = false, cumulativePrice = false } = {}, now = Date.now()) {
+    const rows = (enriched || []).filter(row => Number.isFinite(Date.parse(row.date)))
+      .slice().sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
+    if (!rows.length) return { stanceData: [], retData: [], priceIncomplete: false };
+    const timestamps = rows.map(row => Date.parse(row.date));
+    const lastTime = rows.at(-1).priceBasis === 'latest quote' ? Math.max(now, timestamps.at(-1) + 1) : timestamps.at(-1);
+    let stanceRows = rows;
+    if (cumulativeStance) {
+      const latestByDay = new Map();
+      for (const row of rows) latestByDay.set(new Date(row.date).toLocaleDateString('en-CA', { timeZone: 'America/New_York' }), row);
+      stanceRows = [...latestByDay.values()];
+    }
+    let totalStance = 0;
+    const stanceData = stanceRows.map(row => {
+      const score = historyRowScore(row);
+      if (score != null) totalStance += score;
+      return { x: Date.parse(row.date), y: score == null ? null : cumulativeStance ? totalStance : score };
+    });
+    let wealth = 1, priceIncomplete = false;
+    const retData = cumulativePrice ? [{ x: timestamps[0], y: 0, baseline: true }] : [];
+    rows.forEach((row, i) => {
+      const value = row.defaultRet;
+      let y = Number.isFinite(value) && value >= -100 ? value : null;
+      if (cumulativePrice) {
+        if (y == null) priceIncomplete = true;
+        if (!priceIncomplete) {
+          wealth *= 1 + y / 100;
+          if (!Number.isFinite(wealth)) priceIncomplete = true;
+        }
+        y = priceIncomplete ? null : (wealth - 1) * 100;
+      }
+      retData.push({ x: timestamps[i + 1] ?? lastTime, y, source: row });
+    });
+    return { stanceData, retData, priceIncomplete };
+  }
+
   /**
    * Mount Chart.js dual series (stance score + defaults→live %) full width.
    * @param {HTMLCanvasElement|null} canvas
    * @param {Array<Object>} enriched
    * @returns {void}
    */
-  function mountStanceChart(canvas, enriched) {
+  function mountStanceChart(canvas, enriched, { cumulativeStance = false, cumulativePrice = false } = {}) {
     if (!canvas || !window.Chart) return;
     destroyStanceChart(canvas);
-    const rows = enriched || [];
-    if (!rows.length) return;
-
-    // Use elapsed time, with each return placed at its interval endpoint.
-    const timestamps = rows.map(row => Date.parse(row.date));
-    const lastTime = rows.at(-1).priceBasis === 'latest quote' ? Math.max(Date.now(), timestamps.at(-1) + 1) : timestamps.at(-1);
-
-    // Missing numeric scores stay null rather than becoming categorical estimates.
-    const stanceData = rows.map((row, i) => ({ x: timestamps[i], y: historyRowScore(row) }));
-
-    // Put each return at the next publish timestamp, or at the latest-quote endpoint.
-    const retData = [];
-    for (let i = 0; i < rows.length; i++) {
-      const v = rows[i].defaultRet;
-      retData.push(
-        { x: timestamps[i + 1] ?? lastTime, y: v != null && Number.isFinite(v) ? v : null, source: rows[i] }
-      );
-    }
+    const series = stanceChartSeries(enriched, { cumulativeStance, cumulativePrice });
+    const { stanceData, retData } = series;
+    if (!stanceData.length) return;
     const returnRange = symmetricReturnRange(retData.map(point => point.y));
+    const stanceExtent = cumulativeStance ? Math.max(10, symmetricReturnRange(stanceData.map(point => point.y)).max) : 10;
 
     const accent =
       getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() ||
@@ -395,9 +417,9 @@
       getComputedStyle(document.documentElement).getPropertyValue('--border').trim() ||
       '#333';
 
-    const pointColors = rows
-      .map(r => {
-        const s = historyRowScore(r);
+    const pointColors = stanceData
+      .map(point => {
+        const s = point.y;
         if (s > 0) return up;
         if (s < 0) return down;
         return meta;
@@ -409,7 +431,7 @@
       data: {
         datasets: [
           {
-            label: 'Stance',
+            label: cumulativeStance ? 'Cumulative stance index' : 'Stance',
             data: stanceData,
           yAxisID: 'yStance',
             borderColor: meta,
@@ -423,7 +445,7 @@
             spanGaps: false
           },
           {
-            label: 'Defaults → next publish / latest quote %',
+            label: cumulativePrice ? 'Cumulative matched-default return %' : 'Defaults → next publish / latest quote %',
             data: retData,
             yAxisID: 'yRet',
             borderColor: accent,
@@ -456,7 +478,10 @@
           tooltip: {
             callbacks: {
               title: items => items[0] ? new Date(items[0].parsed.x).toLocaleString() : '',
-              label: item => item.datasetIndex === 0 ? `Stance: ${item.parsed.y ?? 'unavailable'}` : `Defaults → ${item.raw.source.priceBasis === 'next' ? 'next publish' : item.raw.source.priceBasis}: ${U().formatPct(item.parsed.y)} · ${item.raw.source.sampleN}/${item.raw.source.totalN} stocks priced`
+              label: item => item.datasetIndex === 0
+                ? `${cumulativeStance ? 'Cumulative stance index' : 'Stance'}: ${item.parsed.y ?? 'unavailable'}`
+                : item.raw.baseline ? 'Price baseline: 0%'
+                : `${cumulativePrice ? 'Compounded matched-default return' : 'Interval return'}: ${U().formatPct(item.parsed.y)} · ${item.raw.source.sampleN}/${item.raw.source.totalN} stocks priced · ${item.raw.source.priceBasis}`
             }
           }
         },
@@ -469,11 +494,11 @@
           yStance: {
             type: 'linear',
             position: 'left',
-            min: -10,
-            max: 10,
+            min: -stanceExtent,
+            max: stanceExtent,
             ticks: {
               color: meta,
-              stepSize: 5,
+              stepSize: cumulativeStance ? undefined : 5,
               callback(v) {
                 return `${v > 0 ? '+' : ''}${v}`;
               }
@@ -497,6 +522,7 @@
       }
     });
     canvas._clustrChart = chart;
+    return series;
   }
 
   /**
@@ -506,9 +532,34 @@
    */
   function stanceChartShellHtml() {
     return `
+      <div class="stance-chart-controls" role="group" aria-label="Stance history chart modes">
+        <button type="button" role="switch" aria-checked="true" class="dash-mode-toggle" data-cumulative-stance><span class="dash-switch-track" aria-hidden="true"></span><span>Cumulative stance</span></button>
+        <button type="button" role="switch" aria-checked="true" class="dash-mode-toggle" data-cumulative-price><span class="dash-switch-track" aria-hidden="true"></span><span>Cumulative price</span></button>
+      </div>
       <div class="stance-history-chart-wrap">
         <canvas class="stance-history-canvas" aria-label="Stance and default basket returns"></canvas>
-      </div>`;
+      </div><p class="history-data-note" data-stance-chart-note aria-live="polite"></p>`;
+  }
+
+  function mountStanceHistory(root, enriched) {
+    bindStanceHistoryToggle(root);
+    const canvas = root.querySelector('.stance-history-canvas');
+    const stanceToggle = root.querySelector('[data-cumulative-stance]');
+    const priceToggle = root.querySelector('[data-cumulative-price]');
+    const note = root.querySelector('[data-stance-chart-note]');
+    const draw = () => {
+      const cumulativeStance = stanceToggle?.getAttribute('aria-checked') === 'true';
+      const cumulativePrice = priceToggle?.getAttribute('aria-checked') === 'true';
+      const series = mountStanceChart(canvas, enriched, { cumulativeStance, cumulativePrice });
+      const stanceNote = cumulativeStance ? 'Stance sums the latest score per US calendar day; missing scores remain gaps. This is an index, not a percentage.' : 'Stance shows each publish’s score (−10 to +10).';
+      const priceNote = cumulativePrice ? 'Price compounds equal-weight returns for matched default stocks, rebalanced at each publish; basket membership and coverage can change. This is not a fixed-basket buy-and-hold return.' : 'Price shows each interval return to the next publish or latest available quote.';
+      if (note) note.textContent = `${stanceNote} ${priceNote}${cumulativePrice && series?.priceIncomplete ? ' Cumulative price stops at the first missing interval. Turn it off to see later interval returns.' : ''} Summary cards below remain interval averages.`;
+    };
+    for (const toggle of [stanceToggle, priceToggle]) toggle?.addEventListener('click', () => {
+      toggle.setAttribute('aria-checked', String(toggle.getAttribute('aria-checked') !== 'true'));
+      draw();
+    });
+    draw();
   }
 
   /** shell; content written after quotes load.
@@ -1242,9 +1293,7 @@
             const panel = await getHistoryPanel();
             if (!el.isConnected || !stanceAside?.classList.contains('is-open')) return;
             historyMount.innerHTML = panel.html;
-            bindStanceHistoryToggle(historyMount);
-            const c = historyMount.querySelector('.stance-history-canvas');
-            if (c) mountStanceChart(c, panel.enriched);
+            mountStanceHistory(historyMount, panel.enriched);
           } catch (err) {
             historyMount.innerHTML =
               '<div class="stance-history-empty">Could not load history</div>';
@@ -1389,9 +1438,7 @@
         const panel = await getHistoryPanel();
         if (stanceMounted || details.hidden || !el.isConnected) return;
         chartStance.innerHTML = panel.html;
-        bindStanceHistoryToggle(chartStance);
-        const c = chartStance.querySelector('.stance-history-canvas');
-        if (c) mountStanceChart(c, panel.enriched);
+        mountStanceHistory(chartStance, panel.enriched);
         stanceMounted = true;
       } catch (err) {
         chartStance.innerHTML =

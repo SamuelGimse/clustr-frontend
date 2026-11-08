@@ -1,0 +1,2 @@
+.stance-chart-controls { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 6px 0 12px; }
+.stance-chart-controls .dash-mode-toggle { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0; border: 0; background: transparent; color: var(--text); font: inherit; font-size: 12px; cursor: pointer; text-align: left; }
