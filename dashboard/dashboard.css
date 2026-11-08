@@ -27,22 +27,31 @@
 .dash-observed-dot { fill: var(--accent); stroke: var(--panel); stroke-width: 2; }
 .dash-fit { fill: none; stroke-width: 2; stroke-dasharray: 7 5; }
 .dash-fit--linear { stroke: color-mix(in srgb, var(--text) 30%, #8cbdad); }
-.dash-fit--polynomial { stroke: color-mix(in srgb, var(--text) 30%, #c3a4d8); }
 .dash-fit--logarithmic { stroke: color-mix(in srgb, var(--text) 30%, #d1b17c); }
 .dash-fit--exponential { stroke: color-mix(in srgb, var(--text) 30%, #87b8c9); }
 .dash-fit--best { stroke: var(--accent); stroke-width: 3; stroke-dasharray: none; }
+.dash-fit--projection { stroke-dasharray: 4 4; }
 .dash-confidence { fill: var(--accent); fill-opacity: .12; }
+.dash-prediction { fill: var(--accent); fill-opacity: .2; stroke: var(--accent); stroke-opacity: .35; stroke-dasharray: 3 3; }
+.dash-forecast-zone { fill: var(--accent); fill-opacity: .04; }
+.dash-forecast-divider { stroke: var(--text-meta); stroke-width: 1; stroke-dasharray: 2 4; }
+.dash-projection-dot { fill: var(--panel); stroke: var(--accent); stroke-width: 2; }
 .dash-chart-key, .dash-coverage-key { display: flex; flex-wrap: wrap; gap: 10px 18px; color: var(--text-meta); font-size: 11px; }
 .dash-chart-key span, .dash-coverage-key span { display: inline-flex; align-items: center; gap: 6px; }
 .dash-chart-key i, .dash-coverage-key i { display: inline-block; width: 16px; height: 3px; background: var(--accent); }
 .dash-chart-key .dash-key-fit { background: var(--text-meta); }
 .dash-chart-key .dash-key-observed { width: 7px; height: 7px; border-radius: 50%; }
 .dash-chart-key .dash-key-model--linear { background: color-mix(in srgb, var(--text) 30%, #8cbdad); }
-.dash-chart-key .dash-key-model--polynomial { background: color-mix(in srgb, var(--text) 30%, #c3a4d8); }
 .dash-chart-key .dash-key-model--logarithmic { background: color-mix(in srgb, var(--text) 30%, #d1b17c); }
 .dash-chart-key .dash-key-model--exponential { background: color-mix(in srgb, var(--text) 30%, #87b8c9); }
 .dash-chart-key .dash-key-best { background: var(--accent); }
 .dash-chart-key .dash-key-confidence { height: 9px; opacity: .25; }
+.dash-chart-key .dash-key-projection { height: 0; background: none; border-top: 2px dashed var(--accent); }
+.dash-chart-key .dash-key-prediction { height: 9px; opacity: .45; border: 1px dashed var(--text); }
+.dash-trend-readout .dash-projection-readout { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
+.dash-projection-readout > strong { font-size: 25px; font-variant-numeric: tabular-nums; }
+.dash-projection-readout > span { font-size: 11px; line-height: 1.7; }
+.dash-projection-readout .dash-kicker { margin: 0; }
 .dash-trend-controls { display: grid; gap: 6px; width: min(280px, 100%); flex-shrink: 0; }
 .dash-trend-panel > .dash-panel-head { flex-wrap: wrap; }
 @media (max-width: 600px) {

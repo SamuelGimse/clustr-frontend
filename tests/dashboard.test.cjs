@@ -64,11 +64,16 @@ test('Dashboard selection, scatter points and all-model comparison remain cluste
   root.onchange({ target: { closest: selector => selector === '[data-dash-cluster]' ? { value: '<Energy>' } : null } });
   assert.match(root.innerHTML, /&lt;Energy&gt;: scatter plot of 5 daily cluster impacts/);
   assert.equal((root.innerHTML.match(/class="dash-observed-dot"/g) || []).length, 5);
-  assert.equal((root.innerHTML.match(/class="dash-fit /g) || []).length, 1);
+  assert.equal((root.innerHTML.match(/class="dash-fit /g) || []).length, 2);
   assert.match(root.innerHTML, /class="dash-confidence"/);
+  assert.match(root.innerHTML, /class="dash-prediction"/);
+  assert.match(root.innerHTML, /class="dash-forecast-divider"/);
+  assert.match(root.innerHTML, /95% prediction interval/);
+  assert.match(root.innerHTML, /\+1 DAY · Nov 6/);
+  assert(!root.innerHTML.includes('Polynomial'));
   assert(!root.innerHTML.includes('class="dash-observed"'));
   root.onchange({ target: { closest: selector => selector === '[data-dash-show-fits]' ? { checked: true } : null } });
-  assert.equal((root.innerHTML.match(/class="dash-fit /g) || []).length, 4);
+  assert.equal((root.innerHTML.match(/class="dash-fit /g) || []).length, 6);
   assert.match(root.innerHTML, /Original-scale R²/);
   root.onclick({ target: { closest: selector => selector === '[data-dash-market]' ? { dataset: { dashMarket: 'NO' } } : null } });
   assert.match(root.innerHTML, /No approved NO publishes/);

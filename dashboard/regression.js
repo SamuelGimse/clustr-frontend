@@ -7,8 +7,7 @@
   // Two-sided t(.975, df): https://www.itl.nist.gov/div898/handbook/eda/section3/eda3672.htm
   const T95 = [null, 12.706204736, 4.302652730, 3.182446305, 2.776445105, 2.570581836,
     2.446911851, 2.364624252, 2.306004135, 2.262157163, 2.228138852, 2.200985160, 2.178812830];
-  const TYPES = [['linear', 'Linear', 2], ['polynomial', 'Polynomial (quadratic)', 3],
-    ['logarithmic', 'Logarithmic', 2], ['exponential', 'Exponential', 2]];
+  const TYPES = [['linear', 'Linear', 2], ['logarithmic', 'Logarithmic', 2], ['exponential', 'Exponential', 2]];
 
   function inverse(matrix) {
     const n = matrix.length;
@@ -44,20 +43,23 @@
     const total = points.reduce((sum, point) => sum + (point.score - mean) ** 2, 0);
     const r2 = total < 1e-20 ? (residual < 1e-20 ? 1 : 0) : 1 - residual / total;
     if (!Number.isFinite(r2)) return null;
-    const confidence = time => {
+    const interval = (time, futureObservation = false) => {
       const vector = gradient(time);
       const leverage = vector.reduce((sum, a, i) => sum + vector.reduce((inner, b, j) => inner + a * covarianceBase[i][j] * b, 0), 0);
-      const margin = T95[df] * Math.sqrt(Math.max(0, residual / df * leverage));
+      // A future observation includes residual noise as well as fitted-mean uncertainty.
+      const margin = T95[df] * Math.sqrt(Math.max(0, residual / df * (leverage + Number(futureObservation))));
       const value = predict(time);
       return { value, lower: value - margin, upper: value + margin };
     };
+    const confidence = time => interval(time);
+    const prediction = time => interval(time, true);
     const firstTime = points[0].time, lastTime = points.at(-1).time;
     const samples = Array.from({ length: 81 }, (_, i) => {
       const time = firstTime + (lastTime - firstTime) * i / 80;
       return { time, ...confidence(time) };
     });
     if (samples.some(sample => ![sample.value, sample.lower, sample.upper].every(Number.isFinite))) return null;
-    return { kind, label, count: points.length, parameterCount, df, r2: Math.min(1, r2), residual, predict, confidence, samples };
+    return { kind, label, count: points.length, parameterCount, df, r2: Math.min(1, r2), residual, predict, confidence, prediction, samples };
   }
 
   function fitBasis(kind, label, points, basis) {
@@ -113,7 +115,6 @@
     const centered = time => 2 * (time - start) / span - 1;
     const fits = points.length < 3 ? [] : [
       fitBasis('linear', 'Linear', points, time => [1, centered(time)]),
-      fitBasis('polynomial', 'Polynomial (quadratic)', points, time => [1, centered(time), centered(time) ** 2]),
       fitBasis('logarithmic', 'Logarithmic', points, time => [1, Math.log1p((time - start) / 86400000)]),
       fitExponential(points, start, span)
     ].filter(Boolean);
@@ -122,5 +123,20 @@
     return { best, models: TYPES.map(([kind, label, parameters]) => ({ kind, label, fit: fits.find(fit => fit.kind === kind) || null, required: parameters + 1 })), points };
   }
 
-  return { fitRegressions };
+  function projectOneDay(fit, latestReportDate) {
+    const reportTime = Date.parse(latestReportDate), endTime = reportTime + 86400000;
+    if (!fit || !Number.isFinite(reportTime) || reportTime < fit.samples.at(-1).time) return null;
+    const curve = Array.from({ length: 25 }, (_, i) => {
+      const time = fit.samples.at(-1).time + (endTime - fit.samples.at(-1).time) * i / 24;
+      return { time, value: fit.predict(time) };
+    });
+    const band = Array.from({ length: 17 }, (_, i) => {
+      const time = reportTime + 86400000 * i / 16;
+      return { time, ...fit.prediction(time) };
+    });
+    if (curve.some(point => !Number.isFinite(point.value)) || band.some(point => ![point.value, point.lower, point.upper].every(Number.isFinite))) return null;
+    return { reportTime, curve, band, point: band.at(-1) };
+  }
+
+  return { fitRegressions, projectOneDay };
 });

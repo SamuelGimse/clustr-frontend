@@ -19,6 +19,13 @@
     return score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral';
   }
 
+  function projectionHtml(forecast, esc) {
+    if (!forecast) return '<p class="dash-footnote">No stable one-day projection is available.</p>';
+    const number = value => Math.abs(value) >= 1000 ? `${value > 0 ? '+' : ''}${value.toExponential(1)}` : scoreText(Number(value.toFixed(1)));
+    const date = new Date(forecast.point.time).toLocaleDateString('en', { timeZone: 'Europe/Oslo', month: 'short', day: 'numeric' });
+    return `<div class="dash-projection-readout"><p class="dash-kicker">+1 DAY · ${esc(date)}</p><strong>${number(forecast.point.value)}</strong><span>95% prediction interval<br><b>${number(forecast.point.lower)} to ${number(forecast.point.upper)}</b></span><small>News impact · one day after the latest report${Math.abs(forecast.point.value) > 10 ? ' · raw estimate outside the chart scale' : ''}</small></div>`;
+  }
+
   function buildSummary(publishes, groups, selectedMarket, util, atlas) {
     const scoped = publishes.filter(publish => String(publish.market || 'US').toUpperCase() === selectedMarket);
     const model = atlas.buildModel(scoped, groups, 'days', util);
@@ -91,15 +98,28 @@
     const compact = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 600px)').matches;
     const width = compact ? Math.max(220, (document.getElementById('dashboardView')?.clientWidth || window.innerWidth) - 42) : 810;
     const left = compact ? 36 : 48, right = compact ? width - 12 : 762;
-    const firstTime = Date.parse(days[0].date), span = Date.parse(days.at(-1).date) - firstTime;
+    const forecast = regression.projectOneDay(fits.best, days.at(-1).date);
+    const firstTime = Date.parse(days[0].date), lastTime = forecast?.point.time || Date.parse(days.at(-1).date), span = lastTime - firstTime;
     const x = time => span ? left + (time - firstTime) / span * (right - left) : (left + right) / 2;
     const y = score => 220 - (score + 10) * 9;
-    const coord = (point, field) => `${x(point.time).toFixed(2)} ${y(point[field]).toFixed(2)}`;
+    const coord = (point, field) => `${x(point.time).toFixed(2)} ${y(Math.max(-1000, Math.min(1000, point[field]))).toFixed(2)}`;
+    const area = samples => `M${samples.map(point => coord(point, 'upper')).join(' L')} L${[...samples].reverse().map(point => coord(point, 'lower')).join(' L')} Z`;
     const best = fits.best;
+    const futureBand = forecast ? `<path class="dash-prediction" d="${area(forecast.band)}"><title>95% model-based prediction interval for a future news impact, including residual noise. Exponential intervals are approximate. Values outside the axis are clipped.</title></path>` : '';
+    const zone = forecast ? `<rect class="dash-forecast-zone" x="${x(forecast.reportTime)}" y="40" width="${right - x(forecast.reportTime)}" height="180"/><line class="dash-forecast-divider" x1="${x(forecast.reportTime)}" x2="${x(forecast.reportTime)}" y1="40" y2="220"/>` : '';
     const band = best ? `<path class="dash-confidence" d="M${best.samples.map(point => coord(point, 'upper')).join(' L')} L${[...best.samples].reverse().map(point => coord(point, 'lower')).join(' L')} Z"><title>${best.kind === 'exponential' ? 'Approximate ' : ''}95% pointwise confidence interval for the fitted mean, conditional on the selected model and independent errors. Values outside the axis are clipped.</title></path>` : '';
-    const curves = fits.models.filter(model => model.fit && (showAllFits || model.fit === best)).map(model => `<path class="dash-fit dash-fit--${model.kind}${model.fit === best ? ' dash-fit--best' : ''}" d="M${model.fit.samples.map(point => coord(point, 'value')).join(' L')}"><title>${model.label} · R² ${model.fit.r2.toFixed(3)}${model.fit === best ? ' · selected best fit' : ''}</title></path>`).join('');
-    const labels = days.filter((day, index) => index === 0 || index === days.length - 1 || (compact ? index === Math.floor((days.length - 1) / 2) : index % 3 === 0)).map(day => `<text x="${x(Date.parse(day.date)).toFixed(1)}" y="248" text-anchor="${day === days[0] ? 'start' : day === days.at(-1) ? 'end' : 'middle'}">${esc(new Date(day.date).toLocaleDateString('en', { timeZone: 'Europe/Oslo', month: 'short', day: 'numeric' }))}</text>`).join('');
-    return `<svg class="dash-impact-chart" viewBox="0 0 ${width} 260" role="img" aria-label="${esc(series.name)}: scatter plot of ${scored.length} daily cluster impacts${best ? ` with ${best.label.toLowerCase()} regression and a 95% confidence band` : ', insufficient days for regression'}"><defs><clipPath id="dash-trend-plot"><rect x="${left}" y="40" width="${right - left}" height="180"/></clipPath></defs>${[-10, -5, 0, 5, 10].map(score => `<line x1="${left}" x2="${right}" y1="${y(score)}" y2="${y(score)}" class="dash-gridline"/><text x="8" y="${y(score) + 4}">${score > 0 ? '+' : ''}${score}</text>`).join('')}<g clip-path="url(#dash-trend-plot)">${band}${curves}</g>${scored.map(day => `<circle cx="${x(Date.parse(day.date)).toFixed(1)}" cy="${y(day.score).toFixed(1)}" r="5" class="dash-observed-dot"><title>${esc(series.name)} · ${esc(new Date(day.date).toLocaleDateString('en', { timeZone: 'Europe/Oslo' }))}: ${scoreText(day.score)} news impact</title></circle>`).join('')}${labels}</svg>`;
+    const curves = fits.models.filter(model => model.fit && (showAllFits || model.fit === best)).map(model => {
+      const classes = `dash-fit dash-fit--${model.kind}${model.fit === best ? ' dash-fit--best' : ''}`;
+      const extension = forecast ? regression.projectOneDay(model.fit, days.at(-1).date) : null;
+      const past = `<path class="${classes}" d="M${model.fit.samples.map(point => coord(point, 'value')).join(' L')}"><title>${model.label} · R² ${model.fit.r2.toFixed(3)}</title></path>`;
+      const future = extension ? `<path class="${classes} dash-fit--projection" d="M${extension.curve.map(point => coord(point, 'value')).join(' L')}"><title>${model.label} · +1 day model projection</title></path>` : '';
+      return past + future;
+    }).join('');
+    const ticks = days.filter((day, index) => index === 0 || index === days.length - 1 || (compact ? index === Math.floor((days.length - 1) / 2) : index % 3 === 0)).filter(day => !forecast || right - x(Date.parse(day.date)) > 50);
+    const labels = ticks.map(day => `<text x="${x(Date.parse(day.date)).toFixed(1)}" y="248" text-anchor="${day === days[0] ? 'start' : !forecast && day === days.at(-1) ? 'end' : 'middle'}">${esc(new Date(day.date).toLocaleDateString('en', { timeZone: 'Europe/Oslo', month: 'short', day: 'numeric' }))}</text>`).join('');
+    const projectionLabel = forecast ? `<text x="${right}" y="28" text-anchor="end">+1 day</text><text x="${right}" y="248" text-anchor="end">${esc(new Date(forecast.point.time).toLocaleDateString('en', { timeZone: 'Europe/Oslo', month: 'short', day: 'numeric' }))}</text>` : '';
+    const marker = forecast && Math.abs(forecast.point.value) <= 10 ? `<circle class="dash-projection-dot" cx="${right}" cy="${y(forecast.point.value)}" r="4"><title>Projected impact: ${scoreText(forecast.point.value)}</title></circle>` : '';
+    return `<svg class="dash-impact-chart" viewBox="0 0 ${width} 260" role="img" aria-label="${esc(series.name)}: scatter plot of ${scored.length} daily cluster impacts${forecast ? ', plus a one-day projection with a 95% prediction interval' : ''}${best ? ` with ${best.label.toLowerCase()} regression and a 95% confidence band` : ', insufficient days for regression'}"><defs><clipPath id="dash-trend-plot"><rect x="${left}" y="40" width="${right - left}" height="180"/></clipPath></defs>${[-10, -5, 0, 5, 10].map(score => `<line x1="${left}" x2="${right}" y1="${y(score)}" y2="${y(score)}" class="dash-gridline"/><text x="8" y="${y(score) + 4}">${score > 0 ? '+' : ''}${score}</text>`).join('')}<g clip-path="url(#dash-trend-plot)">${zone}${band}${futureBand}${curves}</g>${scored.map(day => `<circle cx="${x(Date.parse(day.date)).toFixed(1)}" cy="${y(day.score).toFixed(1)}" r="5" class="dash-observed-dot"><title>${esc(series.name)} · ${esc(new Date(day.date).toLocaleDateString('en', { timeZone: 'Europe/Oslo' }))}: ${scoreText(day.score)} news impact</title></circle>`).join('')}${marker}${labels}${projectionLabel}</svg>`;
   }
 
   function coverageChart(days, esc) {
@@ -119,20 +139,23 @@
     if (!series) return '<section class="dash-panel dash-panel--wide"><p class="dash-kicker">CLUSTER TREND</p><p>No cluster history is available.</p></section>';
     trendCluster = series.name;
     const fits = regression.fitRegressions(series.days), best = fits.best;
+    const forecast = regression.projectOneDay(best, series.days.at(-1).date);
+    const projectionKeys = forecast ? '<span><i class="dash-key-projection"></i>+1 day projection</span><span><i class="dash-key-prediction"></i>95% prediction interval</span>' : '';
     const shown = fits.models.filter(model => model.fit && (showAllFits || model.fit === best));
     const options = summary.clusterTrends.map(item => `<option value="${esc(item.name)}"${item === series ? ' selected' : ''}>${esc(item.name)}</option>`).join('');
     const controls = `<div class="dash-trend-controls"><label for="dashTrendCluster">Cluster</label><select id="dashTrendCluster" data-dash-cluster>${options}</select><label class="dash-show-fits"><input type="checkbox" data-dash-show-fits${showAllFits ? ' checked' : ''}>Show all regression fits</label></div>`;
     const keys = shown.map(model => `<span><i class="dash-key-model dash-key-model--${model.kind}${model.fit === best ? ' dash-key-best' : ''}"></i>${model.label}${model.fit === best ? ' · best' : ''}</span>`).join('');
-    const legend = `<div class="dash-chart-key"><span><i class="dash-key-observed"></i>Cluster impact</span>${keys}${best ? '<span><i class="dash-key-confidence"></i>95% confidence band</span>' : ''}</div>`;
+    const legend = `<div class="dash-chart-key"><span><i class="dash-key-observed"></i>Cluster impact</span>${keys}${projectionKeys}${best ? '<span><i class="dash-key-confidence"></i>95% mean CI</span>' : ''}</div>`;
     const rows = fits.models.map(model => {
       const value = model.fit ? model.fit.r2.toFixed(3) : fits.points.length < model.required ? `Needs ${model.required} days` : 'Not estimable';
       const chosen = model.fit && model.fit === best;
       return `<tr${chosen ? ' class="is-best"' : ''}><th scope="row">${model.label}${chosen ? ' <span>Best</span>' : ''}</th><td>${value}</td></tr>`;
     }).join('');
     const comparison = `<table class="dash-model-comparison"><caption>Original-scale R²</caption><tbody>${rows}</tbody></table>`;
-    const result = best ? `R² ${best.r2.toFixed(3)} · ${best.count} scored report days` : 'At least 3 scored days; 4 for quadratic';
+    const result = best ? `R² ${best.r2.toFixed(3)} · ${best.count} scored report days` : 'At least 3 scored report days';
+    const projection = best ? projectionHtml(forecast, esc) : '';
     const approximate = best?.kind === 'exponential' ? '; exponential intervals are approximate' : '';
-    return `<section class="dash-panel dash-panel--wide dash-trend-panel"><div class="dash-panel-head"><div><p class="dash-kicker">CLUSTER TREND</p><h2>News impact by report day</h2><p class="dash-trend-scope">Latest approved report per Oslo day · up to 14 report days</p></div>${controls}</div><div class="dash-trend-layout"><div>${impactChart(series, fits, esc)}${legend}<p class="dash-footnote">Dots show only ${esc(series.name)}. Missing scores are omitted. The 95% band estimates the fitted mean under independent-error assumptions${approximate}. Selection by in-sample R² can favour more flexible curves.</p></div><div class="dash-trend-readout"><p class="dash-kicker">BEST FIT FOR THIS CLUSTER</p><strong>${best ? best.label : 'More history needed'}</strong><span>${result}</span>${comparison}<p>Fits use the same observations for this cluster. Confidence is conditional on the selected model. This is descriptive history.</p></div></div></section>`;
+    return `<section class="dash-panel dash-panel--wide dash-trend-panel"><div class="dash-panel-head"><div><p class="dash-kicker">CLUSTER TREND</p><h2>News impact by report day</h2><p class="dash-trend-scope">Latest approved report per Oslo day · up to 14 report days · +1 day projection</p></div>${controls}</div><div class="dash-trend-layout"><div>${impactChart(series, fits, esc)}${legend}<p class="dash-footnote">Dots show only ${esc(series.name)}. Missing scores are omitted. Historical band: 95% fitted-mean CI. Future band: 95% prediction interval${approximate}. Both assume independent, normally distributed residuals. Forecast accuracy has not been backtested.</p></div><div class="dash-trend-readout"><p class="dash-kicker">BEST FIT FOR THIS CLUSTER</p><strong>${best ? best.label : 'More history needed'}</strong><span>${result}</span>${projection}${comparison}<p>Fits use the same observations for this cluster. R² describes historical fit. Projections and intervals are conditional on this model.</p></div></div></section>`;
   }
 
   function paint(root, summary) {
