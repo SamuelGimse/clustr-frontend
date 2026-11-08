@@ -97,3 +97,23 @@
   .atlas-detail-score { width: 100%; text-align: left; }
   .atlas-switch button { flex: 1; padding: 9px 6px; }
 }
+
+/* Price and impact have independent readings and scales. */
+.atlas-table td { height:70px; }
+.atlas-cell { min-width:88px; height:60px; gap:3px; }
+.atlas-cell .atlas-cell-price { color:var(--text); font-size:10px; }
+.atlas-cell .atlas-price-change { font-size:10px; }
+.atlas-price-change--up, .atlas-cell .atlas-price-change--up { color:var(--up); }
+.atlas-price-change--down, .atlas-cell .atlas-price-change--down { color:var(--down); }
+.atlas-price-change--flat, .atlas-price-change--missing { color:var(--atlas-muted); }
+.atlas-price-readout { display:flex; align-items:baseline; gap:12px; font-variant-numeric:tabular-nums; }
+.atlas-price-readout > strong { font-size:16px; }
+.atlas-price-readout > span { font-size:13px; }
+.atlas-axis { fill:var(--atlas-muted); font-size:10px; }
+.atlas-line { height:auto; aspect-ratio:560 / 150; margin-top:10px; }
+.atlas-line--price .atlas-path { stroke:var(--text); stroke-dasharray:5 3; }
+.atlas-point--price { fill:var(--text); }
+.atlas-detail-panel--wide { grid-column:1 / -1; }
+
+.atlas-detail-panel h3 { flex-wrap:wrap; align-items:center; min-height:24px; }
+@media (max-width:560px) { .atlas-axis { font-size:12px; } }
