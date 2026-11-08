@@ -7,15 +7,17 @@
   const STORAGE_KEY = 'clustr-theme';
   const WALLPAPER_KEY = 'clustr-wallpaper';
   const FONT_KEY = 'clustr-font';
+  const SURFACE_STYLE_KEY = 'clustr-surface-style';
   const SCREEN_STYLE_KEY = 'clustr-screen-style';
 
   const root = document.documentElement;
   const themeMenu = document.getElementById('themeMenu');
   const wallpaperToggle = document.getElementById('wallpaperToggle');
   const fontChoice = document.getElementById('fontChoice');
+  const surfaceStyleChoice = document.getElementById('surfaceStyleChoice');
   const screenStyleChoice = document.getElementById('screenStyleChoice');
   const proButtons = [...(themeMenu?.querySelectorAll('[data-pro-theme]') || [])];
-  const proThemes = new Set(proButtons.map(button => button.getAttribute('data-theme')));
+  const proThemes = new Set([...proButtons.map(button => button.getAttribute('data-theme')), 'glass-crt', 'minimal', 'minimal-dark']);
   let proAccess = false;
   let selectedTheme = DEFAULT_THEME;
 
@@ -30,11 +32,21 @@
   function setScreenStyle(value, persist = true) {
     if (value === 'crt' && !proAccess) return;
     const style = value === 'crt' ? 'crt' : 'clean';
-    if (style === 'clean' && selectedTheme === 'glass-crt') applyTheme(DEFAULT_THEME, persist);
     root.setAttribute('data-screen-style', style);
     if (screenStyleChoice) screenStyleChoice.value = style;
     if (persist) {
       try { localStorage.setItem(SCREEN_STYLE_KEY, style); } catch (e) { /* ignore */ }
+    }
+  }
+
+  function setSurfaceStyle(value, persist = true) {
+    if (value === 'minimal' && !proAccess) return;
+    const style = ['glass', 'minimal'].includes(value) ? value : 'original';
+    if (style === 'original') root.removeAttribute('data-surface-style');
+    else root.setAttribute('data-surface-style', style);
+    if (surfaceStyleChoice) surfaceStyleChoice.value = style;
+    if (persist) {
+      try { localStorage.setItem(SURFACE_STYLE_KEY, style); } catch (e) { /* ignore */ }
     }
   }
 
@@ -76,12 +88,12 @@
     if (proThemes.has(theme) && !proAccess) return;
     selectedTheme = theme;
     // Clustr is the renamed legacy dark design, kept byte-for-byte compatible.
-    const appliedTheme = theme === 'clustr' ? 'dark' : theme === 'apple-light' || theme === 'glass-crt' ? 'apple' : theme === 'material-light' ? 'material' : theme;
+    const appliedTheme = theme === 'clustr' ? 'dark' : theme === 'apple-light' ? 'apple' : theme === 'material-light' ? 'material' : theme;
     root.setAttribute('data-theme', appliedTheme);
     if (theme === 'apple-light' || theme === 'material-light') root.setAttribute('data-color-mode', 'light');
-    else if (theme === 'apple' || theme === 'glass-crt') root.setAttribute('data-color-mode', 'dark');
+    else if (theme === 'apple') root.setAttribute('data-color-mode', 'dark');
     else root.removeAttribute('data-color-mode');
-    if (theme === 'glass-crt' || theme === 'crt' || theme === 'dos-amber') setScreenStyle('crt', persist);
+    if (theme === 'crt' || theme === 'dos-amber') setScreenStyle('crt', persist);
     if (persist) {
       try { localStorage.setItem(STORAGE_KEY, theme); } catch (e) { /* ignore */ }
     }
@@ -110,6 +122,18 @@
       saved = localStorage.getItem(STORAGE_KEY) || DEFAULT_THEME;
       // Dark was the former implicit default; make the new Apple design the default.
       if (saved === 'dark') saved = DEFAULT_THEME;
+      if (saved === 'glass-crt') {
+        saved = DEFAULT_THEME;
+        localStorage.setItem(STORAGE_KEY, saved);
+        localStorage.setItem(SURFACE_STYLE_KEY, 'glass');
+        localStorage.setItem(SCREEN_STYLE_KEY, 'crt');
+      }
+      if (saved === 'minimal' || saved === 'minimal-dark') {
+        const minimalTheme = saved;
+        saved = minimalTheme === 'minimal' ? 'apple-light' : DEFAULT_THEME;
+        localStorage.setItem(STORAGE_KEY, saved);
+        localStorage.setItem(SURFACE_STYLE_KEY, 'minimal');
+      }
     } catch (e) {
       /* ignore */
     }
@@ -124,14 +148,20 @@
       button.title = proAccess ? 'Pro theme' : 'Available with Pro';
     });
     if (screenStyleChoice) screenStyleChoice.disabled = !proAccess;
+    const minimalOption = surfaceStyleChoice?.querySelector('option[value="minimal"]');
+    if (minimalOption) minimalOption.disabled = !proAccess;
     let saved;
     try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) { /* ignore */ }
     if (proAccess && proThemes.has(saved)) applyTheme(saved, false);
     if (!proAccess && proThemes.has(saved)) applyTheme(DEFAULT_THEME, false);
+    let savedSurfaceStyle;
+    try { savedSurfaceStyle = localStorage.getItem(SURFACE_STYLE_KEY); } catch (e) { /* ignore */ }
+    const surfaceStyle = savedSurfaceStyle || (selectedTheme === 'apple' || selectedTheme === 'apple-light' ? 'glass' : 'original');
+    setSurfaceStyle(!proAccess && surfaceStyle === 'minimal' ? 'glass' : surfaceStyle, false);
     let savedStyle;
     try { savedStyle = localStorage.getItem(SCREEN_STYLE_KEY); } catch (e) { /* ignore */ }
-    const retroTheme = ['glass-crt', 'crt', 'dos-amber'].includes(selectedTheme);
-    setScreenStyle(proAccess && (savedStyle === 'crt' || !savedStyle && retroTheme || selectedTheme === 'glass-crt') ? 'crt' : 'clean', false);
+    const retroTheme = ['crt', 'dos-amber'].includes(selectedTheme);
+    setScreenStyle(proAccess && (savedStyle === 'crt' || !savedStyle && retroTheme) ? 'crt' : 'clean', false);
   }
 
   function setWallpaper(enabled) {
@@ -146,6 +176,7 @@
   setWallpaper(wallpaperEnabled);
   wallpaperToggle?.addEventListener('change', () => setWallpaper(wallpaperToggle.checked));
   fontChoice?.addEventListener('change', () => setFont(fontChoice.value));
+  surfaceStyleChoice?.addEventListener('change', () => setSurfaceStyle(surfaceStyleChoice.value));
   screenStyleChoice?.addEventListener('change', () => setScreenStyle(screenStyleChoice.value));
   let savedFont;
   try { savedFont = localStorage.getItem(FONT_KEY); } catch (e) { /* ignore */ }

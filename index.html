@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=appearance-2" />
+  <link rel="stylesheet" href="styles.css?v=appearance-4" />
   <link rel="stylesheet" href="polymarket.css?v=1" />
   <link rel="stylesheet" href="connections/connections.css?v=3" />
   <link rel="stylesheet" href="stocks.css?v=glass-and-themes-1" />
@@ -262,14 +262,11 @@
       <section id="accountView" class="hidden account-page" aria-label="Account and subscription">
         <div class="account-shell"><div class="account-eyebrow">CLUSTR / ACCOUNT</div><h1 id="accountTitle">Free account</h1><p id="accountMessage" class="account-message" role="status"></p><div id="accountContent"></div><section class="account-plan account-appearance"><h2>Appearance</h2>
           <div id="themeMenu" class="theme-menu account-theme-menu" role="group" aria-label="Theme">
-            <button type="button" data-theme="apple">Glass Dark</button>
-            <button type="button" data-theme="apple-light">Glass Light</button>
-            <button type="button" data-theme="glass-crt" data-pro-theme disabled>Glass × CRT</button>
+            <button type="button" data-theme="apple">Dark</button>
+            <button type="button" data-theme="apple-light">Light</button>
             <button type="button" data-theme="material" data-pro-theme disabled>Material</button>
             <button type="button" data-theme="material-light" data-pro-theme disabled>Material Light</button>
             <button type="button" data-theme="clustr" data-pro-theme disabled>Clustr</button>
-            <button type="button" data-theme="minimal" data-pro-theme disabled>Minimal</button>
-            <button type="button" data-theme="minimal-dark" data-pro-theme disabled>Minimal Dark</button>
             <button type="button" data-theme="pure-black" data-pro-theme disabled>Black</button>
             <button type="button" data-theme="crt" data-pro-theme disabled>CRT Tube</button>
             <button type="button" data-theme="dos-amber" data-pro-theme disabled>DOS Amber</button>
@@ -278,7 +275,7 @@
             <button type="button" data-theme="aurora-glass" data-pro-theme disabled>Aurora Glass</button>
             <button type="button" data-theme="old-school-rpg" data-pro-theme disabled>Old School RPG</button>
           </div>
-          <div class="appearance-options"><label>Font<select id="fontChoice"><option value="theme">Theme default</option><option value="sans">Modern sans</option><option value="serif">Classic serif</option><option value="mono">Monospace</option><option value="fira">Fira Code</option></select></label><label>Screen style <span class="appearance-pro-label">PRO</span><select id="screenStyleChoice" disabled><option value="clean">Clean</option><option value="crt">CRT Tube</option></select></label></div>
+          <div class="appearance-options"><label>Font<select id="fontChoice"><option value="theme">Theme default</option><option value="sans">Modern sans</option><option value="serif">Classic serif</option><option value="mono">Monospace</option><option value="fira">Fira Code</option></select></label><label>Surface style<select id="surfaceStyleChoice"><option value="original">Theme default</option><option value="glass">Glass</option><option value="minimal" disabled>Minimal · Pro</option></select></label><label>Screen style <span class="appearance-pro-label">PRO</span><select id="screenStyleChoice" disabled><option value="clean">Clean</option><option value="crt">CRT Tube</option></select></label></div>
           <label><input id="wallpaperToggle" type="checkbox"> Show desktop wallpaper</label><p class="account-plan-note">Available with Grassy Hill, Aqua Classic, and Aurora Glass.</p></section></div>
       </section>
       <section id="adminView" class="hidden account-page" aria-label="Admin tools">
@@ -299,7 +296,7 @@
   <script src="atlas/atlas.js?v=4"></script>
   <script src="dashboard/regression.js?v=projection-2"></script>
   <script src="dashboard/dashboard.js?v=projection-4"></script>
-  <script src="js/themes.js?v=appearance-2"></script>
+  <script src="js/themes.js?v=appearance-4"></script>
   <script src="js/map.js?v=repo-exact"></script>
   <script src="js/mindmap.js?v=mobile-audit-1"></script>
   <script src="js/render.js?v=atlas-1"></script>
