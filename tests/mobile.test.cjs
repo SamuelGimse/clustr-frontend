@@ -59,6 +59,15 @@ sortEvents.toggle({ stopPropagation() {} }); assert.equal(sortAttrs['aria-expand
 assert(sortEvents.optionFocused);
 sortEvents.click({ target: { closest: () => null } }); assert.equal(sortAttrs['aria-expanded'], 'false');
 sortEvents.toggle({ stopPropagation() {} }); sortEvents.keydown({ key: 'Escape' }); assert.equal(sortAttrs['aria-expanded'], 'false'); assert(sortEvents.focused);
+const sortButtons=['size','positive','negative','impact'].map(value=>({value,classList:{toggle(name,active){this.active=active;}},getAttribute(){return value;},setAttribute(name,state){this[name]=state;}}));
+const sortSelect={};let renderedSort=null;
+const sortChangeContext={eventSort:'impact',closeEventSortMenu(){},scopedGroups:()=>[],sortEventClusters:()=>sortChangeContext.eventSort,
+  document:{getElementById:()=>sortSelect,querySelectorAll:()=>sortButtons},window:{ClustrRender:{renderEvents:sort=>{renderedSort=sort;}}}};
+vm.createContext(sortChangeContext);
+vm.runInContext(app.slice(app.indexOf('  async function changeEventSort('),app.indexOf("  document.getElementById('eventSortSelect')?.addEventListener")),sortChangeContext);
+vm.runInContext("changeEventSort('negative')",sortChangeContext);
+assert.equal(renderedSort,'negative');assert.equal(sortSelect.value,'negative');assert.equal(sortButtons[2]['aria-pressed'],'true');
+vm.runInContext("changeEventSort('invalid')",sortChangeContext);assert.equal(sortChangeContext.eventSort,'negative');
 const metaContext = { window: {}, document: { getElementById: id => id === 'prevPublishBtn' ? prev : next }, publishes: [{ title: '<unsafe>', market: '<US>', created_at: '2026-11-06T15:00:00Z' }, { title: 'Older', market: 'NO', created_at: '2026-11-05T15:00:00Z' }], currentGroups: [{}, {}], publishIndex: 0, meta: {} };
 const prev = {}, next = {};
 vm.createContext(metaContext);

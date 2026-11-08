@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="styles.css?v=compact-titles-1" />
   <link rel="stylesheet" href="polymarket.css?v=1" />
   <link rel="stylesheet" href="connections/connections.css?v=3" />
-  <link rel="stylesheet" href="watchlist.css?v=links-4" />
+  <link rel="stylesheet" href="watchlist.css?v=toolbar-1" />
   <link rel="stylesheet" href="plans.css?v=1" />
   <link rel="stylesheet" href="stocks.css?v=glass-and-themes-1" />
   <link rel="stylesheet" href="atlas/atlas.css?v=4" />
@@ -158,7 +158,29 @@
             <span class="pro-badge" data-pro-badge hidden></span>
           </div>
       </div>
-      <div id="watchlistScope" class="watchlist-scope" hidden><div class="watch-scope-controls" role="group" aria-label="Stock scope"><button type="button" data-watch-scope="all" aria-pressed="true">All stocks</button><button type="button" data-watch-scope="watchlist" aria-pressed="false">My watchlist <span>0</span></button></div><button type="button" class="watch-manage" data-watch-manage aria-label="Edit watchlist"><span class="watch-edit-long">Edit watchlist</span><span class="watch-edit-short">Edit</span></button><button type="button" class="watch-retry" data-watch-refresh hidden>Retry</button><div class="watch-link-groups" data-watch-links role="group" aria-label="Watchlist link types" hidden><span>Link types</span><label><input type="checkbox" data-watch-link="mentioned" checked><span>Mentioned</span></label><label><input type="checkbox" data-watch-link="close" checked><span>Close links</span></label><label><input type="checkbox" data-watch-link="related" checked><span>Related</span></label><label><input type="checkbox" data-watch-link="defaults" checked><span>Defaults</span></label><label><input type="checkbox" data-watch-link="movers" checked><span>Movers</span></label></div><span class="watchlist-note" data-watch-note role="status"></span></div>
+      <div class="view-toolbar">
+        <div id="watchlistScope" class="watchlist-scope" hidden>
+          <select class="view-scope-picker" data-watch-scope-select aria-label="Stock scope"><option value="all">All stocks</option><option value="watchlist">My watchlist (0)</option></select>
+          <details class="watch-filter-menu" data-watch-menu hidden>
+            <summary><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14"/><path d="M7 3v4M13 8v4M8 13v4"/></svg><span>Links</span><span data-watch-links-count>5/5</span></summary>
+            <div class="watch-filter-panel">
+              <fieldset class="watch-link-groups" data-watch-links><legend>Show clusters linked through</legend><label><input type="checkbox" data-watch-link="mentioned" checked><span>Mentioned in articles</span></label><label><input type="checkbox" data-watch-link="close" checked><span>Close links</span></label><label><input type="checkbox" data-watch-link="related" checked><span>Related stocks</span></label><label><input type="checkbox" data-watch-link="defaults" checked><span>Cluster defaults</span></label><label><input type="checkbox" data-watch-link="movers" checked><span>Market movers</span></label></fieldset>
+              <button type="button" class="watch-manage" data-watch-manage>Manage watchlist <span aria-hidden="true">→</span></button>
+            </div>
+          </details>
+          <span class="watchlist-note" data-watch-note role="status"></span><button type="button" class="watch-retry" data-watch-refresh hidden>Retry</button>
+        </div>
+        <div class="events-sort-bar">
+          <label class="view-sort-picker">Sort <select id="eventSortSelect" aria-label="Sort clusters"><option value="size">Size</option><option value="positive">Positive</option><option value="negative">Negative</option><option value="impact" selected>Impact</option></select></label>
+          <div id="eventSortOptions" class="events-sort-segmented" role="group" aria-label="Sort clusters">
+            <button type="button" class="md-btn md-btn--tonal" data-event-sort="size" title="Largest clusters first">Size</button>
+            <button type="button" class="md-btn md-btn--tonal" data-event-sort="positive" title="Most positive scores first">Positive</button>
+            <button type="button" class="md-btn md-btn--tonal" data-event-sort="negative" title="Most negative scores first">Negative</button>
+            <button type="button" class="md-btn md-btn--tonal is-active" data-event-sort="impact" title="Largest absolute scores first, regardless of sign" aria-pressed="true">Impact</button>
+          </div>
+          <span class="pro-badge events-pro-badge" data-pro-badge hidden></span>
+        </div>
+      </div>
       <header class="top-app-bar">
         <button type="button" id="burgerBtn" class="burger-btn" aria-label="Open menu" aria-expanded="false" aria-controls="side"><span class="burger-lines" aria-hidden="true"><span></span><span></span><span></span></span></button>
         <div class="publish-nav" aria-label="Publish navigation">
@@ -182,16 +204,7 @@
 
       <!-- Events -->
       <div id="eventsView">
-        <div class="events-sort-bar">
-          <span class="events-sort-label">Sort by</span>
-          <div id="eventSortOptions" class="events-sort-segmented" role="group" aria-label="Sort clusters">
-            <button type="button" class="md-btn md-btn--tonal" data-event-sort="size" title="Largest clusters first">Size</button>
-            <button type="button" class="md-btn md-btn--tonal" data-event-sort="positive" title="Most positive scores first">Positive</button>
-            <button type="button" class="md-btn md-btn--tonal" data-event-sort="negative" title="Most negative scores first">Negative</button>
-            <button type="button" class="md-btn md-btn--tonal is-active" data-event-sort="impact" title="Largest absolute scores first, regardless of sign" aria-pressed="true">Impact</button>
-          </div>
-          <span class="pro-badge events-pro-badge" data-pro-badge hidden></span>
-        </div>
+
         <details id="moversStrip" class="movers-strip md-card">
           <summary class="movers-disclosure">
             <h2 class="movers-title">Session movers</h2>
@@ -311,7 +324,7 @@
   <script src="js/auth.js?v=facebook-1"></script>
   <script src="js/cluster-taxonomy.js?v=1"></script>
   <script src="js/api.js?v=account-preview-1"></script>
-  <script src="js/watchlist.js?v=account-preview-2"></script>
+  <script src="js/watchlist.js?v=toolbar-1"></script>
   <script src="atlas/atlas.js?v=clustrmarket-1"></script>
   <script src="dashboard/regression.js?v=projection-2"></script>
   <script src="dashboard/dashboard.js?v=clustrmarket-1"></script>
@@ -324,6 +337,6 @@
   <script src="js/stocks.js?v=watch-links-1"></script>
   <script src="connections/canvas.js?v=2"></script>
   <script src="connections/connections.js?v=clustrmarket-1"></script>
-  <script src="js/app.js?v=account-preview-facebook-1"></script>
+  <script src="js/app.js?v=toolbar-1"></script>
 </body>
 </html>

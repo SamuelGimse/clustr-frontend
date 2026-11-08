@@ -1043,17 +1043,24 @@
   if (navEvents) navEvents.addEventListener('click', () => setNav('events'));
   navWatchlist?.addEventListener('click', () => setNav('watchlist'));
   if (navStocks) navStocks.addEventListener('click', () => setNav('stocks'));
-  document.querySelectorAll('[data-event-sort]').forEach(button => button.addEventListener('click', async () => {
-    eventSort = button.getAttribute('data-event-sort') || 'impact';
+  async function changeEventSort(value) {
+    if (!['size', 'positive', 'negative', 'impact'].includes(value)) return;
+    eventSort = value;
     closeEventSortMenu();
-    if (window.matchMedia('(max-width: 768px)').matches) document.getElementById('eventSortToggle')?.focus({ preventScroll: true });
+    const select = document.getElementById('eventSortSelect');
+    if (select) select.value = value;
     document.querySelectorAll('[data-event-sort]').forEach(item => {
-      const active = item === button;
+      const active = item.getAttribute('data-event-sort') === value;
       item.classList.toggle('is-active', active);
       item.setAttribute('aria-pressed', String(active));
     });
     const R = window.ClustrRender;
     if (R) await R.renderEvents(sortEventClusters(scopedGroups()), scopedGroups());
+  }
+  document.getElementById('eventSortSelect')?.addEventListener('change', event => changeEventSort(event.target.value));
+  document.querySelectorAll('[data-event-sort]').forEach(button => button.addEventListener('click', async () => {
+    await changeEventSort(button.getAttribute('data-event-sort'));
+    if (window.matchMedia('(max-width: 768px)').matches) document.getElementById('eventSortToggle')?.focus({ preventScroll: true });
   }));
   if (navMap) navMap.addEventListener('click', () => setNav('map'));
   if (navWeekly) navWeekly.addEventListener('click', () => setNav('weekly'));

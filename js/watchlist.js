@@ -169,15 +169,20 @@
     const bar = root.document.getElementById('watchlistScope');
     if (bar) {
       bar.hidden = !user || ['account', 'admin', 'watchlist', 'polymarket'].includes(view);
-      bar.querySelectorAll('[data-watch-scope]').forEach(control => {
-        const selected = control.dataset.watchScope === scope;
-        control.setAttribute('aria-pressed', String(selected)); control.classList.toggle('is-active', selected);
-        if (control.dataset.watchScope === 'watchlist') { control.disabled = !ready; control.querySelector('span').textContent = String(entries.size); }
-      });
+      const picker = bar.querySelector('[data-watch-scope-select]');
+      if (picker) {
+        picker.value = scope;
+        const option = picker.querySelector('[value="watchlist"]');
+        option.textContent = `My watchlist (${entries.size})`; option.disabled = !ready;
+      }
+      const menu = bar.querySelector('[data-watch-menu]');
+      if (menu) { menu.hidden = !isFiltered(); if (bar.hidden || menu.hidden) menu.open = false; }
+      const count = bar.querySelector('[data-watch-links-count]');
+      if (count) count.textContent = `${linkTypes.size}/${Object.keys(LINK_TYPES).length}`;
       const note = bar.querySelector('[data-watch-note]');
-      note.textContent = message || (loading ? 'Loading watchlist…' : isFiltered() ? !linkTypes.size?'No link types selected. Turn on a link type to show matching clusters.':entries.size ? 'Showing your saved stocks and linked clusters.' : 'Your watchlist is empty. Add stocks to see matching content.' : '');
+      note.textContent = message || (loading ? 'Loading watchlist…' : isFiltered() ? !linkTypes.size?'No link types selected. Turn on a link type to show matching clusters.':entries.size ? '' : 'Your watchlist is empty. Add stocks to see matching content.' : '');
       const links=bar.querySelector('[data-watch-links]');
-      if(links){links.hidden=!isFiltered();links.querySelectorAll('[data-watch-link]').forEach(control=>{control.checked=linkTypes.has(control.dataset.watchLink);control.disabled=!ready;});}
+      if(links){links.querySelectorAll('[data-watch-link]').forEach(control=>{control.checked=linkTypes.has(control.dataset.watchLink);control.disabled=!ready;});}
       bar.querySelector('[data-watch-refresh]').hidden = !message;
     }
     root.document.querySelectorAll('[data-watch-toggle]').forEach(control => {
@@ -231,11 +236,17 @@
       const toggle = event.target.closest('[data-watch-toggle]'), scopeButton = event.target.closest('[data-watch-scope]');
       if (toggle) { event.preventDefault(); event.stopPropagation(); const stock = { symbol: toggle.dataset.watchSymbol, name: toggle.dataset.watchName }; setSaved(stock, toggle.dataset.watchMarket, !includes(stock, toggle.dataset.watchMarket)).catch(() => {}); }
       if (scopeButton) setScope(scopeButton.dataset.watchScope);
-      if (event.target.closest('[data-watch-manage]')) root.ClustrApp?.showView('watchlist');
+      if (event.target.closest('[data-watch-manage]')) { root.document.querySelector('[data-watch-menu]')?.removeAttribute('open'); root.ClustrApp?.showView('watchlist'); }
+      if (!event.target.closest('[data-watch-menu]')) root.document.querySelector('[data-watch-menu]')?.removeAttribute('open');
       if (event.target.closest('[data-watch-refresh]')) refresh();
       if (event.target.closest('[data-watch-more]')) { limit += 24; paintManager(); }
     });
+    root.document.addEventListener('keydown', event => {
+      const menu = root.document.querySelector('[data-watch-menu][open]');
+      if (event.key === 'Escape' && menu) { menu.open = false; menu.querySelector('summary').focus(); }
+    });
     root.document.addEventListener('change', event => {
+      if (event.target.matches('[data-watch-scope-select]')) setScope(event.target.value);
       const link=event.target.closest('[data-watch-link]');if(link)setLinkType(link.dataset.watchLink,link.checked);
     });
     root.document.addEventListener('input', event => { if (event.target.matches('[data-watch-search]')) { search = event.target.value; limit = 12; paintManager(); } });
