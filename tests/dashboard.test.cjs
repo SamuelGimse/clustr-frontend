@@ -118,11 +118,16 @@ test('Cumulative toggle expands the zero-centered axis and restores daily fits w
   change('[data-dash-show-fits]',{checked:true});
   assert.equal((root.innerHTML.match(/class="dash-fit /g)||[]).length,3);
   assert.doesNotMatch(root.innerHTML,/class="dash-cumulative-line"/);
-  assert.doesNotMatch(root.innerHTML,/class="dash-confidence"/);
+  assert.match(root.innerHTML,/class="dash-confidence"/);
+  assert.match(root.innerHTML,/95% mean CI · approximate/);
+  assert.match(root.innerHTML,/Cumulative observations are correlated/);
+  const energyBand = root.innerHTML.match(/class="dash-confidence" d="([^"]+)"/)[1];
+  assert.doesNotMatch(energyBand, /NaN|Infinity/);
   assert(!root.innerHTML.includes('class="dash-prediction"'));
   assert.equal(focused,'[data-dash-show-fits]');
   change('[data-dash-cluster]',{value:'AI'});
   assert.match(root.innerHTML,/6 cumulative impact/);
+  assert.notEqual(root.innerHTML.match(/class="dash-confidence" d="([^"]+)"/)[1], energyBand);
   toggle();
   assert.match(root.innerHTML,/AI: scatter plot of 3 daily cluster impacts/);
   assert(!root.innerHTML.includes('class="dash-cumulative-line"'));
