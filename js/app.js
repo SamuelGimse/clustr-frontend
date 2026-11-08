@@ -650,7 +650,7 @@
     const label = account.role === 'admin' ? 'Pro · Admin' : isPermanentPro() ? 'Founding 20' : 'Pro';
     document.querySelectorAll('[data-pro-badge]').forEach(badge => {
       badge.hidden = !visible;
-      badge.textContent = visible ? label : '';
+      badge.textContent = visible ? badge.dataset?.proCompact !== undefined ? 'Pro' : label : '';
       badge.title = visible ? `${label} access is active` : '';
     });
   }
