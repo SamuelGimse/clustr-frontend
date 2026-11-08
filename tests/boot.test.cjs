@@ -11,6 +11,7 @@ async function check({ user = {}, rows = [{ id: 1 }], error = null, hash = '' } 
   const context = {
     window: {
       ClustrAuth: { restore: async () => ({ user, role: 'free' }) },
+      ClustrConnections: { hide() {}, render() {} },
       ClustrApi: { fetchPublishes: async () => { if (error) throw error; return rows; } }
     },
     runBoot: async () => calls.push('boot'),
@@ -39,6 +40,7 @@ async function check({ user = {}, rows = [{ id: 1 }], error = null, hash = '' } 
   assert(signedIn.calls.indexOf('nav:events') < signedIn.calls.indexOf('end'));
   assert((await check({ hash: '#/events' })).calls.includes('nav:events'));
   assert((await check({ hash: '#/dashboard' })).calls.includes('nav:dashboard'));
+  assert((await check({ hash: '#/connections' })).calls.includes('nav:connections'));
   const signedOut = await check({ user: null });
   assert(signedOut.calls.includes('badge'));
   assert(signedOut.calls.indexOf('nav:account') < signedOut.calls.indexOf('end'));

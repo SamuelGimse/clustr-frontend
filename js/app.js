@@ -132,6 +132,7 @@
    * @returns {void}
    */
   function setNav(which) {
+    window.ClustrConnections?.hide();
     if (which === 'admin' && authState.role !== 'admin') which = 'account';
     closeEventSortMenu();
     const changed = which !== view;
@@ -160,8 +161,11 @@
     if (adminView) adminView.classList.add('hidden');
     if (which !== 'stocks') window.ClustrStocks?.leave();
 
-    if (which !== 'polymarket' && which !== 'atlas' && which !== 'dashboard' && ['#/polymarket', '#/atlas', '#/dashboard'].includes(location.hash)) history.replaceState(null, '', location.pathname + location.search);
-    if (which === 'dashboard') {
+    if (which !== 'polymarket' && which !== 'atlas' && which !== 'dashboard' && which !== 'connections' && ['#/polymarket', '#/atlas', '#/dashboard', '#/connections'].includes(location.hash)) history.replaceState(null, '', location.pathname + location.search);
+    if (which === 'connections') {
+      history.replaceState(null, '', '#/connections');
+      window.ClustrConnections?.render(currentGroups, publishes[publishIndex]);
+    } else if (which === 'dashboard') {
       history.replaceState(null, '', '#/dashboard');
       navDashboard?.classList.add('is-active');
       navDashboard?.setAttribute('aria-current', 'page');
@@ -941,6 +945,7 @@
       else if (location.hash === '#/admin' && authState.role === 'admin') setNav('admin');
       else if (location.hash === '#/atlas') setNav('atlas');
       else if (location.hash === '#/dashboard') setNav('dashboard');
+      else if (location.hash === '#/connections') setNav('connections');
       else if (location.hash === '#/account' || new URLSearchParams(location.search).has('checkout')) setNav('account');
       else setNav('events');
       setBootStage(2, 'Your workspace is ready');

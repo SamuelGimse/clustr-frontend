@@ -1,0 +1,13 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Connections test fixture</title><link rel="stylesheet" href="../connections/connections.css"><style>body{margin:0;padding:28px;background:#101820;color:#e7f1ed;font:14px system-ui;--border:#2b3a41;--panel:#101c24;--text-primary:#e7f1ed;--text-secondary:#9aaeb2;--accent:#80dfc4}main{max-width:1400px;margin:auto}.fixture{font:11px monospace;color:#9aaeb2}@media(max-width:768px){body{padding:14px}}</style></head><body><main><p class="fixture">DESIGN TEST FIXTURE — SAMPLE DATA, NOT A LIVE REPORT</p><section id="connectionsView"></section></main><script src="../connections/connections.js"></script><script>
+import('../connections/canvas.js').then(()=>{
+const shared={symbol:'NVDA',name:'NVIDIA'};
+const chipNews={title:'Chipmaker expands production capacity',source:'Example source',date:'2026-11-08',short_summary:'Sample story for testing the connection explorer.',link:'https://example.com/chips'};
+ClustrConnections.render([
+{name:'Artificial Intelligence',market:'US',stance_score:3.1,reason:'Sample explanation: infrastructure spending links this cluster to chip suppliers.',mentioned_stocks:[shared],fixed_stocks:[{symbol:'MSFT',name:'Microsoft'}],articles:[chipNews,{title:'New AI infrastructure investment announced',source:'Example source',link:'https://example.com/ai'}]},
+{name:'Semiconductors',market:'US',stance_score:2.4,close_stocks:[shared,{symbol:'AMD',name:'AMD'}],articles:[chipNews]},
+{name:'Nuclear energy',market:'US',stance_score:1.8,fixed_stocks:[{symbol:'CEG',name:'Constellation Energy'}],articles:[{title:'Reactor permit enters final review',source:'Example source',link:'https://example.com/nuclear'}]},
+{name:'Shipping & trade',market:'US',stance_score:-2.1,close_stocks:[{symbol:'FRO',name:'Frontline'}],articles:[{title:'Route disruption changes shipping schedules',source:'Example source',link:'https://example.com/shipping'}]},
+{name:'US interest rates',market:'US',stance_score:0,fixed_stocks:[{symbol:'JPM',name:'JPMorgan'}],articles:[]}
+],{market:'US'});
+});
+</script></body></html>

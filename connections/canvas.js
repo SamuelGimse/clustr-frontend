@@ -1,0 +1,78 @@
+(function(root){
+  const colors={cluster:[.50,.87,.77],stock:[.80,.64,.91],news:[.66,.74,.79]};
+  function simulation(graph, initial) {
+    const ids=new Map(graph.nodes.map((n,i)=>[n.id,i]));
+    const positions=new Float32Array(graph.nodes.length*2),velocities=new Float32Array(positions.length);
+    graph.nodes.forEach((n,i)=>{const p=initial.get(n.id);positions[i*2]=p.x;positions[i*2+1]=p.y;});
+    const anchors=positions.slice(),links=graph.edges.map(e=>[ids.get(e.from),ids.get(e.to)]);
+    function step(){
+      for(let i=0;i<graph.nodes.length;i++)for(let j=i+1;j<graph.nodes.length;j++){
+        let dx=positions[i*2]-positions[j*2],dy=positions[i*2+1]-positions[j*2+1];
+        if(Math.abs(dx)+Math.abs(dy)<.01){dx=.1*(i+1);dy=.1;}
+        const d=Math.max(100,dx*dx+dy*dy),f=Math.min(.02,8/d);
+        velocities[i*2]+=dx*f;velocities[i*2+1]+=dy*f;velocities[j*2]-=dx*f;velocities[j*2+1]-=dy*f;
+      }
+      for(const[a,b]of links){const dx=positions[b*2]-positions[a*2],dy=positions[b*2+1]-positions[a*2+1],distance=Math.max(1,Math.hypot(dx,dy)),f=(distance-125)*.0007;velocities[a*2]+=dx/distance*f;velocities[a*2+1]+=dy/distance*f;velocities[b*2]-=dx/distance*f;velocities[b*2+1]-=dy/distance*f;}
+      for(let i=0;i<positions.length;i++){velocities[i]=(velocities[i]+(anchors[i]-positions[i])*.0008)*.82;positions[i]+=velocities[i];}
+    }
+    return{positions,step};
+  }
+  async function gpuRenderer(canvas){
+    if(!navigator.gpu)return null;
+    const adapter=await navigator.gpu.requestAdapter();if(!adapter)return null;
+    const device=await adapter.requestDevice();const context=canvas.getContext('webgpu');if(!context){device.destroy();return null;}
+    const format=navigator.gpu.getPreferredCanvasFormat();context.configure({device,format,alphaMode:'premultiplied'});
+    const shader=device.createShaderModule({code:`
+struct Out { @builtin(position) p:vec4f, @location(0) uv:vec2f, @location(1) color:vec4f }
+@vertex fn node(@builtin(vertex_index) v:u32,@location(0) center:vec2f,@location(1) radius:vec2f,@location(2) color:vec4f)->Out {
+var corners=array<vec2f,6>(vec2f(-1,-1),vec2f(1,-1),vec2f(-1,1),vec2f(-1,1),vec2f(1,-1),vec2f(1,1));
+var o:Out;o.uv=corners[v];o.p=vec4f(center+corners[v]*radius,0,1);o.color=color;return o; }
+@fragment fn dot(i:Out)->@location(0) vec4f { if(length(i.uv)>1){discard;}return vec4f(i.color.rgb*i.color.a,i.color.a); }
+@vertex fn line(@location(0) p:vec2f,@location(1) color:vec4f)->Out {var o:Out;o.p=vec4f(p,0,1);o.uv=vec2f(0);o.color=color;return o;}
+@fragment fn stroke(i:Out)->@location(0) vec4f {return vec4f(i.color.rgb*i.color.a,i.color.a);}`});
+    const blend={color:{srcFactor:'one',dstFactor:'one-minus-src-alpha'},alpha:{srcFactor:'one',dstFactor:'one-minus-src-alpha'}};
+    const nodePipeline=device.createRenderPipeline({layout:'auto',vertex:{module:shader,entryPoint:'node',buffers:[{arrayStride:32,stepMode:'instance',attributes:[{shaderLocation:0,offset:0,format:'float32x2'},{shaderLocation:1,offset:8,format:'float32x2'},{shaderLocation:2,offset:16,format:'float32x4'}]}]},fragment:{module:shader,entryPoint:'dot',targets:[{format,blend}]},primitive:{topology:'triangle-list'}});
+    const linePipeline=device.createRenderPipeline({layout:'auto',vertex:{module:shader,entryPoint:'line',buffers:[{arrayStride:24,attributes:[{shaderLocation:0,offset:0,format:'float32x2'},{shaderLocation:1,offset:8,format:'float32x4'}]}]},fragment:{module:shader,entryPoint:'stroke',targets:[{format,blend}]},primitive:{topology:'line-list'}});
+    let buffers=[];
+    return{draw(nodes,lines){for(const b of buffers)b.destroy();buffers=[];const encoder=device.createCommandEncoder(),pass=encoder.beginRenderPass({colorAttachments:[{view:context.getCurrentTexture().createView(),clearValue:{r:0,g:0,b:0,a:0},loadOp:'clear',storeOp:'store'}]});
+      for(const[data,pipeline,count,instance]of[[lines,linePipeline,lines.length/6,false],[nodes,nodePipeline,nodes.length/8,true]]){if(!count)continue;const buffer=device.createBuffer({size:data.byteLength,usage:GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST});buffers.push(buffer);device.queue.writeBuffer(buffer,0,data);pass.setPipeline(pipeline);pass.setVertexBuffer(0,buffer);pass.draw(instance?6:count,instance?count:1);}
+      pass.end();device.queue.submit([encoder.finish()]);},destroy(){buffers.forEach(b=>b.destroy());context.unconfigure();device.destroy();}};
+  }
+  function mount(container,graph,initial,onSelect){
+    container.innerHTML='<canvas class="cx-pixels" aria-hidden="true"></canvas><canvas class="cx-labels" tabindex="0" aria-label="Interactive market graph. Drag to pan, scroll or use plus and minus to zoom. Use search or the cluster list for keyboard selection."></canvas><span class="cx-backend">Canvas</span>';
+    let pixels=container.querySelector('.cx-pixels');const labels=container.querySelector('.cx-labels'),ctx=labels.getContext('2d');
+    const state=simulation(graph,initial),ids=new Map(graph.nodes.map((n,i)=>[n.id,i]));
+    let renderer=null,closed=false,frame=0,iteration=0,selected=null,query='',scale=1,offsetX=0,offsetY=0,width=1,height=1,drag=null,hover=null;
+    const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function camera(){return Math.min(width/1200,height/800)*scale;}
+    function point(i){const s=camera();return{x:(state.positions[i*2]-600)*s+width/2+offsetX,y:(state.positions[i*2+1]-400)*s+height/2+offsetY};}
+    function active(){const set=new Set();if(selected){set.add(selected);for(const e of graph.edges)if(e.from===selected||e.to===selected){set.add(e.from);set.add(e.to);}}return set;}
+    function draw(){
+      if(closed)return;ctx.clearRect(0,0,width,height);const nodes=[],lines=[],lit=active();
+      for(const e of graph.edges){const a=point(ids.get(e.from)),b=point(ids.get(e.to)),alpha=selected&&e.from!==selected&&e.to!==selected?.04:.35;
+        if(renderer&&e.kind!=='Default exposure'){for(const p of[a,b])lines.push(p.x/width*2-1,1-p.y/height*2,.5,.87,.77,alpha);}
+        else{ctx.beginPath();ctx.setLineDash(e.kind==='Default exposure'?[3,5]:[]);ctx.strokeStyle=`rgba(128,220,196,${alpha})`;ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}}
+      ctx.setLineDash([]);
+      graph.nodes.forEach((n,i)=>{const p=point(i),match=!query||`${n.label} ${n.name||''}`.toLowerCase().includes(query),alpha=!match||selected&&!lit.has(n.id)?.09:1,r=n.type==='cluster'?8:n.type==='stock'?4:2.5,c=colors[n.type];
+        if(renderer)nodes.push(p.x/width*2-1,1-p.y/height*2,r/width*2,r/height*2,...c,alpha);
+        else{ctx.beginPath();ctx.fillStyle=`rgba(${c.map(v=>Math.round(v*255)).join(',')},${alpha})`;ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fill();}
+        if(n.type==='cluster'||n.id===hover||selected&&lit.has(n.id)){ctx.globalAlpha=alpha;ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillStyle=getComputedStyle(container).color;const text=n.label.length>30?n.label.slice(0,29)+'…':n.label;ctx.fillText(text,p.x,p.y+r+15);ctx.globalAlpha=1;}
+      });
+      if(renderer)renderer.draw(new Float32Array(nodes),new Float32Array(lines));
+    }
+    function tick(){frame=0;if(closed)return;if(!reduced&&iteration++<100){state.step();frame=requestAnimationFrame(tick);}draw();}
+    function request(){if(!closed&&!frame)frame=requestAnimationFrame(tick);}
+    function resize(){const rect=container.getBoundingClientRect();width=Math.max(1,rect.width);height=Math.max(1,rect.height);const dpr=Math.min(window.devicePixelRatio||1,2);for(const canvas of[pixels,labels]){canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);}ctx.setTransform(dpr,0,0,dpr,0,0);request();}
+    function hit(x,y){let found=null,dist=18;graph.nodes.forEach((n,i)=>{const p=point(i),d=Math.hypot(p.x-x,p.y-y);if(d<dist){dist=d;found=n.id;}});return found;}
+    labels.onpointerdown=e=>{drag={x:e.offsetX,y:e.offsetY,ox:offsetX,oy:offsetY};labels.setPointerCapture(e.pointerId);};
+    labels.onpointermove=e=>{if(drag){offsetX=drag.ox+e.offsetX-drag.x;offsetY=drag.oy+e.offsetY-drag.y;}else hover=hit(e.offsetX,e.offsetY);request();};
+    labels.onpointerup=e=>{if(drag&&Math.hypot(e.offsetX-drag.x,e.offsetY-drag.y)<5){const id=hit(e.offsetX,e.offsetY);if(id)onSelect(id);}drag=null;};
+    labels.onpointercancel=()=>{drag=null;};
+    labels.addEventListener('wheel',e=>{e.preventDefault();scale=Math.max(.4,Math.min(4,scale*Math.exp(-e.deltaY*.001)));request();},{passive:false});
+    labels.onkeydown=e=>{if(['+','=','-','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();if(e.key==='-')scale=Math.max(.4,scale-.2);else if(['+','='].includes(e.key))scale=Math.min(4,scale+.2);else{offsetX+=e.key==='ArrowLeft'?30:e.key==='ArrowRight'?-30:0;offsetY+=e.key==='ArrowUp'?30:e.key==='ArrowDown'?-30:0;}request();}};
+    const observer=new ResizeObserver(resize);observer.observe(container);resize();
+    gpuRenderer(pixels).then(result=>{if(closed){result?.destroy();return;}renderer=result;container.querySelector('.cx-backend').textContent=renderer?'WebGPU':'Canvas 2D';resize();}).catch(()=>{if(closed)return;pixels.replaceWith(pixels.cloneNode());pixels=container.querySelector('.cx-pixels');request();});
+    return{update(id,text){selected=id;query=text;request();},zoom(amount){scale=Math.max(.4,Math.min(4,scale+amount));request();},reset(){scale=1;offsetX=offsetY=0;request();},destroy(){closed=true;cancelAnimationFrame(frame);observer.disconnect();renderer?.destroy();}};
+  }
+  const api={simulation,mount};if(typeof module!=='undefined'&&module.exports)module.exports=api;root.ClustrGraphCanvas=api;
+})(typeof window==='undefined'?globalThis:window);

@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css?v=minimal-theme-1" />
   <link rel="stylesheet" href="polymarket.css?v=1" />
+  <link rel="stylesheet" href="connections/connections.css?v=1" />
   <link rel="stylesheet" href="stocks.css?v=1" />
   <link rel="stylesheet" href="atlas/atlas.css?v=4" />
   <link rel="stylesheet" href="dashboard/dashboard.css?v=cluster-fits-3" />
@@ -85,6 +86,7 @@
       </div>
 
       <nav class="nav-rail-list" aria-label="Views">
+        <button type="button" id="navConnections" class="nav-rail-btn" title="Explore connections" aria-label="Connections"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m5 5 14 2-7 12L5 5l14 2M5 5l7 14"/><circle cx="5" cy="5" r="3"/><circle cx="19" cy="7" r="3"/><circle cx="12" cy="19" r="3"/></svg><span class="nav-rail-label">Connections</span></button>
         <button type="button" id="navDashboard" class="nav-rail-btn" title="Overview dashboard" aria-label="Overview dashboard">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="15" width="7" height="6" rx="1.5"/></svg>
           <span class="nav-rail-label">Overview</span>
@@ -254,6 +256,7 @@
       </section>
       <section id="atlasView" class="hidden atlas-page" aria-label="Cluster Atlas"></section>
       <section id="dashboardView" class="hidden dashboard-page" aria-label="Dashboard"></section>
+      <section id="connectionsView" class="hidden" aria-label="Connected market explorer"></section>
       <section id="stocksView" class="hidden stocks-page" aria-label="Stocks and linked clusters"></section>
       <section id="polymarketView" class="hidden" aria-label="Polymarket questions and odds"><div id="clustrPolymarket"></div></section>
       <section id="accountView" class="hidden account-page" aria-label="Account and subscription">
@@ -300,6 +303,8 @@
   <script src="js/signal.js?v=repo-exact"></script>
   <script src="js/polymarket.js?v=1"></script>
   <script src="js/stocks.js?v=1"></script>
+  <script src="connections/canvas.js?v=1"></script>
+  <script src="connections/connections.js?v=1"></script>
   <script src="js/app.js?v=dashboard-1"></script>
 </body>
 </html>
