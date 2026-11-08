@@ -19,7 +19,7 @@
         auth: { flowType: 'pkce', storageKey: key, persistSession: true, autoRefreshToken: false, detectSessionInUrl: false }
       });
     }
-    if (!oauthClient) throw new Error('Social sign-in could not initialize. Reload Clustr Market and try again.');
+    if (!oauthClient) throw new Error('Google sign-in could not initialize. Reload Clustr Market and try again.');
     return oauthClient;
   }
   async function subscription(user, token) {
@@ -81,10 +81,7 @@
     catch (error) { save(null); return { session:null,user:null,role:'free',plan:null,authError:error.message || 'Could not restore your sign-in session.' }; }
   }
   async function signIn(email,password) { save(await request('/auth/v1/token?grant_type=password','POST',{email,password})); return restore(); }
-  async function signInWithProvider(provider) { const redirect=cfg().AUTH_REDIRECT_URL || root.location.origin+root.location.pathname; const { error } = await getOAuthClient().auth.signInWithOAuth({ provider, options: { redirectTo: redirect } }); if (error) throw error; }
-  async function signInWithGoogle() { return signInWithProvider('google'); }
-  async function signInWithApple() { return signInWithProvider('apple'); }
-  async function availableMethods() { const settings=await request('/auth/v1/settings'); return { apple: settings.external?.apple === true }; }
+  async function signInWithGoogle() { const redirect=cfg().AUTH_REDIRECT_URL || root.location.origin+root.location.pathname; const { error } = await getOAuthClient().auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirect } }); if (error) throw error; }
   async function signInWithEmailLink(email, createUser = false) {
     const redirect=cfg().AUTH_REDIRECT_URL || root.location.origin+root.location.pathname;
     await request('/auth/v1/otp?redirect_to='+encodeURIComponent(redirect),'POST',{email,create_user:createUser});
@@ -140,5 +137,5 @@
     if(job.status==='failed'||job.status==='interrupted') throw new Error(job.error||'Full publish failed.');
     return job.result||job;
   }
-  root.ClustrAuth={restore,signIn,signInWithGoogle,signInWithApple,signInWithEmailLink,availableMethods,signUp,resendConfirmation,resetPassword,updatePassword,signOut,checkout:()=>callBilling('create-checkout-session'),portal:()=>callBilling('create-portal-session'),runPublish,accessToken:()=>{const s=session||read();return s&&s.access_token||'';}};
+  root.ClustrAuth={restore,signIn,signInWithGoogle,signInWithEmailLink,signUp,resendConfirmation,resetPassword,updatePassword,signOut,checkout:()=>callBilling('create-checkout-session'),portal:()=>callBilling('create-portal-session'),runPublish,accessToken:()=>{const s=session||read();return s&&s.access_token||'';}};
 })(window);

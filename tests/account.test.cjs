@@ -7,7 +7,7 @@ const source = process.argv.includes('--staged')
   : fs.readFileSync(path.join(__dirname, '../js/app.js'), 'utf8');
 const elements = Object.fromEntries(['accountTitle', 'accountMessage', 'accountContent'].map(id => [id, {}]));
 const badges = [{}, {}];
-const context = { authState: {}, accountMode: 'signin', appleSignInEnabled: false, document: { getElementById: id => elements[id], querySelectorAll: () => badges }, window: { ClustrUtil: { escapeHtml: value => value } } };
+const context = { authState: {}, accountMode: 'signin', document: { getElementById: id => elements[id], querySelectorAll: () => badges }, window: { ClustrUtil: { escapeHtml: value => value } } };
 vm.createContext(context);
 vm.runInContext(source.slice(source.indexOf('  function isPermanentPro()'), source.indexOf('  function renderAdmin(')), context);
 function render(role, plan, user = { email: 'test@example.com' }) {
@@ -35,8 +35,6 @@ assert(badges.every(b => b.hidden === true && b.textContent === ''));
 assert.match(render('free', null, null), /Sign in/);
 assert.match(elements.accountContent.innerHTML, /data-account-action="email-link"/);
 assert(!elements.accountContent.innerHTML.includes('data-account-action="apple"'));
-context.appleSignInEnabled = true;
-assert.match(render('free', null, null), /data-account-action="apple"/);
 assert(badges.every(b => b.hidden));
 const admin = render('admin', null);
 assert.match(admin, /Pro is active/);

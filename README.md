@@ -2,9 +2,7 @@
 
 Static Clustr Market application. Configure its public Supabase URL and anon key in `js/config.js`, then serve this directory as a static site.
 
-Clustr Market uses Supabase Google, email/password, and passwordless email-link authentication. The Apple button appears when the Apple provider is enabled in Supabase. Free and Pro data access is enforced by Supabase policy; the private `clustr-backend` repository contains the matching RLS and billing setup.
-
-Apple web sign-in needs an Apple Developer Program App ID with Sign in with Apple, a Services ID for `clustrmarket.com`, and an Apple signing key. Configure the Services ID return URL as `https://yrykmwjcarytyroofiar.supabase.co/auth/v1/callback`, then put the Services ID and generated client secret in Supabase Authentication → Sign In / Providers → Apple. Keep the signing key and client secret out of this public repository. Apple's OAuth client secret must be renewed every six months. Until the provider is enabled, the app hides its Apple button.
+Clustr Market uses Supabase Google, email/password, and passwordless email-link authentication. Free and Pro data access is enforced by Supabase policy; the private `clustr-backend` repository contains the matching RLS and billing setup.
 
 Administrators can start a full publish from Account while the private `clustr-backend` service is running locally on port 3001. The backend checks the Supabase admin role before it runs the pipeline.
 
