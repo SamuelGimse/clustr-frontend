@@ -3,8 +3,11 @@
 .watch-link-groups {display:flex;flex:1 1 100%;flex-wrap:wrap;align-items:center;gap:6px}
 .watch-link-groups[hidden] {display:none}
 .watch-link-groups > span {font-size:11px;color:var(--text-meta);margin-right:6px}
-.watch-link-groups button {min-height:44px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--design-button-radius,9px);background:transparent;color:var(--text-meta);font:inherit;font-size:12px;cursor:pointer}
-.watch-link-groups button[aria-pressed="true"] {background:var(--panel-2);color:var(--text);border-color:var(--accent)}
+.watch-link-groups label {display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 4px;color:var(--text-meta);font-size:12px;line-height:1.4;cursor:pointer}
+.watch-link-groups input {appearance:auto;flex:0 0 14px;width:14px;height:14px;min-height:0;margin:0;padding:0;accent-color:var(--accent);cursor:pointer}
+.watch-link-groups label:has(input:checked) {color:var(--text)}
+.watch-link-groups label:has(input:disabled) {opacity:.5;cursor:wait}
+.watch-link-groups input:focus-visible {outline:2px solid var(--text-meta);outline-offset:3px}
 .watch-scope-controls { display: inline-flex; gap: 3px; padding: 3px; border: 1px solid var(--border); border-radius: var(--design-control-radius, 12px); background: transparent; }
 .watch-scope-controls button, .watchlist-action, .watch-manage, .watch-retry { min-height: 40px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--design-button-radius, 9px); background: var(--panel); color: var(--text); font: inherit; font-size: 12px; cursor: pointer; }
 .watch-scope-controls button { border-color: transparent; background: transparent; color: var(--text-meta); }
