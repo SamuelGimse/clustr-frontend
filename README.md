@@ -22,3 +22,10 @@ The manifest and icons use project-relative paths for GitHub Pages. Existing saf
 ## Polymarket
 
 The Polymarket navigation item reads stored questions, outcome prices and history from `PUBLISH_API_URL` (or `POLYMARKET_API_URL` when configured). The matching implementation is in `untitled3`: Fetch News collects up to 100 markets and adds them to the source feed, with stock-relevance filtering before publishing. `polymarket.css` and `js/polymarket.js` match the backend's standalone screen. No separate collection timer is installed. History distinguishes original Clustr snapshots from later-retrieved Polymarket prices. Outcome prices and history links also appear on published prediction-market article cards.
+
+
+## App information and footer
+
+The global footer links to `info.html` (About, guide, technology credits, Terms and Privacy), with local technology logos documented in `icons/technology/README.md`. The operator display name is Gimse Media.
+
+Terms and Privacy are deliberately marked **Draft** in the footer, Account and the documents. No consent checkbox or acceptance record is created for these drafts. Before finalizing them, obtain the operator's public contact details, confirm retention periods and processing/transfer arrangements, and confirm checkout, cancellation and refund information. Review the resulting legal documents before requesting user agreement.
