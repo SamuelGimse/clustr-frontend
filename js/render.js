@@ -102,7 +102,15 @@
       heating_degree_days_72h: 'Heating forecast', cooling_degree_days_72h: 'Cooling forecast',
       conflict_event_share: 'Conflict event share', satellite_hotspots_24h: 'Satellite hotspots'
     };
-    return `<section class="cluster-market-signals" aria-label="Dated market data"><div class="cluster-market-signals-head"><strong>Market data</strong><span>Context only · does not change news scores</span></div><div class="cluster-market-signals-list">${signals.map(item => {
+    const visible = signals.filter(item => item.source !== 'ApeWisdom').concat(signals.filter(item => item.source === 'ApeWisdom').sort((a, b) => b.value - a.value).slice(0, 5));
+    return `<section class="cluster-market-signals" aria-label="Dated market data"><div class="cluster-market-signals-head"><strong>Market data</strong><span>Context only · does not change news scores</span></div><div class="cluster-market-signals-list">${visible.map(item => {
+      if (item.source === 'ApeWisdom') {
+        const integer = value => typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? String(value) : '—';
+        const change = typeof item.mentions_change_pct === 'number' && Number.isFinite(item.mentions_change_pct) ? ` · mentions ${util.formatPct(item.mentions_change_pct)} vs 24h ago` : '';
+        const rankChange = Number.isSafeInteger(item.rank_change) ? ` · rank ${item.rank_change > 0 ? 'up ' : item.rank_change < 0 ? 'down ' : 'unchanged '}${Math.abs(item.rank_change) || ''} vs 24h ago` : '';
+        const retrieved = Number.isFinite(Date.parse(item.available_at)) ? new Date(item.available_at).toLocaleString() : 'unknown';
+        return `<div class="cluster-market-signal"><span><a href="https://apewisdom.io/" target="_blank" rel="noopener noreferrer">ApeWisdom</a> · ${util.escapeHtml(item.symbol || '')} · Reddit attention</span><strong>${integer(item.value)} mentions</strong><small>Rank #${integer(item.rank)} · ${integer(item.upvotes)} upvotes${util.escapeHtml(change + rankChange)} · retrieved ${util.escapeHtml(retrieved)}. Discussion volume, not bullish/bearish sentiment; not evidence of this news causing interest. Top-100 coverage; no upstream timestamp supplied.</small></div>`;
+      }
       const value = item.value == null ? NaN : Number(item.value);
       const formatted = Number.isFinite(value) ? `${value > 0 && String(item.metric).endsWith('_change_pct') ? '+' : ''}${value.toFixed(item.unit === 'detections' ? 0 : 1)}${item.unit === '%' ? '%' : ''}` : '—';
       return `<div class="cluster-market-signal"><span>${util.escapeHtml(item.source || '')} · ${util.escapeHtml(labels[item.metric] || item.metric || '')}</span><strong>${formatted}</strong><small>${util.escapeHtml(item.region || '')} · observed ${util.escapeHtml(String(item.observed_at || '').slice(0, 10))}</small></div>`;
