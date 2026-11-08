@@ -590,6 +590,11 @@ html[data-theme="vt220"] .cluster-name {
   --md-sys-color-outline: #1a1a1a;
   --md-sys-color-up: #00e676;
   --md-sys-color-down: #ff5252;
+  --md-surface-container: var(--panel);
+  --md-on-surface: var(--text);
+  --md-on-surface-variant: var(--text-meta);
+  --md-outline: var(--border);
+  --md-primary: var(--accent);
 }
 html[data-theme="pure-black"] body,
 html[data-theme="pure-black"] .shell,
@@ -3976,7 +3981,8 @@ html[data-theme="material"] .pm-ranges button { min-height: 40px; border-radius:
 html[data-theme="apple"] {
   --design-control-radius: 999px;
   --glass-fill: rgba(255, 255, 255, .64);
-  --glass-card: rgba(255, 255, 255, .72);
+  --glass-card: rgba(255, 255, 255, .52);
+  --glass-sheen: linear-gradient(145deg, rgba(255, 255, 255, .42), rgba(255, 255, 255, .03) 65%);
   --glass-inset: rgba(255, 255, 255, .42);
   --glass-edge: rgba(255, 255, 255, .9);
   --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, .85), inset 0 -1px 0 rgba(255, 255, 255, .3), 0 6px 24px rgba(30, 50, 80, .09);
@@ -3987,17 +3993,17 @@ html[data-theme="apple"] body {
   background-attachment: fixed;
 }
 html[data-theme="apple"] :is(.md-card, .cluster-card, .account-shell, .pm-browser, .pm-detail, .movers-strip, .weekly-summary > div, .weekly-cluster, .weekly-ai-digest, .weekly-trend-panel, .country-panel, .mindmap, .chart-folder, .dash-metric, .dash-panel, .atlas-stats span, .atlas-matrix, .atlas-detail, .stocks-cluster, .stocks-browser) {
-  background: var(--glass-card);
+  background: var(--glass-sheen), var(--glass-card);
   border: 1px solid var(--glass-edge);
   box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(18px) saturate(110%);
-  -webkit-backdrop-filter: blur(18px) saturate(110%);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
 }
 html[data-theme="apple"] :is(.md-chart, .stance, .stance-history-panel, .price-bar, .article-grid > *, .account-plan, .country-card, .tank-art-card, .tank-side, .dash-trend-readout, .atlas-detail-panel, .atlas-detail-score, .stocks-tile, .stocks-search-tools) {
   background: var(--glass-inset);
 }
 html[data-theme="apple"] .cluster-card,
-html[data-theme="apple"] .cluster-card:hover { background: color-mix(in srgb, var(--glass-card) 70%, transparent); }
+html[data-theme="apple"] .cluster-card:hover { background: var(--glass-sheen), color-mix(in srgb, var(--glass-card) 70%, transparent); }
 html[data-theme="apple"] .article-grid > * { background: color-mix(in srgb, var(--glass-inset) 70%, transparent); }
 html[data-theme="apple"] :is(.nav-rail, .top-app-bar, .mobile-topbar, .theme-menu, .events-sort-segmented, .publish-nav) {
   background: var(--glass-fill);
@@ -4059,7 +4065,8 @@ html[data-theme="apple"] .nav-rail-btn.is-active {
 @media (prefers-color-scheme: dark) {
   html[data-theme="apple"] {
     --glass-fill: rgba(60, 60, 63, .58);
-    --glass-card: rgba(32, 32, 35, .72);
+    --glass-card: rgba(32, 32, 35, .5);
+    --glass-sheen: linear-gradient(145deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, .02) 65%);
     --glass-inset: rgba(44, 44, 46, .42);
     --glass-edge: rgba(255, 255, 255, .16);
     --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), inset 0 -1px 0 rgba(255, 255, 255, .04), 0 8px 24px rgba(0, 0, 0, .24);
@@ -4082,7 +4089,8 @@ html[data-theme="apple"][data-color-mode="light"] {
   --md-sys-color-up: #16824a;
   --md-sys-color-down: #d70015;
   --glass-fill: rgba(255, 255, 255, .64);
-  --glass-card: rgba(255, 255, 255, .72);
+  --glass-card: rgba(255, 255, 255, .52);
+  --glass-sheen: linear-gradient(145deg, rgba(255, 255, 255, .42), rgba(255, 255, 255, .03) 65%);
   --glass-inset: rgba(255, 255, 255, .42);
   --glass-edge: rgba(255, 255, 255, .9);
   --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, .85), inset 0 -1px 0 rgba(255, 255, 255, .3), 0 6px 24px rgba(30, 50, 80, .09);
@@ -4529,6 +4537,32 @@ html[data-theme="grassy-hill"] .top-app-bar :is(.brand, .tagline) { color: #fff;
 html[data-theme="aqua-classic"] :is(.account-primary, .account-actions .account-primary) { background: linear-gradient(#8fddff, #2589c8 52%, #1566aa); border-color: #2b79b0; }
 html[data-theme="aurora-glass"] :is(.md-card, .cluster-card, .dash-panel, .dash-metric, .stocks-cluster, .stocks-browser, .atlas-matrix, .atlas-detail, .weekly-summary > div, .weekly-cluster, .weekly-ai-digest, .weekly-trend-panel, .pm-browser, .pm-detail, .account-shell, .country-panel) { background: rgba(250, 253, 255, .94); }
 html[data-theme="old-school-rpg"] .nav-rail-brand { color: #f2dd9b; }
+
+@media (prefers-color-scheme: dark) {
+  .theme-menu button[data-theme="apple"] { background: linear-gradient(135deg, #303033, #171719); color: #f5f5f7; border-color: #525256; --swatch-accent: #e5e5e7; }
+  .theme-menu button[data-theme="material"] { background: linear-gradient(135deg, #36343b, #141218); color: #e6e0e9; border-color: #49454f; --swatch-accent: #d0bcff; }
+}
+html[data-theme="pure-black"] :is(.account-shell, .weekly-tabs, .weekly-summary > div, .weekly-cluster, .weekly-trend-panel, .chart-folder-tabs, .events-sort-segmented) { background: var(--panel); border-color: var(--border); }
+html[data-theme="pure-black"] :is(.account-form input, .account-publish-market select) { background: var(--panel-2); border-color: var(--border); color: var(--text); }
+html[data-theme="pure-black"] :is(.account-primary, .account-actions .account-primary, .weekly-tab.is-active) { background: var(--accent); border-color: var(--accent); color: #000; }
+html[data-theme] .account-theme-menu {
+  position: static;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+  max-height: none;
+  margin: 14px 0 18px;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-theme] .account-theme-menu button { min-width: 0; min-height: 44px; }
+html[data-theme] .account-theme-menu button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 @media (min-width: 769px) {
   html[data-theme] .nav-rail { background: transparent; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }

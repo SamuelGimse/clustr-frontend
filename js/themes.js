@@ -8,7 +8,6 @@
   const WALLPAPER_KEY = 'clustr-wallpaper';
 
   const root = document.documentElement;
-  const themeBtn = document.getElementById('themeBtn');
   const themeMenu = document.getElementById('themeMenu');
   const wallpaperToggle = document.getElementById('wallpaperToggle');
 
@@ -100,28 +99,11 @@
   setWallpaper(wallpaperEnabled);
   wallpaperToggle?.addEventListener('change', () => setWallpaper(wallpaperToggle.checked));
 
-  if (themeBtn && themeMenu) {
-    themeBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      const open = themeMenu.classList.toggle('is-open');
-      themeMenu.classList.toggle('hidden', !open);
-      themeBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-
+  if (themeMenu) {
     themeMenu.querySelectorAll('[data-theme]').forEach(btn => {
-      btn.addEventListener('click', e => {
-        e.stopPropagation();
+      btn.addEventListener('click', () => {
         applyTheme(btn.getAttribute('data-theme'));
-        themeMenu.classList.remove('is-open');
-        themeMenu.classList.add('hidden');
-        themeBtn.setAttribute('aria-expanded', 'false');
       });
-    });
-
-    document.addEventListener('click', () => {
-      themeMenu.classList.remove('is-open');
-      themeMenu.classList.add('hidden');
-      themeBtn.setAttribute('aria-expanded', 'false');
     });
   }
 
@@ -168,7 +150,7 @@
     if (close) close.addEventListener('click', () => setOpen(false));
 
     // Close drawer after choosing a primary nav item on mobile
-    side.querySelectorAll('.nav-rail-btn:not(#themeBtn)').forEach(btn => {
+    side.querySelectorAll('.nav-rail-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         if (mobile.matches) {
           setOpen(false);

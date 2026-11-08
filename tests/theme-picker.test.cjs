@@ -6,7 +6,10 @@ const vm = require('node:vm');
 
 test('Theme picker shows only the requested choices and light variants stay light', () => {
   const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
-  const menu = read('index.html').match(/<div id="themeMenu"[^>]*>([\s\S]*?)<\/div>/)?.[1] || '';
+  const html = read('index.html');
+  const menu = html.match(/<div id="themeMenu"[^>]*>([\s\S]*?)<\/div>/)?.[1] || '';
+  assert.match(html, /<section id="accountView"[\s\S]*?<div id="themeMenu"/);
+  assert.doesNotMatch(html, /id="themeBtn"/);
   assert.deepEqual([...menu.matchAll(/data-theme="([^"]+)"[^>]*>([^<]+)</g)].map(match => [match[1], match[2]]), [
     ['apple', 'Glass'], ['apple-light', 'Glass Light'], ['material', 'Material'],
     ['material-light', 'Material Light'], ['clustr', 'Clustr'], ['pure-black', 'Black'],
