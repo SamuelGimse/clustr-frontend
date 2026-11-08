@@ -26,3 +26,9 @@ test('New icons preserve News as default and existing navigation order', () => {
   assert.match(html, /id="navEvents"[^>]*class="nav-rail-btn is-active"[^>]*aria-current="page"/);
   for (let i = 1; i < ids.length; i++) assert(html.indexOf('id="' + ids[i - 1] + '"') < html.indexOf('id="' + ids[i] + '"'));
 });
+test('Trends uses a readable rising node path instead of overlapping ribbons', () => {
+  const trends = html.match(/<button[^>]*id="navWeekly"[\s\S]*?<\/button>/)[0];
+  assert.match(trends, /d="m3 18 5-6 5 3 7-11"/);
+  assert.equal((trends.match(/<circle /g) || []).length, 4);
+  assert.doesNotMatch(trends, /<path[^>]*d="[^"]*[cC]/);
+});
