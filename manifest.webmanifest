@@ -4,7 +4,7 @@
   "short_name": "Clustr",
   "description": "World events mapped to stocks.",
   "lang": "en",
-  "start_url": "./",
+  "start_url": "./#/events",
   "scope": "./",
   "display": "standalone",
   "background_color": "#101720",

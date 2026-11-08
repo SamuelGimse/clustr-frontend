@@ -21,7 +21,7 @@ test('manifest URLs stay within the GitHub Pages project, including auth fragmen
   assert.equal(scope.pathname, '/clustr-frontend/');
   assert.equal(start.pathname, scope.pathname);
   assert.equal(start.search, '');
-  assert.equal(start.hash, '');
+  assert.equal(start.hash, '#/events');
 });
 
 test('Home Screen icons exist with the declared PNG dimensions', () => {

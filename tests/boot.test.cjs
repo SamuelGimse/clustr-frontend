@@ -6,7 +6,7 @@ const path = require('node:path');
 const source = fs.readFileSync(path.join(__dirname, '../js/app.js'), 'utf8');
 const init = source.slice(source.indexOf('  async function init() {'), source.indexOf("  if (navPolymarket) navPolymarket.addEventListener"));
 
-async function check({ user = {}, rows = [{ id: 1 }], error = null } = {}) {
+async function check({ user = {}, rows = [{ id: 1 }], error = null, hash = '' } = {}) {
   const calls = [];
   const context = {
     window: {
@@ -22,7 +22,7 @@ async function check({ user = {}, rows = [{ id: 1 }], error = null } = {}) {
     renderProBadges: () => calls.push('badge'),
     warmGroupsCache: () => {},
     navAdmin: null,
-    location: { hash: '', search: '' },
+    location: { hash, search: '' },
     status: { textContent: '' },
     console: { error() {} },
     URLSearchParams
@@ -37,6 +37,8 @@ async function check({ user = {}, rows = [{ id: 1 }], error = null } = {}) {
   assert(signedIn.calls.indexOf('badge') < signedIn.calls.indexOf('paint'));
   assert(signedIn.calls.indexOf('paint') < signedIn.calls.indexOf('end'));
   assert(signedIn.calls.indexOf('nav:events') < signedIn.calls.indexOf('end'));
+  assert((await check({ hash: '#/events' })).calls.includes('nav:events'));
+  assert((await check({ hash: '#/dashboard' })).calls.includes('nav:dashboard'));
   const signedOut = await check({ user: null });
   assert(signedOut.calls.includes('badge'));
   assert(signedOut.calls.indexOf('nav:account') < signedOut.calls.indexOf('end'));
