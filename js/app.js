@@ -780,24 +780,12 @@
    */
 
   /**
-   * Warm relational cluster cache for stance history (skip JSON).
-   * @param {number} [limit=12]
+   * Warm compact history without downloading full article bodies.
    * @returns {Promise<void>}
    */
-  async function warmGroupsCache(limit = 12) {
-    if (!window.ClustrApi || !window.ClustrApi.loadGroupsForPublish) return;
-    const slice = publishes.slice(0, limit);
-    for (const pub of slice) {
-      if (!pub || pub.id == null) continue;
-      if (groupsCache[pub.id] && groupsCache[pub.id].length) continue;
-      try {
-        const g = await window.ClustrApi.loadGroupsForPublish(pub);
-        groupsCache[pub.id] = g;
-        groupsCache[String(pub.id)] = g;
-      } catch (err) {
-        console.warn('warm cache', pub.id, err.message);
-      }
-    }
+  async function warmGroupsCache() {
+    try { await window.ClustrApi.fetchHistorySummaries?.(); }
+    catch (error) { console.warn('Compact history unavailable:', error.message); }
   }
 
   async function paintCurrent(reuse = false) {
@@ -852,8 +840,8 @@
     publishes = await window.ClustrApi.fetchPublishes(100);
     publishIndex = 0;
     if (publishes.length) {
+      await warmGroupsCache();
       await paintCurrent();
-      warmGroupsCache(14);
     } else if (status) status.textContent = 'No publishes yet';
   }
 
@@ -934,7 +922,7 @@
       setBootStage(1, 'Loading your market workspace…');
       // Load data while the sequence runs so enter feels instant
       const dataP = window.ClustrApi.fetchPublishes(100);
-      const [, loadedPublishes] = await Promise.all([bootP, dataP]);
+      const [, loadedPublishes] = await Promise.all([bootP, dataP, warmGroupsCache()]);
       publishes = loadedPublishes;
       publishIndex = 0;
       if (location.hash === '#/polymarket') setNav('polymarket');
@@ -948,7 +936,6 @@
       }
 
       await paintCurrent();
-      warmGroupsCache(14);
       if (location.hash === '#/polymarket') setNav('polymarket');
       else if (location.hash === '#/admin' && authState.role === 'admin') setNav('admin');
       else if (location.hash === '#/watchlist') setNav('watchlist');
@@ -1121,7 +1108,11 @@
     if (!daysView) return;
     daysView.textContent = 'Loading reports…';
     try {
-      if (window.ClustrWatchlist?.isFiltered()) {
+      let snapshots = null;
+      if (window.ClustrApi.fetchHistorySummaries) {
+        snapshots = new Map((await window.ClustrApi.fetchHistorySummaries()).map(publish => [String(publish.id), publish.groups_json || []]));
+      }
+      if (window.ClustrWatchlist?.isFiltered() && !snapshots) {
         const pending = publishes.filter(publish => !groupsCache[publish.id]);
         await Promise.all(Array.from({ length: Math.min(4, pending.length) }, async () => {
           while (pending.length && revision === reportRevision) {
@@ -1131,7 +1122,10 @@
         }));
       }
       if (revision !== reportRevision) return;
-      const rows = publishes.map((publish, index) => ({ publish, index })).filter(row => !window.ClustrWatchlist?.isFiltered() || scopedGroups(groupsCache[row.publish.id] || [], row.publish.market).length);
+      const rows = publishes.map((publish, index) => {
+        const groups = snapshots?.get(String(publish.id)) || groupsCache[publish.id] || [];
+        return { publish: { ...publish, __clusterCount: scopedGroups(groups, publish.market).length }, index };
+      }).filter(row => !window.ClustrWatchlist?.isFiltered() || row.publish.__clusterCount);
       if (!rows.length) { daysView.textContent = 'No reports match your watchlist. Add stocks or choose All stocks.'; return; }
       window.ClustrRender.renderDaysList(rows.map(row => row.publish), rows.findIndex(row => row.index === publishIndex), index => {
         publishIndex = rows[index].index; paintCurrent(); setNav('events');

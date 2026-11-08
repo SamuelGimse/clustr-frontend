@@ -1732,7 +1732,7 @@
             new Date(p.created_at).toLocaleString()
           )}</div>
         </div>
-        <div class="day-s">${(window.ClustrWatchlist?.filterGroups(window.ClustrApp?.getGroupsCache?.()[p.id] || [], p.market) || window.ClustrApp?.getGroupsCache?.()[p.id] || []).length} clusters</div>
+        <div class="day-s">${p.__clusterCount ?? (window.ClustrWatchlist?.filterGroups(window.ClustrApp?.getGroupsCache?.()[p.id] || [], p.market) || window.ClustrApp?.getGroupsCache?.()[p.id] || []).length} clusters</div>
       </button>`
       )
       .join('');

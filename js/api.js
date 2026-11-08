@@ -5,7 +5,47 @@
  */
 
 (function () {
-  let fullPublishHistoryPromise = null;
+  let fullPublishHistoryPromise = null, historySummaryPromise = null, historySummaries = [];
+  let cacheSession = null;
+  const detailRequests = new Map();
+
+  function resetCaches() {
+    fullPublishHistoryPromise = null; historySummaryPromise = null; historySummaries = []; detailRequests.clear();
+  }
+  function syncSession() {
+    const token = window.ClustrAuth?.accessToken() || '';
+    if (token !== cacheSession) { cacheSession = token; resetCaches(); }
+    return token;
+  }
+
+  async function fetchHistorySummaries() {
+    const owner = syncSession();
+    if (!historySummaryPromise) historySummaryPromise = (async () => {
+      const rows = [];
+      for (let offset = 0; ; offset += 100) {
+        const page = await rest(`rpc/clustr_history_snapshots?p_limit=100&p_offset=${offset}`);
+        if (owner !== syncSession()) throw new Error('Account changed while loading history.');
+        rows.push(...page);
+        if (page.length < 100) { historySummaries = rows; return rows; }
+      }
+    })();
+    const pending = historySummaryPromise;
+    try { return await pending; }
+    catch (error) { if (pending === historySummaryPromise) historySummaryPromise = null; throw error; }
+  }
+
+  async function fetchPublishDetail(publish) {
+    const owner = syncSession(), id = String(publish.id);
+    if (!detailRequests.has(id)) detailRequests.set(id, (async () => {
+      const rows = await rest(`clustr_publishes?select=id,groups_json&id=eq.${encodeURIComponent(id)}&limit=1`);
+      if (owner !== syncSession()) throw new Error('Account changed while loading a report.');
+      if (!rows.length) throw new Error('This report is not available to your account.');
+      return { ...publish, ...rows[0] };
+    })());
+    const pending = detailRequests.get(id);
+    try { return await pending; }
+    catch (error) { if (pending === detailRequests.get(id)) detailRequests.delete(id); throw error; }
+  }
 
   /**
    * @returns {{url: string, key: string}}
@@ -45,7 +85,7 @@
    */
   async function fetchPublishes(limit = 30) {
     return rest(
-      `clustr_publishes?select=id,title,notes,market,created_at,groups_json&market=eq.US&notes=like.PULSE%20pipeline*&order=id.desc&limit=${encodeURIComponent(String(Math.min(limit, 100)))}`
+      `clustr_publishes?select=id,title,notes,market,created_at&market=eq.US&notes=like.PULSE%20pipeline*&order=id.desc&limit=${encodeURIComponent(String(Math.min(limit, 100)))}`
     );
   }
 
@@ -55,7 +95,7 @@
     if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start > end) throw new Error('Invalid publish range');
     const all = new Map();
     for (let offset = 0; ; offset += 100) {
-      const params = new URLSearchParams({ select: 'id,title,notes,market,created_at,groups_json', market: 'eq.US', notes: 'like.PULSE pipeline*', order: 'created_at.desc,id.desc', limit: '100', offset: String(offset) });
+      const params = new URLSearchParams({ select: 'id,title,notes,market,created_at', market: 'eq.US', notes: 'like.PULSE pipeline*', order: 'created_at.desc,id.desc', limit: '100', offset: String(offset) });
       params.append('created_at', `gte.${start.toISOString()}`);
       params.append('created_at', `lte.${end.toISOString()}`);
       const page = await rest(`clustr_publishes?${params}`);
@@ -70,13 +110,14 @@
    * @returns {Promise<object[]>}
    */
   async function fetchAllPublishes() {
+    syncSession();
     if (fullPublishHistoryPromise) return fullPublishHistoryPromise;
     fullPublishHistoryPromise = (async () => {
       const pageSize = 100;
       const all = [];
       for (let offset = 0; ; offset += pageSize) {
         const page = await rest(
-          `clustr_publishes?select=id,title,notes,market,created_at,groups_json&market=eq.US&notes=like.PULSE%20pipeline*&order=id.desc&limit=${pageSize}&offset=${offset}`
+          `clustr_publishes?select=id,title,notes,market,created_at&market=eq.US&notes=like.PULSE%20pipeline*&order=id.desc&limit=${pageSize}&offset=${offset}`
         );
         all.push(...page);
         if (page.length < pageSize) return all;
@@ -215,6 +256,7 @@
    */
   async function loadGroupsForPublish(publish) {
     if (!publish) return [];
+    if (publish.id != null && String(publish.notes || '').startsWith('PULSE pipeline') && !Array.isArray(publish.groups_json)) publish = await fetchPublishDetail(publish);
     // Pipeline publishes carry the rated article objects in groups_json; prefer that
     // payload so signed per-article ratings survive the relational fallback path.
     if (String(publish.notes || '').startsWith('PULSE pipeline') && Array.isArray(publish.groups_json)) {
@@ -257,7 +299,7 @@
     const local = localStanceHistory(name, context);
 
     try {
-      const publishes = await fetchAllPublishes();
+      const publishes = await fetchHistorySummaries();
       const history = stanceHistoryFromPublishes(name, publishes, {}, context);
       if (history.length) return history;
     } catch (err) {
@@ -321,6 +363,7 @@
   }
 
   function localStanceHistory(clusterName, context = {}) {
+    syncSession();
     const publishes =
       (window.ClustrApp && typeof window.ClustrApp.getPublishes === 'function'
         ? window.ClustrApp.getPublishes()
@@ -329,7 +372,7 @@
       (window.ClustrApp && typeof window.ClustrApp.getGroupsCache === 'function'
         ? window.ClustrApp.getGroupsCache()
         : {}) || {};
-    return stanceHistoryFromPublishes(clusterName, publishes, cache, context);
+    return stanceHistoryFromPublishes(clusterName, historySummaries.length ? historySummaries : publishes, cache, context);
   }
 
   /**
@@ -397,7 +440,8 @@
     fetchPublishes,
     fetchPublishesInRange,
     fetchAllPublishes,
-    invalidatePublishHistory: () => { fullPublishHistoryPromise = null; },
+    fetchHistorySummaries,
+    invalidatePublishHistory: resetCaches,
     fetchAiSummaries,
     fetchClustersForPublish,
     loadGroupsForPublish,

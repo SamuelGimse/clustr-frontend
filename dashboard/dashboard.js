@@ -228,7 +228,7 @@
       root.innerHTML = '<div class="dash-loading" role="status">Loading dashboard from approved publishes…</div>';
       const current = revision;
       if (!loading) loading = (async () => {
-        const publishes = await window.ClustrApi.fetchAllPublishes();
+        const publishes = await (window.ClustrApi.fetchHistorySummaries || window.ClustrApi.fetchAllPublishes)();
         const groups = new Map(await Promise.all(publishes.map(async publish => [String(publish.id), await window.ClustrApi.loadGroupsForPublish(publish)])));
         return { publishes, groups };
       })();
