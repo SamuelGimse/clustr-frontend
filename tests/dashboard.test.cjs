@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const atlas = require('../atlas/atlas.js');
-const { buildSummary } = require('../dashboard/dashboard.js');
+const { buildSummary, linearTrend } = require('../dashboard/dashboard.js');
 
 global.window = {};
 require('../js/util.js');
@@ -30,10 +30,26 @@ test('Dashboard uses the latest report per day and keeps markets separate', () =
   assert.equal(us.stories, 2);
   assert.equal(us.rated, 2);
   assert.equal(us.sourceCount, 2);
+  assert.deepEqual(us.days.map(day => [day.stories, day.sources]), [[1, 1], [2, 2]]);
+  assert.deepEqual(us.distribution.map(([, count]) => count), [0, 0, 0, 2, 0]);
   assert.equal(us.stocks.length, 2);
   assert.equal(us.themes.find(theme => theme.name === 'Energy').delta, 6);
   const no = buildSummary(publishes, groups, 'NO', util, atlas);
   assert.equal(no.latest.id, 4);
   assert.equal(no.stocks.length, 0);
   assert.equal(no.days.length, 1);
+});
+
+test('Dashboard trend fits scored report days in calendar time', () => {
+  const days = [
+    { date: '2026-11-01T12:00:00Z', meanScore: -2 },
+    { date: '2026-11-02T12:00:00Z', meanScore: 0 },
+    { date: '2026-11-03T12:00:00Z', meanScore: null },
+    { date: '2026-11-04T12:00:00Z', meanScore: 4 }
+  ];
+  const trend = linearTrend(days);
+  assert.ok(Math.abs(trend.slope - 2) < 1e-10);
+  assert.ok(Math.abs(trend.r2 - 1) < 1e-10);
+  assert.equal(trend.count, 3);
+  assert.equal(linearTrend(days.slice(0, 2)), null);
 });

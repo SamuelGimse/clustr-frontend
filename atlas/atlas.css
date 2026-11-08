@@ -23,6 +23,7 @@
 .atlas-swatch--down { background: var(--down); }
 .atlas-swatch--flat { background: var(--atlas-muted); }
 .atlas-matrix { max-height: min(64vh, 740px); overflow: auto; border: 1px solid var(--atlas-edge); border-radius: 16px; background: var(--atlas-card); scrollbar-color: var(--atlas-edge) transparent; }
+.atlas-matrix--stocks { max-height: min(64vh, 540px); }
 .atlas-table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
 .atlas-table th, .atlas-table td { padding: 5px; border-right: 1px solid var(--atlas-edge); border-bottom: 1px solid var(--atlas-edge); text-align: center; }
 .atlas-table thead th { position: sticky; top: 0; z-index: 2; min-width: 76px; padding: 10px 5px; background: var(--panel-2); color: var(--atlas-muted); font-size: 11px; white-space: nowrap; }

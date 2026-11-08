@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const { buildModel } = require('../atlas/atlas.js');
+const { buildModel, pageStocks } = require('../atlas/atlas.js');
 
 global.window = {};
 require('../js/util.js');
@@ -48,4 +48,16 @@ test('Stock rows combine linked cluster scores once per cluster and keep link ty
   assert.equal(lmt.entries[0].score, util.articleImpactScore([3, -2]));
   assert.deepEqual(lmt.entries[0].links[0].layers, ['Close link', 'Cluster default']);
   assert.equal(model.stocks.find(stock => stock.symbol === 'XOM').entries[0].score, 0);
+});
+
+test('Stock search is applied before ten-row paging', () => {
+  const stocks = Array.from({ length: 25 }, (_, index) => ({ symbol: `S${index}`, company: index % 2 ? 'Alpha' : 'Beta' }));
+  const first = pageStocks(stocks, '', 10);
+  assert.equal(first.matches.length, 25);
+  assert.equal(first.visible.length, 10);
+  assert.deepEqual(pageStocks(stocks, '', 20).visible.slice(10).map(stock => stock.symbol), stocks.slice(10, 20).map(stock => stock.symbol));
+  const filtered = pageStocks(stocks, 'alpha', 10);
+  assert.equal(filtered.matches.length, 12);
+  assert.equal(filtered.visible.length, 10);
+  assert.equal(pageStocks(stocks, 'alpha', 20).visible.length, 12);
 });

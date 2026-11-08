@@ -19,11 +19,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=ambient-halos-1" />
+  <link rel="stylesheet" href="styles.css?v=mobile-pill-1" />
   <link rel="stylesheet" href="polymarket.css?v=1" />
   <link rel="stylesheet" href="stocks.css?v=1" />
-  <link rel="stylesheet" href="atlas/atlas.css?v=2" />
-  <link rel="stylesheet" href="dashboard/dashboard.css?v=1" />
+  <link rel="stylesheet" href="atlas/atlas.css?v=4" />
+  <link rel="stylesheet" href="dashboard/dashboard.css?v=2" />
 </head>
 <body>
   <div class="app-halos" aria-hidden="true">
@@ -85,33 +85,33 @@
       </div>
 
       <nav class="nav-rail-list" aria-label="Views">
-        <button type="button" id="navDashboard" class="nav-rail-btn" title="Dashboard" aria-label="Dashboard">
+        <button type="button" id="navDashboard" class="nav-rail-btn" title="Overview dashboard" aria-label="Overview dashboard">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="15" width="7" height="6" rx="1.5"/></svg>
-          <span class="nav-rail-label">Dashboard</span>
+          <span class="nav-rail-label">Overview</span>
         </button>
-        <button type="button" id="navEvents" class="nav-rail-btn is-active" title="Events" aria-label="Events" aria-current="page">
+        <button type="button" id="navEvents" class="nav-rail-btn is-active" title="News clusters" aria-label="News clusters" aria-current="page">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
             <rect x="3" y="4" width="7" height="7" rx="1.5"/>
             <rect x="14" y="4" width="7" height="7" rx="1.5"/>
             <rect x="3" y="13" width="7" height="7" rx="1.5"/>
             <rect x="14" y="13" width="7" height="7" rx="1.5"/>
           </svg>
-          <span class="nav-rail-label">Events</span>
+          <span class="nav-rail-label">News</span>
         </button>
-        <button type="button" id="navPolymarket" class="nav-rail-btn hidden" hidden title="Polymarket questions and odds" aria-label="Polymarket"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 20V4M4 20h17M7 15l4-5 4 3 5-7"/><circle cx="11" cy="10" r="1.5"/></svg><span class="nav-rail-label">Polymarket</span></button>
+        <button type="button" id="navPolymarket" class="nav-rail-btn hidden" hidden title="Polymarket odds" aria-label="Polymarket odds"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 20V4M4 20h17M7 15l4-5 4 3 5-7"/><circle cx="11" cy="10" r="1.5"/></svg><span class="nav-rail-label">Odds</span></button>
         <button type="button" id="navStocks" class="nav-rail-btn" title="Stocks and their cluster connections" aria-label="Stocks">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="10" width="4" height="10" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="17" y="7" width="4" height="13" rx="1"/></svg>
           <span class="nav-rail-label">Stocks</span>
         </button>
-<button type="button" id="navWeekly" class="nav-rail-btn" title="Weekly clusters and trends" aria-label="Weekly clusters and trends">
+<button type="button" id="navWeekly" class="nav-rail-btn" title="Weekly cluster trends" aria-label="Weekly cluster trends">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
             <path d="M4 19V5M4 19h17M7 15l4-5 3 3 6-8"/><circle cx="7" cy="15" r="1"/><circle cx="11" cy="10" r="1"/><circle cx="14" cy="13" r="1"/><circle cx="20" cy="5" r="1"/>
           </svg>
-          <span class="nav-rail-label">Weekly</span>
+          <span class="nav-rail-label">Trends</span>
         </button>
-        <button type="button" id="navAtlas" class="nav-rail-btn" title="Cluster Atlas" aria-label="Cluster Atlas">
+        <button type="button" id="navAtlas" class="nav-rail-btn" title="Cluster and stock history" aria-label="Cluster and stock history">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18M7 3v18M14 3v18"/><circle cx="14" cy="12" r="2.2" fill="currentColor" stroke="none"/></svg>
-          <span class="nav-rail-label">Atlas</span>
+          <span class="nav-rail-label">History</span>
         </button>
         <button type="button" id="navAccount" class="nav-rail-btn" title="Account and subscription" aria-label="Account and subscription">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
@@ -128,12 +128,12 @@
           </svg>
           <span style="display: none" class="nav-rail-label">Signal</span>
         </button>
-        <button type="button" id="navDays" class="nav-rail-btn" title="Days" aria-label="Days">
+        <button type="button" id="navDays" class="nav-rail-btn" title="Daily reports" aria-label="Daily reports">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
             <rect x="3" y="5" width="18" height="16" rx="2"/>
             <path d="M3 10h18M8 3v4M16 3v4"/>
           </svg>
-          <span class="nav-rail-label">Days</span>
+          <span class="nav-rail-label">Reports</span>
         </button>
       </nav>
 
@@ -321,9 +321,9 @@
   <script src="js/auth.js?v=admin-publish-live-chart-2"></script>
   <script src="js/cluster-taxonomy.js?v=1"></script>
   <script src="js/api.js?v=atlas-1"></script>
-  <script src="atlas/atlas.js?v=2"></script>
-  <script src="dashboard/dashboard.js?v=1"></script>
-  <script src="js/themes.js?v=mobile-audit-1"></script>
+  <script src="atlas/atlas.js?v=4"></script>
+  <script src="dashboard/dashboard.js?v=2"></script>
+  <script src="js/themes.js?v=mobile-pill-1"></script>
   <script src="js/map.js?v=repo-exact"></script>
   <script src="js/mindmap.js?v=mobile-audit-1"></script>
   <script src="js/render.js?v=atlas-1"></script>
