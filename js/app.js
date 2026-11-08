@@ -633,7 +633,7 @@
     if (previewBanner) {
       previewBanner.hidden = authState.role !== 'admin' || !accountPreview;
       const label = previewBanner.querySelector('[data-preview-label]');
-      if (label) label.textContent = `Previewing ${accountPreview === 'permanent' ? 'Permanent Pro' : accountPreview === 'pro' ? 'Pro' : 'Free'} · Your real account is still Admin`;
+      if (label) label.textContent = `Previewing ${accountPreview === 'permanent' ? 'Founding 20' : accountPreview === 'pro' ? 'Pro' : 'Free'} · Your real account is still Admin`;
     }
     for (const id of ['navWatchlist', 'navAtlas']) {
       const button = document.getElementById(id);
@@ -646,7 +646,7 @@
   function renderProBadges() {
     const account = getDisplayAccount();
     const visible = !!account.user && ['pro', 'admin'].includes(account.role);
-    const label = account.role === 'admin' ? 'Pro · Admin' : isPermanentPro() ? 'Permanent Pro' : 'Pro';
+    const label = account.role === 'admin' ? 'Pro · Admin' : isPermanentPro() ? 'Founding 20' : 'Pro';
     document.querySelectorAll('[data-pro-badge]').forEach(badge => {
       badge.hidden = !visible;
       badge.textContent = visible ? label : '';
@@ -673,8 +673,8 @@
     }
     title.textContent = 'Your Clustr Market account';
     const permanent = isPermanentPro();
-    content.innerHTML = `<div class="account-profile"><span>${window.ClustrUtil.escapeHtml(account.user.email || '')}</span><span class="account-plan-badge">${account.role === 'admin' ? 'PRO · ADMIN' : permanent ? 'PERMANENT PRO' : account.role === 'pro' ? 'PRO · ACTIVE' : 'FREE'}</span></div>` +
-      (account.role === 'admin' ? `<section class="account-plan"><h2>Pro is active</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p><p class="account-plan-note">Your admin account includes permanent Pro access. No subscription is required.</p></section>` : account.role === 'pro' ? `<section class="account-plan"><h2>${permanent ? 'Permanent Pro' : 'Pro is active'}</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p>${permanent ? '<p class="account-plan-note">Your Pro access has no expiry date and no recurring payments.</p>' : account.plan?.current_period_end ? `<p class="account-plan-note">Current period ends ${new Date(account.plan.current_period_end).toLocaleDateString()}.</p>` : ''}${account.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage subscription</button>' : ''}</section>` :
+    content.innerHTML = `<div class="account-profile"><span>${window.ClustrUtil.escapeHtml(account.user.email || '')}</span><span class="account-plan-badge">${account.role === 'admin' ? 'PRO · ADMIN' : permanent ? 'FOUNDING 20' : account.role === 'pro' ? 'PRO · ACTIVE' : 'FREE'}</span></div>` +
+      (account.role === 'admin' ? `<section class="account-plan"><h2>Pro is active</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p><p class="account-plan-note">Your admin account includes permanent Pro access. No subscription is required.</p></section>` : account.role === 'pro' ? `<section class="account-plan"><h2>${permanent ? 'Founding 20' : 'Pro is active'}</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p>${permanent ? '<p class="account-plan-note">Your Founding 20 access has no expiry date and no recurring payments.</p>' : account.plan?.current_period_end ? `<p class="account-plan-note">Current period ends ${new Date(account.plan.current_period_end).toLocaleDateString()}.</p>` : ''}${account.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage subscription</button>' : ''}</section>` :
       `<section class="account-plan"><h2>Free plan</h2><p>Browse older reports. Today’s and yesterday’s reports, Watchlist and History are not included (US Eastern time).</p><h3>Pro · 99 kr/month</h3><p>Get the latest data, your personal Watchlist and interactive History.</p><button class="account-primary" type="button" data-account-action="checkout">Continue to secure checkout</button>${account.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage billing</button>' : ''}</section>`) +
       '<button class="account-secondary" type="button" data-account-action="logout">Sign out</button>';
   }

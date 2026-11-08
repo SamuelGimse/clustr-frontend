@@ -16,18 +16,18 @@ function render(role, plan, user = { email: 'test@example.com' }) {
   return elements.accountContent.innerHTML;
 }
 const permanent = render('pro', { status: 'active', current_period_end: null, stripe_customer_id: null });
-assert.match(permanent, /Permanent Pro/);
+assert.match(permanent, /Founding 20/);
 assert.match(permanent, /no expiry date and no recurring payments/);
 assert(!/data-account-action="(?:portal|checkout)"/.test(permanent));
 assert.match(permanent, /data-account-action="logout"/);
-assert(badges.every(b => b.hidden === false && b.textContent === 'Permanent Pro'));
+assert(badges.every(b => b.hidden === false && b.textContent === 'Founding 20'));
 const paid = render('pro', { status: 'active', current_period_end: '2099-01-01', stripe_customer_id: 'cus_test' });
 assert.match(paid, /Manage subscription/);
-assert(!paid.includes('PERMANENT PRO'));
+assert(!paid.includes('FOUNDING 20'));
 assert(badges.every(b => b.hidden === false && b.textContent === 'Pro'));
 assert.match(render('pro', { status: 'active', current_period_end: null, stripe_customer_id: 'cus_test' }), /Manage subscription/);
 const trial = render('pro', { status: 'trialing', current_period_end: '2099-01-01', stripe_customer_id: null });
-assert(!trial.includes('PERMANENT PRO'));
+assert(!trial.includes('FOUNDING 20'));
 assert(!trial.includes('data-account-action="portal"'));
 const free = render('free', { status: 'active', current_period_end: '2020-01-01', stripe_customer_id: null });
 assert.match(free, /data-account-action="checkout"/);
