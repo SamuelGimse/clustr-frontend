@@ -4163,6 +4163,7 @@ html[data-theme="material"][data-color-mode="light"] :is(.nav-rail-btn.is-active
 .cluster-card.is-expanded .cluster-drivers { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; }
 .cluster-details { margin-top: 18px; padding-top: 16px; }
 .stock-panel { margin: 0 0 14px; }
+.stock-group-context { margin: 10px 0 12px; color: var(--text-meta); font-size: 13px; line-height: 1.5; }
 .stock-panel-head { display: grid; grid-template-columns: auto minmax(0, 240px) minmax(0, 1fr); gap: 12px; }
 .stock-panel-head .md-label { margin: 0; }
 .stock-panel-head .stock-group-select { width: 100%; min-width: 0; }

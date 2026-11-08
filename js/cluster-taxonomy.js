@@ -75,6 +75,11 @@
       const group = { ...sourceGroup, ...(Array.isArray(sourceGroup.articles) ? { articles: sourceGroup.articles.map(a => a.event_id ? { ...a, event_id: `${normalize(original)}:${a.event_id}` } : a) } : {}) };
       const name = canonicalName(original);
       if (!name) continue;
+      if (normalize(name) === 'earnings shocks') {
+        group.fixed_stocks = [];
+        group.default_stocks = [];
+        group.default_symbols = [];
+      }
       const key = normalize(name);
       let item = result.get(key);
       if (!item) {
