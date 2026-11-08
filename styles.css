@@ -1076,8 +1076,16 @@ body { isolation: isolate; }
   background: linear-gradient(135deg, #f8f8f8, #dedee0); color: #29292c; --swatch-accent: #747478;
   border-color: #d6dbe5;
 }
+.theme-menu button[data-theme="apple-light"] {
+  background: linear-gradient(135deg, #fff, #f2f2f7); color: #1c1c1e; --swatch-accent: #a6a6ad;
+  border-color: #d6dbe5;
+}
 .theme-menu button[data-theme="material"] {
   background: linear-gradient(135deg, #fef7ff, #ede8f8); color: #1d1b20; --swatch-accent: #6750a4;
+  border-color: #ddd6ed;
+}
+.theme-menu button[data-theme="material-light"] {
+  background: linear-gradient(135deg, #fff, #f3edf7); color: #1d1b20; --swatch-accent: #6750a4;
   border-color: #ddd6ed;
 }
 .theme-menu button[data-theme="dark-blue"] {
@@ -3971,7 +3979,9 @@ html[data-theme="apple"] :is(.md-card, .cluster-card, .account-shell, .pm-browse
 html[data-theme="apple"] :is(.md-chart, .stance, .stance-history-panel, .price-bar, .article-grid > *, .account-plan, .country-card, .tank-art-card, .tank-side, .dash-trend-readout, .atlas-detail-panel, .atlas-detail-score, .stocks-tile, .stocks-search-tools) {
   background: var(--glass-inset);
 }
-html[data-theme="apple"] .cluster-card:hover { background: var(--glass-card); }
+html[data-theme="apple"] .cluster-card,
+html[data-theme="apple"] .cluster-card:hover { background: color-mix(in srgb, var(--glass-card) 70%, transparent); }
+html[data-theme="apple"] .article-grid > * { background: color-mix(in srgb, var(--glass-inset) 70%, transparent); }
 html[data-theme="apple"] :is(.nav-rail, .top-app-bar, .mobile-topbar, .theme-menu, .events-sort-segmented, .publish-nav) {
   background: var(--glass-fill);
   border: 1px solid var(--glass-edge);
@@ -4039,16 +4049,57 @@ html[data-theme="apple"] .nav-rail-btn.is-active {
     --md-sys-color-surface-container-high: rgba(44, 44, 46, .78);
   }
 }
+html[data-theme="apple"][data-color-mode="light"] {
+  color-scheme: light;
+  --md-sys-color-surface: #f2f2f7;
+  --md-sys-color-surface-container: rgba(255, 255, 255, .78);
+  --md-sys-color-surface-container-high: rgba(255, 255, 255, .78);
+  --md-sys-color-surface-container-highest: #e5e5ea;
+  --md-sys-color-on-surface: #1c1c1e;
+  --md-sys-color-on-surface-variant: #6e6e73;
+  --md-sys-color-primary: #48484c;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #dedee2;
+  --md-sys-color-outline: rgba(60, 60, 67, .18);
+  --md-sys-color-outline-variant: rgba(60, 60, 67, .29);
+  --md-sys-color-up: #16824a;
+  --md-sys-color-down: #d70015;
+  --glass-fill: rgba(255, 255, 255, .64);
+  --glass-card: rgba(255, 255, 255, .72);
+  --glass-inset: rgba(255, 255, 255, .42);
+  --glass-edge: rgba(255, 255, 255, .9);
+  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, .85), inset 0 -1px 0 rgba(255, 255, 255, .3), 0 6px 24px rgba(30, 50, 80, .09);
+}
+html[data-theme="material"][data-color-mode="light"] {
+  color-scheme: light;
+  --md-sys-color-surface: #fef7ff;
+  --md-sys-color-surface-container: #f3edf7;
+  --md-sys-color-surface-container-high: #ece6f0;
+  --md-sys-color-surface-container-highest: #e6e0e9;
+  --md-sys-color-on-surface: #1d1b20;
+  --md-sys-color-on-surface-variant: #49454f;
+  --md-sys-color-primary: #6750a4;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #e9ddff;
+  --md-sys-color-outline: #79747e;
+  --md-sys-color-outline-variant: #cac4d0;
+  --md-sys-color-up: #176b3a;
+  --md-sys-color-down: #ba1a1a;
+}
+html[data-theme="material"][data-color-mode="light"] :is(.nav-rail-btn.is-active, .md-btn--tonal.is-active, .md-btn--tonal:hover, .md-btn--icon:hover:not(:disabled), .stance-history-icon-btn:hover, .md-chip--filter.is-selected) { color: #21005d; }
 @media (max-width: 768px) {
   html[data-theme="apple"] .top-app-bar { top: 64px; padding: 12px; }
 }
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
   html[data-theme="apple"] { --glass-fill: var(--md-sys-color-surface-container-highest); --glass-card: var(--md-sys-color-surface-container-highest); --glass-inset: var(--md-sys-color-surface-container-highest); --glass-edge: var(--text-meta); }
+  html[data-theme="apple"][data-color-mode="light"] { --glass-fill: var(--md-sys-color-surface-container-highest); --glass-card: var(--md-sys-color-surface-container-highest); --glass-inset: var(--md-sys-color-surface-container-highest); --glass-edge: var(--text-meta); }
   html[data-theme="apple"] :is(.md-card, .cluster-card, .account-shell, .pm-browser, .pm-detail, .movers-strip, .weekly-summary > div, .weekly-cluster, .weekly-ai-digest, .weekly-trend-panel, .country-panel, .mindmap, .chart-folder, .dash-metric, .dash-panel, .atlas-stats span, .atlas-matrix, .atlas-detail, .stocks-cluster, .stocks-browser, .md-chart, .stance, .stance-history-panel, .price-bar, .article-grid > *, .account-plan, .country-card, .tank-art-card, .tank-side, .dash-trend-readout, .atlas-detail-panel, .atlas-detail-score, .stocks-tile, .stocks-search-tools, .nav-rail, .top-app-bar, .mobile-topbar, .theme-menu, .events-sort-segmented, .publish-nav, .md-btn--icon, .stance-history-icon-btn, .cluster-expand, .account-secondary, .pm-secondary) {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     box-shadow: none;
   }
+  html[data-theme="apple"] :is(.cluster-card, .cluster-card:hover) { background: var(--glass-card); }
+  html[data-theme="apple"] .article-grid > * { background: var(--glass-inset); }
 }
 
 /* Card structure: compact overview, balanced analysis, one stock/chart workspace. */
@@ -4289,4 +4340,101 @@ html[data-theme] .md-btn--icon { padding: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   html[data-theme] .top-app-bar { transition: none; }
+}
+
+[data-theme="grassy-hill"] {
+  color-scheme: light;
+  --md-sys-color-surface: #dceefa;
+  --md-sys-color-surface-container: rgba(255, 255, 255, .9);
+  --md-sys-color-surface-container-high: rgba(236, 246, 255, .94);
+  --md-sys-color-surface-container-highest: #d6e9fa;
+  --md-sys-color-on-surface: #193955;
+  --md-sys-color-on-surface-variant: #4a6580;
+  --md-sys-color-primary: #2459ad;
+  --md-sys-color-on-primary: #fff;
+  --md-sys-color-primary-container: #d2e4ff;
+  --md-sys-color-outline: rgba(33, 82, 142, .34);
+  --md-sys-color-outline-variant: #8baed3;
+  --md-sys-color-up: #177a3f;
+  --md-sys-color-down: #bd3440;
+  --font-sans: Tahoma, Verdana, sans-serif;
+}
+[data-theme="aqua-classic"] {
+  color-scheme: light;
+  --md-sys-color-surface: #dceaf3;
+  --md-sys-color-surface-container: rgba(248, 251, 254, .88);
+  --md-sys-color-surface-container-high: rgba(226, 237, 247, .92);
+  --md-sys-color-surface-container-highest: #d1e2f1;
+  --md-sys-color-on-surface: #173149;
+  --md-sys-color-on-surface-variant: #536a7e;
+  --md-sys-color-primary: #1476b9;
+  --md-sys-color-on-primary: #fff;
+  --md-sys-color-primary-container: #c8e8f9;
+  --md-sys-color-outline: rgba(48, 98, 137, .34);
+  --md-sys-color-outline-variant: #a3c5da;
+  --md-sys-color-up: #13795b;
+  --md-sys-color-down: #b33b55;
+  --font-sans: "Lucida Grande", "Trebuchet MS", system-ui, sans-serif;
+}
+[data-theme="aurora-glass"] {
+  color-scheme: dark;
+  --md-sys-color-surface: #0b1d3a;
+  --md-sys-color-surface-container: rgba(15, 36, 68, .78);
+  --md-sys-color-surface-container-high: rgba(34, 65, 102, .85);
+  --md-sys-color-surface-container-highest: #315b89;
+  --md-sys-color-on-surface: #f0f7ff;
+  --md-sys-color-on-surface-variant: #afc8e5;
+  --md-sys-color-primary: #9bdcff;
+  --md-sys-color-on-primary: #102947;
+  --md-sys-color-primary-container: #315d84;
+  --md-sys-color-outline: rgba(172, 214, 252, .35);
+  --md-sys-color-outline-variant: #80aed8;
+  --md-sys-color-up: #74e5b7;
+  --md-sys-color-down: #ff9aa7;
+  --font-sans: "Segoe UI", system-ui, sans-serif;
+}
+html:is([data-theme="grassy-hill"], [data-theme="aqua-classic"], [data-theme="aurora-glass"]) body {
+  background: var(--bg) center / cover fixed no-repeat;
+}
+html[data-theme="grassy-hill"][data-wallpaper="on"] body { background-image: url("wallpapers/grassy-hill.png"); }
+html[data-theme="aqua-classic"][data-wallpaper="on"] body { background-image: url("wallpapers/aqua-classic.png"); }
+html[data-theme="aurora-glass"][data-wallpaper="on"] body { background-image: url("wallpapers/aurora-glass.png"); }
+html:is([data-theme="grassy-hill"], [data-theme="aqua-classic"], [data-theme="aurora-glass"]) .app-halos { display: none; }
+html:is([data-theme="grassy-hill"], [data-theme="aqua-classic"], [data-theme="aurora-glass"]) :is(.md-card, .cluster-card, .dash-panel, .dash-metric, .stocks-cluster, .stocks-browser, .atlas-matrix, .atlas-detail, .weekly-summary > div, .weekly-cluster, .weekly-ai-digest, .weekly-trend-panel, .pm-browser, .pm-detail, .account-shell, .country-panel) {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 24px rgba(8, 37, 71, .16), inset 0 1px 0 rgba(255, 255, 255, .35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+html:is([data-theme="grassy-hill"], [data-theme="aqua-classic"], [data-theme="aurora-glass"]) :is(.nav-rail, .top-app-bar, .mobile-topbar, .theme-menu) {
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 24px rgba(8, 37, 71, .2);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+html[data-theme="grassy-hill"] :is(.nav-rail, .mobile-topbar) { background: linear-gradient(180deg, rgba(43, 100, 207, .96), rgba(18, 58, 153, .94)); }
+html[data-theme="grassy-hill"] .nav-rail-btn { color: #eff6ff; }
+html[data-theme="grassy-hill"] .nav-rail-btn.is-active { color: #123b85; background: linear-gradient(#fff, #cde5ff); box-shadow: inset 0 1px #fff, 0 2px 5px rgba(0, 20, 70, .24); }
+html[data-theme="grassy-hill"] :is(.top-app-bar, .theme-menu) { background: linear-gradient(180deg, rgba(255, 255, 255, .95), rgba(210, 232, 251, .93)); }
+html[data-theme="grassy-hill"] :is(.md-btn--tonal, .md-btn--icon, .day-item) { background: linear-gradient(#fff, #d7eaff); border: 1px solid #91b9e8; border-radius: 8px; }
+html[data-theme="aqua-classic"] :is(.nav-rail, .mobile-topbar) { background: linear-gradient(180deg, rgba(247, 250, 252, .96), rgba(185, 210, 229, .94)); }
+html[data-theme="aqua-classic"] .nav-rail-btn.is-active { color: #fff; background: linear-gradient(#74c9f2, #1876bd 55%, #0a5a9f); box-shadow: inset 0 1px rgba(255, 255, 255, .75), 0 2px 6px rgba(10, 63, 108, .25); }
+html[data-theme="aqua-classic"] :is(.top-app-bar, .theme-menu) { background: linear-gradient(180deg, rgba(255, 255, 255, .94), rgba(196, 220, 238, .92)); }
+html[data-theme="aqua-classic"] :is(.md-btn--tonal, .md-btn--icon, .day-item) { background: linear-gradient(#fff, #c9e5f5); border: 1px solid #82b8d8; border-radius: 10px; }
+html[data-theme="aurora-glass"] :is(.nav-rail, .mobile-topbar, .top-app-bar, .theme-menu) { background: linear-gradient(145deg, rgba(38, 72, 112, .76), rgba(7, 24, 56, .82)); }
+html[data-theme="aurora-glass"] .nav-rail-btn.is-active { color: #fff; background: linear-gradient(135deg, rgba(117, 208, 254, .48), rgba(61, 112, 214, .54)); box-shadow: inset 0 1px rgba(255, 255, 255, .4), 0 0 12px rgba(79, 177, 255, .35); }
+html[data-theme="aurora-glass"] :is(.md-btn--tonal, .md-btn--icon, .day-item) { background: linear-gradient(180deg, rgba(103, 171, 232, .35), rgba(32, 71, 124, .58)); border: 1px solid rgba(174, 220, 255, .42); border-radius: 10px; }
+.theme-menu button[data-theme="grassy-hill"] { background: linear-gradient(#3080e0 48%, #57b522 49%); color: #fff; --swatch-accent: #fff; }
+.theme-menu button[data-theme="aqua-classic"] { background: linear-gradient(135deg, #f0f7ff, #77c9ed); color: #173149; --swatch-accent: #1476b9; }
+.theme-menu button[data-theme="aurora-glass"] { background: linear-gradient(135deg, #133f6e, #2b7dae); color: #fff; --swatch-accent: #9bdcff; }
+.account-appearance { margin-top: 20px; }
+.account-appearance label { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
+.account-appearance input { width: 20px; height: 20px; accent-color: var(--accent); }
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  html:is([data-theme="grassy-hill"], [data-theme="aqua-classic"], [data-theme="aurora-glass"]) :is(.md-card, .cluster-card, .dash-panel, .dash-metric, .stocks-cluster, .stocks-browser, .atlas-matrix, .atlas-detail, .weekly-summary > div, .weekly-cluster, .weekly-ai-digest, .weekly-trend-panel, .pm-browser, .pm-detail, .account-shell, .country-panel) {
+    background: var(--md-sys-color-surface-container-highest);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }

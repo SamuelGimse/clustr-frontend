@@ -5,30 +5,12 @@
 (function () {
   const DEFAULT_THEME = 'apple';
   const STORAGE_KEY = 'clustr-theme';
+  const WALLPAPER_KEY = 'clustr-wallpaper';
 
   const root = document.documentElement;
   const themeBtn = document.getElementById('themeBtn');
   const themeMenu = document.getElementById('themeMenu');
-
-  function installDesignSystemChoices() {
-    if (!themeMenu || themeMenu.querySelector('.theme-menu-group')) return;
-
-    const current = themeMenu.querySelector('[data-theme="dark"]');
-    if (current) {
-      current.setAttribute('data-theme', 'clustr');
-      current.textContent = 'Clustr';
-    }
-
-    const group = document.createElement('div');
-    group.className = 'theme-menu-group';
-    group.setAttribute('role', 'group');
-    group.setAttribute('aria-label', 'Design systems');
-    group.innerHTML =
-      '<p class="theme-menu-heading">Design systems</p>' +
-      '<button type="button" data-theme="apple" role="menuitem">Apple</button>' +
-      '<button type="button" data-theme="material" role="menuitem">Google Material</button>';
-    themeMenu.prepend(group);
-  }
+  const wallpaperToggle = document.getElementById('wallpaperToggle');
 
   /**
    * @returns {boolean}
@@ -66,8 +48,10 @@
   function applyTheme(name) {
     const theme = (name || '').trim() || DEFAULT_THEME;
     // Clustr is the renamed legacy dark design, kept byte-for-byte compatible.
-    const appliedTheme = theme === 'clustr' ? 'dark' : theme;
+    const appliedTheme = theme === 'clustr' ? 'dark' : theme === 'apple-light' ? 'apple' : theme === 'material-light' ? 'material' : theme;
     root.setAttribute('data-theme', appliedTheme);
+    if (theme === 'apple-light' || theme === 'material-light') root.setAttribute('data-color-mode', 'light');
+    else root.removeAttribute('data-color-mode');
     try {
       localStorage.setItem(STORAGE_KEY, theme);
     } catch (e) {
@@ -104,7 +88,17 @@
     applyTheme(saved);
   }
 
-  installDesignSystemChoices();
+  function setWallpaper(enabled) {
+    if (enabled) root.setAttribute('data-wallpaper', 'on');
+    else root.removeAttribute('data-wallpaper');
+    if (wallpaperToggle) wallpaperToggle.checked = enabled;
+    try { localStorage.setItem(WALLPAPER_KEY, enabled ? 'on' : 'off'); } catch (e) {}
+  }
+
+  let wallpaperEnabled = false;
+  try { wallpaperEnabled = localStorage.getItem(WALLPAPER_KEY) === 'on'; } catch (e) {}
+  setWallpaper(wallpaperEnabled);
+  wallpaperToggle?.addEventListener('change', () => setWallpaper(wallpaperToggle.checked));
 
   if (themeBtn && themeMenu) {
     themeBtn.addEventListener('click', e => {

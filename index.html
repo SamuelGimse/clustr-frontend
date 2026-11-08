@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=apple-glass-cards-1" />
+  <link rel="stylesheet" href="styles.css?v=retro-themes-1" />
   <link rel="stylesheet" href="polymarket.css?v=1" />
   <link rel="stylesheet" href="stocks.css?v=1" />
   <link rel="stylesheet" href="atlas/atlas.css?v=4" />
@@ -146,42 +146,17 @@
           <span class="nav-rail-label">Theme</span>
         </button>
         <div id="themeMenu" class="theme-menu hidden" role="menu">
-          <button type="button" data-theme="dark" role="menuitem">Dark</button>
-          <button type="button" data-theme="dark-blue" role="menuitem">Dark blue</button>
-          <button type="button" data-theme="synthwave84" role="menuitem">SynthWave 84</button>
-          <button type="button" data-theme="nord" role="menuitem">Nord</button>
-          <button type="button" data-theme="one-dark" role="menuitem">One Dark</button>
-          <button type="button" data-theme="tokyo-night" role="menuitem">Tokyo Night</button>
-          <button type="button" data-theme="catppuccin" role="menuitem">Catppuccin</button>
-          <button type="button" data-theme="gruvbox" role="menuitem">Gruvbox</button>
-          <button type="button" data-theme="monokai" role="menuitem">Monokai</button>
-          <button type="button" data-theme="dracula" role="menuitem">Dracula</button>
-          <button type="button" data-theme="matrix" role="menuitem">Matrix</button>
-          <button type="button" data-theme="solarized" role="menuitem">Solarized</button>
-          <button type="button" data-theme="github-dark" role="menuitem">GitHub Dark</button>
-          <button type="button" data-theme="github-light" role="menuitem">GitHub Light</button>
-          <button type="button" data-theme="nord-light" role="menuitem">Nord Light</button>
-          <button type="button" data-theme="paper" role="menuitem">Paper</button>
-          <button type="button" data-theme="aurora" role="menuitem">Aurora</button>
-          <button type="button" data-theme="volcanic" role="menuitem">Volcanic</button>
-          <button type="button" data-theme="neon-lilac" role="menuitem">Neon Lilac</button>
-          <button type="button" data-theme="amber-terminal" role="menuitem">Amber Terminal</button>
+          <button type="button" data-theme="apple" role="menuitem">Glass</button>
+          <button type="button" data-theme="apple-light" role="menuitem">Glass Light</button>
+          <button type="button" data-theme="material" role="menuitem">Material</button>
+          <button type="button" data-theme="material-light" role="menuitem">Material Light</button>
+          <button type="button" data-theme="clustr" role="menuitem">Clustr</button>
+          <button type="button" data-theme="pure-black" role="menuitem">Black</button>
           <button type="button" data-theme="crt" role="menuitem">CRT Tube</button>
-          <button type="button" data-theme="kermit" role="menuitem">Kermit</button>
-          <button type="button" data-theme="coral-navy" role="menuitem">Coral Navy</button>
-          <button type="button" data-theme="charcoal-sand" role="menuitem">Charcoal Sand</button>
-          <button type="button" data-theme="berry-mint" role="menuitem">Berry Mint</button>
-          <button type="button" data-theme="plum-cream" role="menuitem">Plum Cream</button>
-          <button type="button" data-theme="forest-mist" role="menuitem">Forest Mist</button>
-          <button type="button" data-theme="indigo-peach" role="menuitem">Indigo Peach</button>
-          <button type="button" data-theme="sea-foam" role="menuitem">Sea Foam</button>
-          <button type="button" data-theme="sunset-teal" role="menuitem">Sunset Teal</button>
           <button type="button" data-theme="dos-amber" role="menuitem">DOS Amber</button>
-          <button type="button" data-theme="vt220" role="menuitem">VT220</button>
-          <button type="button" data-theme="midnight" role="menuitem">Midnight</button>
-          <button type="button" data-theme="slate" role="menuitem">Slate</button>
-          <button type="button" data-theme="graphite" role="menuitem">Graphite</button>
-          <button type="button" data-theme="pure-black" role="menuitem">Pure Black</button>
+          <button type="button" data-theme="grassy-hill" role="menuitem">Grassy Hill</button>
+          <button type="button" data-theme="aqua-classic" role="menuitem">Aqua Classic</button>
+          <button type="button" data-theme="aurora-glass" role="menuitem">Aurora Glass</button>
         </div>
       </div>
     </aside>
@@ -304,7 +279,7 @@
       <section id="stocksView" class="hidden stocks-page" aria-label="Stocks and linked clusters"></section>
       <section id="polymarketView" class="hidden" aria-label="Polymarket questions and odds"><div id="clustrPolymarket"></div></section>
       <section id="accountView" class="hidden account-page" aria-label="Account and subscription">
-        <div class="account-shell"><div class="account-eyebrow">CLUSTR / ACCOUNT</div><h1 id="accountTitle">Free account</h1><p id="accountMessage" class="account-message" role="status"></p><div id="accountContent"></div></div>
+        <div class="account-shell"><div class="account-eyebrow">CLUSTR / ACCOUNT</div><h1 id="accountTitle">Free account</h1><p id="accountMessage" class="account-message" role="status"></p><div id="accountContent"></div><section class="account-plan account-appearance"><h2>Appearance</h2><label><input id="wallpaperToggle" type="checkbox"> Show desktop wallpaper</label><p class="account-plan-note">Available with Grassy Hill, Aqua Classic, and Aurora Glass.</p></section></div>
       </section>
       <section id="adminView" class="hidden account-page" aria-label="Admin tools">
         <div class="account-shell"><div class="account-eyebrow">CLUSTR / ADMIN</div><h1>Admin tools</h1><p id="adminMessage" class="account-message" role="status"></p><section class="account-plan admin-plan"><div class="admin-publish-head"><div><h2>Full publish</h2><p>Fetch news and movers, score articles, group related stories, map stocks, snapshot prices, and save a new publish.</p></div><label class="account-publish-market">Market<select id="publishMarket"><option value="US">United States</option><option value="NO">Norway</option></select></label><button class="account-primary" type="button" data-account-action="publish">Run full publish</button><span class="account-plan-note">The backend on this PC must be running. One publish can run at a time.</span></div><div class="admin-monitor-grid"><section class="admin-monitor-panel"><h3>Live filtering &amp; grouping</h3><canvas id="publishChart" class="publish-chart" role="img" aria-label="Live article filtering and cluster progress"></canvas><p id="publishProgressText" class="account-plan-note">Waiting for a publish.</p></section><section class="admin-monitor-panel"><h3>Publish console</h3><pre id="publishConsole" class="publish-console" aria-live="polite"></pre></section><section class="admin-monitor-panel admin-model-panel"><h3>Live filter model &amp; reply</h3><p id="publishModelName" class="account-plan-note">Model: waiting for publish</p><p id="publishModelActivity" class="account-plan-note">Waiting for filtering.</p><p id="publishModelArticle" class="account-plan-note"></p><pre id="publishModelReply" class="publish-model-reply" aria-live="polite">The newest model reply will appear here.</pre></section></div></section></div>
@@ -316,14 +291,14 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js?v=admin-publish-2"></script>
-  <script src="js/util.js?v=atlas-1"></script>
+  <script src="js/util.js?v=retro-themes-1"></script>
   <script src="js/quotes.js?v=repo-exact"></script>
   <script src="js/auth.js?v=admin-publish-live-chart-2"></script>
   <script src="js/cluster-taxonomy.js?v=1"></script>
   <script src="js/api.js?v=atlas-1"></script>
   <script src="atlas/atlas.js?v=4"></script>
   <script src="dashboard/dashboard.js?v=2"></script>
-  <script src="js/themes.js?v=mobile-pill-1"></script>
+  <script src="js/themes.js?v=retro-themes-1"></script>
   <script src="js/map.js?v=repo-exact"></script>
   <script src="js/mindmap.js?v=mobile-audit-1"></script>
   <script src="js/render.js?v=atlas-1"></script>
