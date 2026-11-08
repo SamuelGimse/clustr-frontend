@@ -178,7 +178,7 @@
     const esc = U().escapeHtml;
     root.innerHTML = `<div class="stocks-heading"><div><span class="stocks-eyebrow">YOUR WEEK IN STOCKS</span><h1>Stocks</h1><p id="stocksRange">Loading the last seven days…</p></div><button type="button" class="stocks-refresh" data-stock-refresh>Refresh</button></div>
       <p id="stocksLoadStatus" class="stocks-load-status" role="status"></p>
-      <div class="stocks-workspace"><section id="stocksDetail" class="stocks-detail" aria-label="Linked clusters"></section><section class="stocks-browser" aria-label="Find a stock"><div class="stocks-search-tools"><label for="stocksSearch">Find a stock</label><div class="stocks-search-row"><input id="stocksSearch" type="search" placeholder="Ticker or name" autocomplete="off" value="${esc(query)}"></div><p id="stocksResultCount" role="status"></p></div><div id="stocksGrid" class="stocks-grid" aria-label="Stocks from the last seven days"></div></section></div>`;
+      <div class="stocks-workspace"><section class="stocks-browser" aria-label="Find a stock"><div class="stocks-search-tools"><label for="stocksSearch">Find a stock</label><div class="stocks-search-row"><input id="stocksSearch" type="search" placeholder="Ticker or name" autocomplete="off" value="${esc(query)}"></div><p id="stocksResultCount" role="status"></p></div><div id="stocksGrid" class="stocks-grid" aria-label="Stocks from the last seven days"></div></section><section id="stocksDetail" class="stocks-detail" aria-label="Linked clusters"></section></div>`;
     root.addEventListener('input', handleInput);
     root.addEventListener('change', handleChange);
     root.addEventListener('click', handleClick);
