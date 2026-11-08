@@ -894,6 +894,7 @@
         s.symbol || ''
       )}" title="${util.escapeHtml((s.name || s.symbol || '') + debt)}">
         <span class="chip-label">${util.escapeHtml(s.symbol || s.name || '?')}</span>
+        ${util.redditBuzzHtml(s.__redditBuzz)}
         <span class="chip-meta">${util.isQuoteSymbol(s.symbol) ? 'Loading quote…' : 'No quote'}</span>
       </button>`;
   }
@@ -923,6 +924,7 @@
 
     return `
       <div class="price-bar" data-price-symbol="${util.escapeHtml(symbol)}">
+        ${util.redditBuzzHtml(stock?.__redditBuzz, true)}
         <div class="price-bar-title"><span>${util.escapeHtml(symbol)}${
           name ? ' — ' + util.escapeHtml(name) : ''
         }</span>${window.ClustrWatchlist?.button({ symbol, name }, stock?.__market || 'US') || ''}</div>
@@ -1494,10 +1496,10 @@
     const findStock = symbol => {
       const s = util.normalizeSymbol(symbol);
       return (
-        chartPool.find(x => util.normalizeSymbol(x.symbol) === s) || {
+        { ...(chartPool.find(x => util.normalizeSymbol(x.symbol) === s) || {
           symbol: s,
           name: s
-        }
+        }), __redditBuzz: util.redditBuzzForStock([group], s, group.__historyScope.market || group.market || 'US', group.__historyScope.asOf) }
       );
     };
 
@@ -1705,7 +1707,7 @@
         priceMount.innerHTML = '<p class="empty-state">No priced stocks in this group.</p>';
         return;
       }
-      bubblesEl.innerHTML = g.list.map(stock => bubbleBtn({ ...stock, __market: group.__historyScope.market || group.market || 'US' })).join('');
+      bubblesEl.innerHTML = g.list.map(stock => bubbleBtn({ ...stock, __market: group.__historyScope.market || group.market || 'US', __redditBuzz: util.redditBuzzForStock([group], stock.symbol, group.__historyScope.market || group.market || 'US', group.__historyScope.asOf) })).join('');
       bindBubbles();
       refreshNewsQuotes(el);
       if (!details.hidden) updateGroupSincePublish(g.id);

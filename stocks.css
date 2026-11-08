@@ -68,6 +68,10 @@
 .stocks-page :is(button, input, select, summary, a):focus-visible, .stocks-link-filter input:focus-visible + span { outline: 2px solid var(--text-meta); outline-offset: 3px; }
 html[data-theme="apple"] :is(.stocks-cluster, .stocks-browser) { background: var(--glass-sheen), var(--glass-card); box-shadow: var(--glass-shadow); backdrop-filter: none; -webkit-backdrop-filter: none; }
 .main:has(> #stocksView:not(.hidden)) .publish-nav { display: none; }
+.reddit-buzz { display: inline-flex; align-items: center; gap: 5px; width: fit-content; max-width: 100%; padding: 3px 7px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-meta); font-size: 10px; line-height: 1.4; font-weight: 500; white-space: nowrap; }
+.reddit-buzz strong { color: var(--text); font-size: inherit; }
+.reddit-buzz-detail { color: var(--text-meta); font-size: 11px; line-height: 1.6; margin: 8px 0 14px; }
+.reddit-buzz-detail a { color: inherit; text-decoration: underline; }
 @media (min-width: 769px) {
   .main:has(> #stocksView:not(.hidden)) .top-app-bar { display: none; }
 }

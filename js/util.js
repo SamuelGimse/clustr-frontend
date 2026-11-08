@@ -134,7 +134,34 @@ function tradingViewUrl(symbol) {
   );
 }
 
+function redditBuzzForStock(groups, symbol, market = 'US', asOf = new Date().toISOString()) {
+  if (market !== 'US' || !Number.isFinite(Date.parse(asOf))) return null;
+  const ticker = normalizeSymbol(symbol);
+  let latest = null;
+  for (const group of groups || []) {
+    if (group.market && group.market !== market) continue;
+    for (const signal of group.market_signals || []) {
+      const time = Date.parse(signal.available_at);
+      if (signal.source !== 'ApeWisdom' || signal.metric !== 'reddit_stock_mentions' || signal.market !== market ||
+          normalizeSymbol(signal.symbol) !== ticker || !Number.isFinite(time) || time > Date.parse(asOf) ||
+          !Number.isInteger(signal.rank) || signal.rank < 1 || signal.rank > 100 ||
+          !Number.isSafeInteger(signal.value) || signal.value < 0) continue;
+      if (!latest || time > Date.parse(latest.available_at)) latest = { ...signal, score: 101 - signal.rank };
+    }
+  }
+  return latest;
+}
+
+function redditBuzzHtml(signal, detail = false) {
+  if (!signal) return '';
+  const date = new Date(signal.available_at).toLocaleString();
+  const explanation = `ApeWisdom Reddit discussion rank #${signal.rank}: ${signal.value} mentions. Score = 101 minus rank among the top 100 stocks; #1 = 100/100. Attention, not bullish/bearish sentiment or investment merit. Retrieved ${date}.`;
+  return `<span class="reddit-buzz" title="${escapeHtml(explanation)}" aria-label="${escapeHtml(explanation)}">Reddit buzz <strong>${signal.score}/100</strong></span>${detail ? `<p class="reddit-buzz-detail"><a href="https://apewisdom.io/" target="_blank" rel="noopener noreferrer">ApeWisdom</a> · #${signal.rank} · ${signal.value} mentions · snapshot retrieved ${escapeHtml(date)}. Relative discussion rank, not sentiment or a trade score.</p>` : ''}`;
+}
+
 window.ClustrUtil = {
+  redditBuzzForStock,
+  redditBuzzHtml,
   sleep,
   normalizeSymbol,
   isQuoteSymbol,
