@@ -75,6 +75,17 @@ test('search supports company names, news sources, summaries and type filtering'
   assert.equal(graph.nodes.filter(n=>matches(n,'datacenter','news')).length,1);
   assert.equal(graph.nodes.filter(n=>matches(n,'NVDA','cluster')).length,0);
 });
+test('Graph palettes keep all node types distinct against light and dark surfaces',()=>{
+  const {palette}=require('../connections/canvas');
+  const luminance=rgb=>rgb.map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
+  for(const [light,bg]of[[true,[1,1,1]],[true,[224/255,212/255,172/255]],[false,[16/255,28/255,36/255]]]){
+    for(const type of ['cluster','stock','news']){
+      const a=luminance(palette(light)[type]),b=luminance(bg);
+      assert.ok((Math.max(a,b)+.05)/(Math.min(a,b)+.05)>=3,`${type} needs visible contrast`);
+    }
+  }
+});
+
 test('GPU adapter rejection falls back and gestures do not select accidentally',async()=>{
   const vm=require('node:vm'),fs=require('node:fs');
   let disconnected=false,cancelled=false;
