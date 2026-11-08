@@ -31,12 +31,15 @@
 .pp-demo-dot { width: 6px; height: 6px; border-radius: 50%; background: #c9a7ef; }
 .pp-figure svg { display: block; width: 100%; height: auto; overflow: visible; }
 .pp-figure svg text { fill: #a8beb7; font: 12px system-ui, sans-serif; }
+.pp-figure svg .pp-small { font-size: 10px; }
+.pp-figure svg .pp-company.pp-small { font-size: 12px; }
 .pp-caption { margin: 0; padding: 8px 14px; color: #91a6a0; font-size: 10px; }
 .pp-grid path { stroke: #b3e6d514; fill: none; }
 .pp-zero { stroke: #b3e6d53d; stroke-dasharray: 3 5; }
 .pp-line { stroke: #8cffe0; fill: none; stroke-width: 3; stroke-linejoin: round; }
 .pp-fit { stroke: #c9a7ef; stroke-width: 2; stroke-dasharray: 7 6; }
 .pp-band { fill: #8cffe015; }
+.pp-volume { fill: #c9a7ef75; }
 .pp-dot, .pp-node { fill: #8cffe0; stroke: #8cffe030; stroke-width: 10; }
 .pp-connection { stroke: #8cffe0; stroke-width: 1.5; fill: none; }
 .pp-story-line { stroke: #8cffe04d; stroke-dasharray: 4 5; fill: none; }

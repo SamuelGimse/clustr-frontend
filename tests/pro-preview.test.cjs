@@ -29,3 +29,17 @@ test('Preview component has no data/network access and loads before the app', ()
   assert(html.indexOf('js/pro-preview.js') < html.indexOf('js/app.js'));
   assert.match(html, /id="proFeatureView" class="hidden"/);
 });
+
+test('Stocks and Trends previews show the actual workflows', () => {
+  const stocks = render('stocks');
+  assert.match(stocks, /FIND A STOCK/);
+  assert.match(stocks, /Ticker or company/);
+  assert.match(stocks, /Article mentions/);
+  assert.match(stocks, /All cluster links/);
+  assert.match(stocks, /source articles/);
+  const trends = render('weekly');
+  assert.match(trends, /DAILY ARTICLE IMPACT/);
+  assert.match(trends, /CLUSTER RELEASES/);
+  assert.match(trends, /REPEATED CLUSTERS/);
+  assert.match(trends, /FIRST → LATEST SCORE/);
+});

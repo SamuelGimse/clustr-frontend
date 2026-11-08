@@ -4351,7 +4351,8 @@ html[data-theme="material"][data-color-mode="light"] :is(.nav-rail-btn.is-active
   html[data-theme] .main { padding-top: 12px; padding-bottom: calc(112px + env(safe-area-inset-bottom)); }
   html[data-theme] { touch-action: pan-x pan-y; }
   html[data-theme] .top-app-bar { position: fixed; top: auto; bottom: calc(12px + env(safe-area-inset-bottom)); left: 12px; right: 12px; width: auto; margin: 0; padding: 6px 8px; display: flex; flex-direction: row; align-items: center; gap: 6px; border-radius: 999px; }
-  html[data-theme] .top-app-bar .burger-btn { display: inline-flex; flex: 0 0 44px; }
+  html[data-theme] .top-app-bar .burger-btn { display: inline-flex; flex: 0 0 84px; width: 84px; min-width: 84px; height: 48px; padding: 0 10px; gap: 7px; border: 1px solid var(--accent); background: var(--accent); color: var(--md-sys-color-on-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+  html[data-theme] .top-app-bar .burger-label { font-size: 12px; font-weight: 800; line-height: 1; }
   html[data-theme] .top-app-bar .publish-nav { flex: 1 1 auto; width: auto; }
   html[data-theme] .publish-nav:has(.meta:empty) { display: none; }
   html[data-theme] .page-brand-bar { margin: 0 0 12px; padding: env(safe-area-inset-top) 4px 0; background: transparent; }
