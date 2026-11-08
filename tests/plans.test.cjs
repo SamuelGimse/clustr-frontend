@@ -8,34 +8,40 @@ const source = fs.readFileSync(path.join(__dirname, '../js/app.js'), 'utf8');
 function setup(role, signedIn = true) {
   const makeElement = () => ({ hidden: true, innerHTML: '', title: '', attrs: {},
     classList: { add() {}, remove() {}, toggle() {} }, setAttribute(name, value) { this.attrs[name] = value; } });
-  const elements = Object.fromEntries(['freePlanBanner', 'navWatchlist', 'navAtlas'].map(id => [id, makeElement()]));
+  const elements = Object.fromEntries(['freePlanBanner', 'navWatchlist', 'navAtlas', 'navStocks', 'navWeekly'].map(id => [id, makeElement()]));
   const calls = [];
   const context = { authState: { role, user: signedIn ? { id: 'user' } : null }, accountPreview: '',
     document: { getElementById: id => elements[id] },
     window: { ClustrConnections: { hide() {} }, ClustrWatchlist: { setView() {}, mount() { calls.push('watchlist'); } },
-      ClustrAtlas: { render() { calls.push('history'); } }, matchMedia: () => ({ matches: false }) },
+      ClustrAtlas: { render() { calls.push('history'); } }, ClustrStocks: { leave() {}, mount() { calls.push('stocks'); } }, matchMedia: () => ({ matches: false }) },
+    renderWeekly: () => calls.push('trends'),
     view: 'events', publishes: [], publishIndex: 0, currentGroups: [], closeEventSortMenu() {},
     location: { hash: '', pathname: '/', search: '' }, history: { replaceState(_state, _title, hash) { context.location.hash = hash; } },
   };
   for (const name of ['navWatchlist', 'navDashboard', 'navEvents', 'navStocks', 'navMap', 'navDays', 'navSignal', 'navMind', 'navWeekly', 'navAtlas', 'navAccount', 'navAdmin', 'navPolymarket', 'polymarketView', 'eventsView', 'mapView', 'daysView', 'signalView', 'mindView', 'weeklyView', 'watchlistView', 'stocksView', 'atlasView', 'dashboardView', 'accountView', 'adminView']) context[name] = makeElement();
   vm.createContext(context);
+  context.proFeatureView = makeElement();
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/pro-preview.js'), 'utf8'), context);
   vm.runInContext(source.slice(source.indexOf('  function getDisplayAccount('), source.indexOf('  function renderProBadges(')), context);
   vm.runInContext(source.slice(source.indexOf('  function setNav('), source.indexOf('  function weeklyScore(')), context);
   return { context, elements, calls };
 }
 
-test('Free sees the delay banner and locked views never call Watchlist or History renderers', () => {
+test('Free sees the delay banner and all four locked views show feature-specific demos without loading paid renderers', () => {
   const { context, elements, calls } = setup('free');
   context.renderPlanAccess();
   assert.equal(elements.freePlanBanner.hidden, false);
-  for (const view of ['watchlist', 'atlas']) {
+  context.weeklyView.innerHTML = 'Keep the real Trends page intact';
+  for (const view of ['watchlist', 'atlas', 'stocks', 'weekly']) {
     context.setNav(view);
-    const host = context[view === 'atlas' ? 'atlasView' : 'watchlistView'];
+    const host = context.proFeatureView;
     assert.match(host.innerHTML, /PRO FEATURE/);
     assert.match(host.innerHTML, /data-account-action="checkout"/);
     assert.match(host.innerHTML, /99 kr\/month/);
-    assert.equal(context.location.hash, `#/${view}`);
+    assert.match(host.innerHTML, /Demo preview · fictional data/);
+    if (view === 'watchlist' || view === 'atlas') assert.equal(context.location.hash, `#/${view}`);
   }
+  assert.equal(context.weeklyView.innerHTML, 'Keep the real Trends page intact');
   assert.deepEqual(calls, []);
 });
 
@@ -44,8 +50,8 @@ test('Pro and admin have full feature access without the Free banner', () => {
     const { context, elements, calls } = setup(role);
     context.renderPlanAccess();
     assert.equal(elements.freePlanBanner.hidden, true);
-    context.setNav('watchlist'); context.setNav('atlas');
-    assert.deepEqual(calls, ['watchlist', 'history']);
+    context.setNav('watchlist'); context.setNav('atlas'); context.setNav('stocks'); context.setNav('weekly');
+    assert.deepEqual(calls, ['watchlist', 'history', 'stocks', 'trends']);
   }
 });
 
@@ -54,8 +60,8 @@ test('Signed-out direct links ask users to sign in, never start checkout or moun
   context.renderPlanAccess();
   assert.equal(elements.freePlanBanner.hidden, true);
   context.setNav('watchlist');
-  assert.match(context.watchlistView.innerHTML, /Sign in to upgrade/);
-  assert.doesNotMatch(context.watchlistView.innerHTML, /data-account-action="checkout"/);
+  assert.match(context.proFeatureView.innerHTML, /Sign in to explore Pro/);
+  assert.doesNotMatch(context.proFeatureView.innerHTML, /data-account-action="checkout"/);
   assert.deepEqual(calls, []);
 });
 

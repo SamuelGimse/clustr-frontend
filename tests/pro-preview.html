@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Pro feature demo previews</title>
+<link rel="stylesheet" href="../pro-preview.css">
+<style>body{margin:0;padding:24px;background:#101619;color:#f4f7f6;font-family:system-ui,sans-serif}main{max-width:1180px;margin:auto}nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}nav button{padding:10px 16px;border:1px solid #ffffff30;border-radius:20px;background:#18231f;color:inherit;font:inherit;cursor:pointer}nav button[aria-pressed=true]{background:#8cffe0;color:#08271e}@media(max-width:540px){body{padding:12px}}</style></head>
+<body><main><nav aria-label="Demo feature"><button data-demo="stocks" aria-pressed="true">Stocks</button><button data-demo="weekly" aria-pressed="false">Trends</button><button data-demo="atlas" aria-pressed="false">History</button><button data-demo="watchlist" aria-pressed="false">Watchlist</button></nav><div id="preview"></div></main>
+<script src="../js/pro-preview.js"></script><script>
+const preview=document.getElementById('preview');
+preview.innerHTML=ClustrProPreview.render('stocks');
+document.querySelectorAll('[data-demo]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-demo]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));preview.innerHTML=ClustrProPreview.render(button.dataset.demo);}));
+document.addEventListener('click',event=>{if(event.target.closest('[data-account-action]'))event.preventDefault();});
+</script></body></html>

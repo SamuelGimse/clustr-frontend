@@ -36,6 +36,7 @@
   const watchlistView = document.getElementById('watchlistView');
   const navWatchlist = document.getElementById('navWatchlist');
   const stocksView = document.getElementById('stocksView');
+  const proFeatureView = document.getElementById('proFeatureView');
   const atlasView = document.getElementById('atlasView');
   const dashboardView = document.getElementById('dashboardView');
   const polymarketView = document.getElementById('polymarketView');
@@ -168,17 +169,18 @@
     if (dashboardView) dashboardView.classList.add('hidden');
     if (accountView) accountView.classList.add('hidden');
     if (adminView) adminView.classList.add('hidden');
+    if (proFeatureView) proFeatureView.classList.add('hidden');
     if (which !== 'stocks') window.ClustrStocks?.leave();
 
     if (which !== 'watchlist' && which !== 'polymarket' && which !== 'atlas' && which !== 'dashboard' && which !== 'connections' && ['#/watchlist', '#/polymarket', '#/atlas', '#/dashboard', '#/connections'].includes(location.hash)) history.replaceState(null, '', location.pathname + location.search);
-    if (['watchlist', 'atlas'].includes(which) && !hasProAccess()) {
-      const host = which === 'watchlist' ? watchlistView : atlasView;
-      const nav = which === 'watchlist' ? navWatchlist : navAtlas;
+    if (['watchlist', 'atlas', 'stocks', 'weekly'].includes(which) && !hasProAccess()) {
+      const host = proFeatureView;
+      const nav = { watchlist: navWatchlist, atlas: navAtlas, stocks: navStocks, weekly: navWeekly }[which];
       nav?.classList.add('is-active');
       nav?.setAttribute('aria-current', 'page');
       host?.classList.remove('hidden');
-      if (host) host.innerHTML = `<section class="account-shell pro-feature-gate"><p class="account-eyebrow">PRO FEATURE</p><h1>${which === 'watchlist' ? 'Watchlist' : 'History'}</h1><p>${which === 'watchlist' ? 'Save stocks and filter your workspace with a personal watchlist.' : 'Explore the interactive cluster and stock history.'} Included with Clustr Market Pro.</p><p>Free includes reports from two or more calendar days ago (US Eastern time).</p><button type="button" class="account-primary" data-account-action="${authState.user ? 'checkout' : 'account'}">${authState.user ? 'Get Pro · 99 kr/month' : 'Sign in to upgrade'}</button></section>`;
-      history.replaceState(null, '', `#/${which}`);
+      if (host) host.innerHTML = window.ClustrProPreview.render(which, !!authState.user);
+      if (which === 'watchlist' || which === 'atlas') history.replaceState(null, '', `#/${which}`);
     } else if (which === 'connections') {
       history.replaceState(null, '', '#/connections');
       window.ClustrConnections?.mount(currentGroups, publishes[publishIndex]);
@@ -635,7 +637,7 @@
       const label = previewBanner.querySelector('[data-preview-label]');
       if (label) label.textContent = `Previewing ${accountPreview === 'permanent' ? 'Permanent Pro' : accountPreview === 'pro' ? 'Pro' : 'Free'} · Your real account is still Admin`;
     }
-    for (const id of ['navWatchlist', 'navAtlas']) {
+    for (const id of ['navWatchlist', 'navAtlas', 'navStocks', 'navWeekly']) {
       const button = document.getElementById(id);
       if (!button) continue;
       button.classList.toggle('is-pro-locked', !hasProAccess());
