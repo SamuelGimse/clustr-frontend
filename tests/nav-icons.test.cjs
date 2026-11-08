@@ -32,3 +32,11 @@ test('Trends uses a readable rising node path instead of overlapping ribbons', (
   assert.equal((trends.match(/<circle /g) || []).length, 4);
   assert.doesNotMatch(trends, /<path[^>]*d="[^"]*[cC]/);
 });
+test('History is a timeline and Watchlist is a tracking eye, not a favourites star', () => {
+  const history = html.match(/<button[^>]*id="navAtlas"[\s\S]*?<\/button>/)[0];
+  const watchlist = html.match(/<button[^>]*id="navWatchlist"[\s\S]*?<\/button>/)[0];
+  assert.match(history, /d="M5 4v16"/);
+  assert.match(history, /cx="5" cy="12"/);
+  assert.match(watchlist, /cx="12" cy="12" r="3.5"/);
+  assert.doesNotMatch(watchlist, /2\.8 5\.7|6\.3\.9/);
+});
