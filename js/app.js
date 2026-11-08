@@ -557,8 +557,8 @@
   }
 
   function renderProBadges() {
-    const visible = !!authState.user && authState.role === 'pro';
-    const label = isPermanentPro() ? 'Permanent Pro' : 'Pro';
+    const visible = !!authState.user && ['pro', 'admin'].includes(authState.role);
+    const label = authState.role === 'admin' ? 'Pro · Admin' : isPermanentPro() ? 'Permanent Pro' : 'Pro';
     document.querySelectorAll('[data-pro-badge]').forEach(badge => {
       badge.hidden = !visible;
       badge.textContent = visible ? label : '';
@@ -584,8 +584,8 @@
     }
     title.textContent = 'Your Clustr account';
     const permanent = isPermanentPro();
-    content.innerHTML = `<div class="account-profile"><span>${window.ClustrUtil.escapeHtml(authState.user.email || '')}</span><span class="account-plan-badge">${authState.role === 'admin' ? 'ADMIN' : permanent ? 'PERMANENT PRO' : authState.role === 'pro' ? 'PRO · ACTIVE' : 'FREE'}</span></div>` +
-      (authState.role === 'admin' ? `<section class="account-plan"><h2>Admin access is active</h2><p>Full Clustr access, including current clusters, weekly trends, and the complete publish history.</p></section>` : authState.role === 'pro' ? `<section class="account-plan"><h2>${permanent ? 'Permanent Pro' : 'Pro is active'}</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p>${permanent ? '<p class="account-plan-note">Your Pro access has no expiry date and no recurring payments.</p>' : authState.plan?.current_period_end ? `<p class="account-plan-note">Current period ends ${new Date(authState.plan.current_period_end).toLocaleDateString()}.</p>` : ''}${authState.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage subscription</button>' : ''}</section>` :
+    content.innerHTML = `<div class="account-profile"><span>${window.ClustrUtil.escapeHtml(authState.user.email || '')}</span><span class="account-plan-badge">${authState.role === 'admin' ? 'PRO · ADMIN' : permanent ? 'PERMANENT PRO' : authState.role === 'pro' ? 'PRO · ACTIVE' : 'FREE'}</span></div>` +
+      (authState.role === 'admin' ? `<section class="account-plan"><h2>Pro is active</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p><p class="account-plan-note">Your admin account includes permanent Pro access. No subscription is required.</p></section>` : authState.role === 'pro' ? `<section class="account-plan"><h2>${permanent ? 'Permanent Pro' : 'Pro is active'}</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p>${permanent ? '<p class="account-plan-note">Your Pro access has no expiry date and no recurring payments.</p>' : authState.plan?.current_period_end ? `<p class="account-plan-note">Current period ends ${new Date(authState.plan.current_period_end).toLocaleDateString()}.</p>` : ''}${authState.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage subscription</button>' : ''}</section>` :
       `<section class="account-plan"><h2>Free plan</h2><p>Access the previous trading day’s clusters for free.</p><h3>Pro · 99 kr/month</h3><p>Unlock current clusters, weekly cluster history, trends, and the full archive.</p><button class="account-primary" type="button" data-account-action="checkout">Continue to secure checkout</button>${authState.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage billing</button>' : ''}</section>`) +
       '<button class="account-secondary" type="button" data-account-action="logout">Sign out</button>';
   }
