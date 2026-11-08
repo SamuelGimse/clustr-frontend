@@ -4276,3 +4276,10 @@ html[data-theme] .top-app-bar .meta { overflow: hidden; text-overflow: ellipsis;
 html[data-theme] .top-app-bar .publish-meta-mobile > :last-child { display: none; }
 html[data-theme] .md-btn--icon { padding: 0; }
 .md-btn--icon > svg { flex-shrink: 0; }
+@media (max-width: 768px) {
+  html[data-theme] .top-app-bar { transition: transform .2s ease, opacity .2s ease, visibility 0s; }
+  html[data-theme] .top-app-bar.is-scroll-hidden { transform: translateY(calc(100% + 24px + env(safe-area-inset-bottom))); opacity: 0; visibility: hidden; pointer-events: none; transition: transform .2s ease, opacity .2s ease, visibility 0s .2s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme] .top-app-bar { transition: none; }
+}

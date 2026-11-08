@@ -84,6 +84,9 @@
   .atlas-detail-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 560px) {
+  .atlas-matrix { max-height: min(48dvh, 430px); }
+  .atlas-detail { scroll-margin-top: 12px; }
+  .atlas-stock-links { max-height: none; }
   .atlas-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .atlas-stats span { min-width: 0; padding: 10px; }
   .atlas-switch { width: 100%; }

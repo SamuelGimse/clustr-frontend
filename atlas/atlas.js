@@ -226,12 +226,14 @@
         if (!entry) return;
         state.selected = `${entry.publish.id}|${button.dataset.atlasStock}`;
         draw(root);
+        if (window.matchMedia('(max-width: 768px)').matches) root.querySelector('#atlasDetail')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
       }
       const entry = model.themes.find(theme => theme.name === button.dataset.atlasTheme)?.entries[Number(button.dataset.atlasIndex)];
       if (!entry) return;
       state.selected = `${entry.publish.id}|${button.dataset.atlasTheme}`;
       draw(root);
+      if (window.matchMedia('(max-width: 768px)').matches) root.querySelector('#atlasDetail')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
     draw(root);
   }

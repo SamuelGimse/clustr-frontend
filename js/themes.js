@@ -194,6 +194,30 @@
     });
     mobile.addEventListener('change', () => setOpen(false));
     setOpen(false);
+    const bar = document.querySelector?.('.top-app-bar');
+    if (bar) {
+      let pageY = window.scrollY || 0;
+      let matrixY = 0;
+      const update = (current, previous) => {
+        if (!mobile.matches || current < 32) bar.classList.remove('is-scroll-hidden');
+        else if (!document.body.classList.contains('nav-open')) {
+          if (current - previous > 6) bar.classList.add('is-scroll-hidden');
+          else if (previous - current > 6) bar.classList.remove('is-scroll-hidden');
+        }
+      };
+      window.addEventListener('scroll', () => {
+        const current = window.scrollY || 0;
+        update(current, pageY);
+        pageY = current;
+      }, { passive: true });
+      document.addEventListener('scroll', event => {
+        if (!event.target?.classList?.contains('atlas-matrix')) return;
+        const current = event.target.scrollTop;
+        update(current, matrixY);
+        matrixY = current;
+      }, { passive: true, capture: true });
+      mobile.addEventListener('change', () => bar.classList.remove('is-scroll-hidden'));
+    }
   }
 
   window.ClustrThemes = { applyTheme, initTheme, isLightTheme, initMobileNav };
