@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const html = fs.readFileSync('index.html', 'utf8');
-const ids = ['navDashboard', 'navEvents', 'navStocks', 'navConnections', 'navWeekly', 'navAtlas', 'navDays', 'navWatchlist', 'navAdmin', 'navAccount'];
+const ids = ['navDashboard', 'navEvents', 'navStocks', 'navConnections', 'navMap', 'navWeekly', 'navAtlas', 'navDays', 'navWatchlist', 'navAdmin', 'navAccount'];
 test('All visible navigation uses the original signal icon family with inherited theme colors', () => {
   const icons = new Set();
   for (const id of ids) {

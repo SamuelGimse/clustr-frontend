@@ -84,3 +84,15 @@
 
 #connectionsView .cx-inspector-body button { min-height:40px; padding:8px; border:1px solid transparent; border-radius:7px; font-size:12px; }
 #connectionsView .cx-inspector-body button:hover { background:var(--panel-2); }
+
+.cx-map-caption { align-items:center; }
+.cx-map-caption [data-action="fullscreen"] { flex-shrink:0; margin-left:auto; min-height:44px; padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--panel); color:var(--text-primary); font:inherit; cursor:pointer; }
+.cx-explorer:fullscreen, .cx-explorer.cx-fullscreen { display:flex; flex-direction:column; width:100%; height:100dvh; padding:8px; box-sizing:border-box; background:var(--bg,#101720); color:var(--text-primary); }
+.cx-explorer.cx-fullscreen { position:fixed; inset:0; z-index:10000; }
+.cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-workspace { flex:1; min-height:0; }
+.cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-map { display:flex; flex-direction:column; min-width:0; min-height:0; }
+.cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-scroll { flex:1; min-height:0; height:auto; }
+.cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-canvas { min-height:0; }
+.cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-inspector { max-height:none; min-height:0; }
+.cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-picker { flex-shrink:0; }
+@media(max-width:768px) { .cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-workspace { grid-template-rows:minmax(0,1fr) minmax(100px,25dvh); } }

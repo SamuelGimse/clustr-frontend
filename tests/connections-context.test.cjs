@@ -6,7 +6,7 @@ const vm=require('node:vm');
 
 test('Network opens the supplied preview snapshot and retains the selected stock when changing range', async()=>{
   const elements=new Map(),created=[];let reads=0;
-  const make=()=>({innerHTML:'',textContent:'',value:'',style:{},attrs:{},children:[],contains:()=>true,classList:{add(){},remove(){}},setAttribute(key,value){this.attrs[key]=value;},focus(){this.focused=true;},scrollIntoView(){},addEventListener(){},insertAdjacentHTML(where,html){this.innerHTML=where==='afterbegin'?html+this.innerHTML:this.innerHTML+html;},append(...nodes){this.children.push(...nodes);},before(node){this.previous=node;},querySelector(selector){if(!elements.has(selector))elements.set(selector,make());return elements.get(selector);}});
+  const make=()=>({innerHTML:'',textContent:'',value:'',style:{},attrs:{},children:[],contains:()=>true,classList:{values:new Set(),add(v){this.values.add(v);},remove(v){this.values.delete(v);},contains(v){return this.values.has(v);}},setAttribute(key,value){this.attrs[key]=value;},focus(){this.focused=true;},scrollIntoView(){},addEventListener(){},insertAdjacentHTML(where,html){this.innerHTML=where==='afterbegin'?html+this.innerHTML:this.innerHTML+html;},append(...nodes){this.children.push(...nodes);},before(node){this.previous=node;},querySelector(selector){if(!elements.has(selector))elements.set(selector,make());return elements.get(selector);}});
   const host=make(),nav=make();
   const document={getElementById:id=>id==='connectionsView'?host:id==='navConnections'?nav:null,createElement:tag=>{const node=make();node.tag=tag;created.push(node);return node;}};
   const publish={id:7,market:'US',created_at:'2026-11-06T12:00:00Z'};
@@ -20,6 +20,13 @@ test('Network opens the supplied preview snapshot and retains the selected stock
   assert.equal(reads,0);assert.match(elements.get('.cx-inspector-body').innerHTML,/<h2>NVDA<\/h2>/);assert.match(elements.get('svg').innerHTML,/cx-selected[^>]*data-node="stock:US:NVDA"/);
   assert.match(created.findLast(node=>node.className==='cx-scope').textContent,/Last 1 day.*6 Nov 2026/);
   assert.match(elements.get('.cx-inspector-body').innerHTML,/Saved price/);assert.match(elements.get('.cx-inspector-body').innerHTML,/123.45/);assert.match(elements.get('.cx-inspector-body').innerHTML,/-2.25%/);assert.match(elements.get('.cx-inspector-body').innerHTML,/cx-impact--up">\+3/);
+  const fullscreen=elements.get('[data-action="fullscreen"]'),map=elements.get('.cx-explorer');
+  host.onclick({target:{closest:()=>({dataset:{action:'fullscreen'}})}});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(fullscreen.attrs['aria-pressed'],'true');assert(map.classList.contains('cx-fullscreen'));
+  host.onkeydown({key:'Escape',preventDefault(){},stopPropagation(){}});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(fullscreen.attrs['aria-pressed'],'false');assert(!map.classList.contains('cx-fullscreen'));
   const search=elements.get('[data-watchlist-search]');search.value='NVIDIA';search.oninput({target:search});
   assert.match(elements.get('.cx-stock-list').innerHTML,/stock:US:NVDA/);assert.doesNotMatch(elements.get('.cx-stock-list').innerHTML,/stock:US:AMD/);
   host.onkeydown({key:'Escape',target:search,preventDefault(){}});assert.match(elements.get('.cx-stock-list').innerHTML,/stock:US:AMD/);
