@@ -34,6 +34,7 @@
   const mindView = document.getElementById('mindView');
   const weeklyView = document.getElementById('weeklyView');
   const stocksView = document.getElementById('stocksView');
+  const atlasView = document.getElementById('atlasView');
   const polymarketView = document.getElementById('polymarketView');
   const navPolymarket = document.getElementById('navPolymarket');
   const accountView = document.getElementById('accountView');
@@ -46,6 +47,7 @@
   const navSignal = document.getElementById('navSignal');
   const navMind = document.getElementById('navMind');
   const navWeekly = document.getElementById('navWeekly');
+  const navAtlas = document.getElementById('navAtlas');
   const navAccount = document.getElementById('navAccount');
   const navAdmin = document.getElementById('navAdmin');
   let authState = { session: null, user: null, role: 'free', plan: null };
@@ -54,7 +56,7 @@
 
   function eventClusterScore(group) {
     const ratings = (group.articles || []).map(article => article.rating ?? article.score);
-    const articleScore = window.ClustrUtil.exponentialMeanRating(ratings);
+    const articleScore = window.ClustrUtil.articleImpactScore(ratings);
     const storedScore = Number(group.stance_score ?? group.cluster_score ?? group.impact_score);
     return articleScore ?? (Number.isFinite(storedScore) ? storedScore : 0);
   }
@@ -135,7 +137,7 @@
     const R = window.ClustrRender;
     const MapApi = window.ClustrMap;
 
-    [navEvents, navStocks, navMap, navDays, navSignal, navMind, navWeekly, navAccount, navAdmin, navPolymarket].forEach(b => {
+    [navEvents, navStocks, navMap, navDays, navSignal, navMind, navWeekly, navAtlas, navAccount, navAdmin, navPolymarket].forEach(b => {
       if (b) {
         b.classList.remove('is-active');
         b.setAttribute('aria-current', 'false');
@@ -150,6 +152,7 @@
     if (mindView) mindView.classList.add('hidden');
     if (weeklyView) weeklyView.classList.add('hidden');
     if (stocksView) stocksView.classList.add('hidden');
+    if (atlasView) atlasView.classList.add('hidden');
     if (accountView) accountView.classList.add('hidden');
     if (adminView) adminView.classList.add('hidden');
     if (which !== 'stocks') window.ClustrStocks?.leave();
@@ -232,6 +235,11 @@
       }
       if (weeklyView) weeklyView.classList.remove('hidden');
       renderWeekly();
+    } else if (which === 'atlas') {
+      navAtlas?.classList.add('is-active');
+      navAtlas?.setAttribute('aria-current', 'page');
+      atlasView?.classList.remove('hidden');
+      window.ClustrAtlas?.render(atlasView);
     } else if (which === 'account') {
       if (navAccount) {
         navAccount.classList.add('is-active');
@@ -265,7 +273,7 @@
   }
 
   function weeklyScore(group) {
-    const articleScore = window.ClustrUtil.exponentialMeanRating((group.articles || []).map(a => a.rating ?? a.score));
+    const articleScore = window.ClustrUtil.articleImpactScore((group.articles || []).map(a => a.rating ?? a.score));
     if (articleScore != null) return articleScore;
     const value = Number(group.stance_score ?? group.cluster_score ?? group.impact_score);
     return Number.isFinite(value) && value >= -10 && value <= 10 && value !== 0 ? value : null;
@@ -353,7 +361,7 @@
         if (!dailyByMarket.has(market)) dailyByMarket.set(market, []);
         dailyByMarket.get(market).push(row);
       } else if (row.kind === 'weekly_cluster') {
-        const key = `${market}:${String(row.cluster_name || '').trim().toLocaleLowerCase()}`;
+        const key = `${market}:${window.ClustrTaxonomy.canonicalName(row.cluster_name).toLocaleLowerCase()}`;
         const current = weeklySummaryByCluster.get(key);
         if (!current || row.summary_date > current.summary_date) weeklySummaryByCluster.set(key, row);
       }
@@ -820,6 +828,8 @@
   }
 
   async function refreshPublishes() {
+    window.ClustrApi.invalidatePublishHistory?.();
+    window.ClustrAtlas?.invalidate();
     publishes = await window.ClustrApi.fetchPublishes(100);
     publishIndex = 0;
     if (publishes.length) {
@@ -972,6 +982,7 @@
   }));
   if (navMap) navMap.addEventListener('click', () => setNav('map'));
   if (navWeekly) navWeekly.addEventListener('click', () => setNav('weekly'));
+  if (navAtlas) navAtlas.addEventListener('click', () => setNav('atlas'));
   if (navAccount) navAccount.addEventListener('click', () => setNav('account'));
   if (navAdmin) navAdmin.addEventListener('click', () => setNav('admin'));
   if (navMind) navMind.addEventListener('click', () => setNav('mind'));

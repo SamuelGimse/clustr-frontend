@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="styles.css?v=sidebar-align-6" />
   <link rel="stylesheet" href="polymarket.css?v=1" />
   <link rel="stylesheet" href="stocks.css?v=1" />
+  <link rel="stylesheet" href="atlas/atlas.css?v=1" />
 </head>
 <body>
   <!-- CRT overlay (visible only when data-theme=crt) -->
@@ -89,6 +90,10 @@
             <path d="M4 19V5M4 19h17M7 15l4-5 3 3 6-8"/><circle cx="7" cy="15" r="1"/><circle cx="11" cy="10" r="1"/><circle cx="14" cy="13" r="1"/><circle cx="20" cy="5" r="1"/>
           </svg>
           <span class="nav-rail-label">Weekly</span>
+        </button>
+        <button type="button" id="navAtlas" class="nav-rail-btn" title="Cluster Atlas" aria-label="Cluster Atlas">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18M7 3v18M14 3v18"/><circle cx="14" cy="12" r="2.2" fill="currentColor" stroke="none"/></svg>
+          <span class="nav-rail-label">Atlas</span>
         </button>
         <button type="button" id="navAccount" class="nav-rail-btn" title="Account and subscription" aria-label="Account and subscription">
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
@@ -276,6 +281,7 @@
         <div id="weeklyChart" class="weekly-chart"></div>
         <div id="weeklyList" class="weekly-list"></div>
       </section>
+      <section id="atlasView" class="hidden atlas-page" aria-label="Cluster Atlas"></section>
       <section id="stocksView" class="hidden stocks-page" aria-label="Stocks and linked clusters"></section>
       <section id="polymarketView" class="hidden" aria-label="Polymarket questions and odds"><div id="clustrPolymarket"></div></section>
       <section id="accountView" class="hidden account-page" aria-label="Account and subscription">
@@ -291,17 +297,19 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js?v=admin-publish-2"></script>
-  <script src="js/util.js?v=card-audit-1"></script>
+  <script src="js/util.js?v=atlas-1"></script>
   <script src="js/quotes.js?v=repo-exact"></script>
   <script src="js/auth.js?v=admin-publish-live-chart-2"></script>
-  <script src="js/api.js?v=stock-explorer-1"></script>
+  <script src="js/cluster-taxonomy.js?v=1"></script>
+  <script src="js/api.js?v=atlas-1"></script>
+  <script src="atlas/atlas.js?v=1"></script>
   <script src="js/themes.js?v=mobile-audit-1"></script>
   <script src="js/map.js?v=repo-exact"></script>
   <script src="js/mindmap.js?v=mobile-audit-1"></script>
-  <script src="js/render.js?v=brand-dock-2"></script>
+  <script src="js/render.js?v=atlas-1"></script>
   <script src="js/signal.js?v=repo-exact"></script>
   <script src="js/polymarket.js?v=1"></script>
   <script src="js/stocks.js?v=1"></script>
-  <script src="js/app.js?v=stock-explorer-1"></script>
+  <script src="js/app.js?v=atlas-1"></script>
 </body>
 </html>

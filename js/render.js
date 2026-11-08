@@ -99,7 +99,7 @@
 
   function groupRating(group) {
     const ratings = (group && group.articles || []).map(article => article.rating ?? article.score);
-    return U().exponentialMeanRating(ratings) ?? U().numericStance(group && (group.stance_score ?? group.cluster_score));
+    return U().articleImpactScore(ratings) ?? U().numericStance(group && (group.stance_score ?? group.cluster_score));
   }
 
   function clusterScoreHtml(group) {

@@ -37,6 +37,11 @@ function exponentialMeanRating(values) {
   return Math.max(-10, Math.min(10, Number(score.toFixed(1))));
 }
 
+function articleImpactScore(values) {
+  const valid = (values || []).filter(value => value != null && String(value).trim() !== '' && Number.isFinite(Number(value)) && Math.abs(Number(value)) <= 10);
+  return valid.length ? exponentialMeanRating(valid.filter(value => Number(value) !== 0)) ?? 0 : null;
+}
+
 function numericStance(value) {
   if (value == null || String(value).trim() === '') return null;
   const score = Number(value);
@@ -117,6 +122,7 @@ window.ClustrUtil = {
   formatPct,
   formatMoney,
   exponentialMeanRating,
+  articleImpactScore,
   numericStance,
   stanceCategory,
   deltaSincePublish,

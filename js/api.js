@@ -220,13 +220,13 @@
     // Pipeline publishes carry the rated article objects in groups_json; prefer that
     // payload so signed per-article ratings survive the relational fallback path.
     if (String(publish.notes || '').startsWith('PULSE pipeline') && Array.isArray(publish.groups_json)) {
-      return publish.groups_json;
+      return window.ClustrTaxonomy.mergeGroups(publish.groups_json);
     }
     // Prefer relational tables for other publishes; fall back to groups_json.
     if (publish.id != null) {
       try {
         const nested = await fetchClustersForPublish(publish.id);
-        if (nested.length) return nested;
+        if (nested.length) return window.ClustrTaxonomy.mergeGroups(nested);
       } catch (err) {
         console.warn('relational clusters', err.message);
       }
@@ -241,8 +241,8 @@
    */
   function groupsFromPublish(publish) {
     if (!publish) return [];
-    if (Array.isArray(publish.groups_json)) return publish.groups_json;
-    if (Array.isArray(publish.groups)) return publish.groups;
+    if (Array.isArray(publish.groups_json)) return window.ClustrTaxonomy.mergeGroups(publish.groups_json);
+    if (Array.isArray(publish.groups)) return window.ClustrTaxonomy.mergeGroups(publish.groups);
     return [];
   }
 
@@ -342,7 +342,7 @@
    * @returns {object[]}
    */
   function stanceHistoryFromPublishes(clusterName, publishRows, cache, context = {}) {
-    const name = String(clusterName || '').trim().toLowerCase();
+    const name = window.ClustrTaxonomy.canonicalName(clusterName).toLowerCase();
     if (!name) return [];
 
     const scope = historyContext(context);
@@ -362,6 +362,7 @@
       if (!groups.length) {
         groups = groupsFromPublish(p);
       }
+      groups = window.ClustrTaxonomy.mergeGroups(groups);
       const match = groups.find(
         g => String(g.name || '').trim().toLowerCase() === name
       );
@@ -379,7 +380,7 @@
           priceAtPublish: s.priceAtPublish ?? s.price ?? null
         });
       }
-      const stanceScore = window.ClustrUtil.exponentialMeanRating((match.articles || []).map(article => article.rating ?? article.score)) ?? window.ClustrUtil.numericStance(match.stance_score ?? match.cluster_score);
+      const stanceScore = window.ClustrUtil.articleImpactScore((match.articles || []).map(article => article.rating ?? article.score)) ?? window.ClustrUtil.numericStance(match.stance_score ?? match.cluster_score);
       rows.push({
         stance: window.ClustrUtil.stanceCategory(stanceScore) || String(match.stance || 'watch').toLowerCase(),
         stanceScore,
@@ -397,6 +398,8 @@
   window.ClustrApi = {
     fetchPublishes,
     fetchPublishesInRange,
+    fetchAllPublishes,
+    invalidatePublishHistory: () => { fullPublishHistoryPromise = null; },
     fetchAiSummaries,
     fetchClustersForPublish,
     loadGroupsForPublish,
