@@ -2,7 +2,11 @@
 
 Static Clustr Market application. Configure its public Supabase URL and anon key in `js/config.js`, then serve this directory as a static site.
 
-Clustr Market uses Supabase Google, email/password, and passwordless email-link authentication. Free and Pro data access is enforced by Supabase policy; the private `clustr-backend` repository contains the matching RLS and billing setup.
+Clustr Market uses Supabase Google, Facebook, email/password, and passwordless email-link authentication. Free and Pro data access is enforced by Supabase policy; the private `clustr-backend` repository contains the matching RLS and billing setup.
+
+Free can read reports before yesterday's midnight in US Eastern time: Friday is available on Sunday. Watchlist and interactive History require Pro, alongside existing Pro-only features. Verified Stripe webhooks grant the 99 NOK/month subscription. Billing requires Stripe secrets and a successful sandbox checkout test before live sales.
+
+Admin's Account preview selector shows Free, subscribed Pro or Permanent Pro without losing actual Admin access. Preview filters report dates and disables real billing, sign-out and Watchlist edits. Exit preview to return to the actual account.
 
 Administrators can start a full publish from Account while the private `clustr-backend` service is running locally on port 3001. The backend checks the Supabase admin role before it runs the pipeline.
 

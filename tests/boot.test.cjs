@@ -22,6 +22,8 @@ async function check({ user = {}, rows = [{ id: 1 }], error = null, hash = '' } 
     setBootStage: stage => calls.push(`stage:${stage}`),
     renderAccount: () => calls.push('account'),
     renderProBadges: () => calls.push('badge'),
+    renderPlanAccess: () => calls.push('access'),
+    hasProAccess: () => false,
     warmGroupsCache: () => {},
     navAdmin: null,
     location: { hash, search: '' },

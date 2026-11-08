@@ -36,6 +36,25 @@ test('All report lists omit large bodies; concurrent detail reads share one auth
   s.api.invalidatePublishHistory();await s.api.loadGroupsForPublish(s.publish);assert.equal(s.calls.length,5);
 });
 
+test('Free admin preview filters report queries and paginated summaries, and clears caches on exit', async () => {
+  const s = setup();
+  s.api.setPreviewCutoff('2026-11-07T05:00:00Z');
+  await s.api.fetchPublishes(100);
+  assert(new URL(s.calls.at(-1).url).searchParams.getAll('created_at').includes('lt.2026-11-07T05:00:00Z'));
+  s.setHook(url => {
+    if (!url.includes('/rpc/')) return null;
+    const offset = Number(new URL(url).searchParams.get('p_offset'));
+    return { ok: true, json: async () => offset === 0 ? Array.from({ length: 100 }, (_, id) => ({ id, created_at: '2026-11-08T12:00:00Z' })) : [s.compact] };
+  });
+  const summaries = await s.api.fetchHistorySummaries();
+  assert.equal(summaries.length, 1);
+  assert.equal(summaries[0].id, s.compact.id);
+  s.api.setPreviewCutoff(null);
+  await s.api.fetchPublishes(100);
+  assert.equal(new URL(s.calls.at(-1).url).searchParams.getAll('created_at').length, 0);
+  assert.throws(() => s.api.setPreviewCutoff('invalid'));
+});
+
 test('All cluster histories share compact snapshots and preserve scores and default prices',async()=>{
   const s=setup();
   const [rows]=await Promise.all([s.api.fetchHistorySummaries(),s.api.fetchHistorySummaries()]);

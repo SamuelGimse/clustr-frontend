@@ -56,6 +56,7 @@
   const navAdmin = document.getElementById('navAdmin');
   let authState = { session: null, user: null, role: 'free', plan: null };
   let accountMode = 'signin';
+  let accountPreview = '';
   let publishChart = null;
 
   function eventClusterScore(group) {
@@ -170,7 +171,15 @@
     if (which !== 'stocks') window.ClustrStocks?.leave();
 
     if (which !== 'watchlist' && which !== 'polymarket' && which !== 'atlas' && which !== 'dashboard' && which !== 'connections' && ['#/watchlist', '#/polymarket', '#/atlas', '#/dashboard', '#/connections'].includes(location.hash)) history.replaceState(null, '', location.pathname + location.search);
-    if (which === 'connections') {
+    if (['watchlist', 'atlas'].includes(which) && !hasProAccess()) {
+      const host = which === 'watchlist' ? watchlistView : atlasView;
+      const nav = which === 'watchlist' ? navWatchlist : navAtlas;
+      nav?.classList.add('is-active');
+      nav?.setAttribute('aria-current', 'page');
+      host?.classList.remove('hidden');
+      if (host) host.innerHTML = `<section class="account-shell pro-feature-gate"><p class="account-eyebrow">PRO FEATURE</p><h1>${which === 'watchlist' ? 'Watchlist' : 'History'}</h1><p>${which === 'watchlist' ? 'Save stocks and filter your workspace with a personal watchlist.' : 'Explore the interactive cluster and stock history.'} Included with Clustr Market Pro.</p><p>Free includes reports from two or more calendar days ago (US Eastern time).</p><button type="button" class="account-primary" data-account-action="${authState.user ? 'checkout' : 'account'}">${authState.user ? 'Get Pro · 99 kr/month' : 'Sign in to upgrade'}</button></section>`;
+      history.replaceState(null, '', `#/${which}`);
+    } else if (which === 'connections') {
       history.replaceState(null, '', '#/connections');
       window.ClustrConnections?.mount(currentGroups, publishes[publishIndex]);
     } else if (which === 'dashboard') {
@@ -255,7 +264,7 @@
       navStocks?.classList.add('is-active');
       navStocks?.setAttribute('aria-current', 'page');
       stocksView?.classList.remove('hidden');
-      window.ClustrStocks?.mount(stocksView, authState.role);
+      window.ClustrStocks?.mount(stocksView, getDisplayAccount().role);
     } else if (which === 'weekly') {
       if (navWeekly) {
         navWeekly.classList.add('is-active');
@@ -350,7 +359,7 @@
       return at >= start.getTime() && at <= end.getTime();
     });
     range.textContent = `${start.toLocaleDateString()} – ${end.toLocaleDateString()} · rolling 7 days · ${inWeek.length} publishes`;
-    if (!['pro', 'admin'].includes(authState.role)) {
+    if (!hasProAccess()) {
       summary.innerHTML = '<div class="weekly-locked"><b>Pro</b><span>Weekly history is part of the paid plan.</span></div>';
       if (aiSummary) aiSummary.innerHTML = '';
       chart.innerHTML = '';
@@ -599,13 +608,45 @@
   }
 
   function isPermanentPro() {
-    return authState.role === 'pro' && authState.plan?.status === 'active' &&
-      authState.plan.current_period_end === null && !authState.plan.stripe_customer_id;
+    const account = getDisplayAccount();
+    return account.role === 'pro' && account.plan?.status === 'active' &&
+      account.plan.current_period_end === null && !account.plan.stripe_customer_id;
+  }
+
+  function getDisplayAccount() {
+    if (authState.role !== 'admin' || !accountPreview) return authState;
+    return { ...authState, role: accountPreview === 'free' ? 'free' : 'pro',
+      plan: accountPreview === 'free' ? null : { status: 'active', current_period_end: null,
+        stripe_customer_id: accountPreview === 'permanent' ? null : 'preview' } };
+  }
+
+  function hasProAccess() {
+    const account = getDisplayAccount();
+    return !!account.user && ['pro', 'admin'].includes(account.role);
+  }
+
+  function renderPlanAccess() {
+    const free = !!authState.user && !hasProAccess();
+    const banner = document.getElementById('freePlanBanner');
+    if (banner) banner.hidden = !free;
+    const previewBanner = document.getElementById('accountPreviewBanner');
+    if (previewBanner) {
+      previewBanner.hidden = authState.role !== 'admin' || !accountPreview;
+      const label = previewBanner.querySelector('[data-preview-label]');
+      if (label) label.textContent = `Previewing ${accountPreview === 'permanent' ? 'Permanent Pro' : accountPreview === 'pro' ? 'Pro' : 'Free'} · Your real account is still Admin`;
+    }
+    for (const id of ['navWatchlist', 'navAtlas']) {
+      const button = document.getElementById(id);
+      if (!button) continue;
+      button.classList.toggle('is-pro-locked', !hasProAccess());
+      button.title = hasProAccess() ? '' : 'Included with Clustr Market Pro';
+    }
   }
 
   function renderProBadges() {
-    const visible = !!authState.user && ['pro', 'admin'].includes(authState.role);
-    const label = authState.role === 'admin' ? 'Pro · Admin' : isPermanentPro() ? 'Permanent Pro' : 'Pro';
+    const account = getDisplayAccount();
+    const visible = !!account.user && ['pro', 'admin'].includes(account.role);
+    const label = account.role === 'admin' ? 'Pro · Admin' : isPermanentPro() ? 'Permanent Pro' : 'Pro';
     document.querySelectorAll('[data-pro-badge]').forEach(badge => {
       badge.hidden = !visible;
       badge.textContent = visible ? label : '';
@@ -614,32 +655,49 @@
   }
 
   function renderAccount(message = '') {
+    const account = getDisplayAccount();
     const title = document.getElementById('accountTitle');
     const note = document.getElementById('accountMessage');
     const content = document.getElementById('accountContent');
     if (!title || !content) return;
     note.textContent = message;
-    if (!authState.user) {
+    if (!account.user) {
       title.textContent = accountMode === 'signup' ? 'Create your free account' : 'Sign in to Clustr Market';
-      content.innerHTML = `<button class="account-secondary" type="button" data-account-action="google">Continue with Google</button><form id="accountForm" class="account-form"><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" minlength="8" autocomplete="${accountMode === 'signup' ? 'new-password' : 'current-password'}" required></label><button class="account-primary" type="submit">${accountMode === 'signup' ? 'Create free account' : 'Sign in'}</button></form><div class="account-actions"><button type="button" data-account-action="email-link">${accountMode === 'signup' ? 'Create account with email link' : 'Email me a sign-in link'}</button><button type="button" data-account-action="switch">${accountMode === 'signup' ? 'Already have an account? Sign in' : 'Create a free account'}</button>${accountMode === 'signin' ? '<button type="button" data-account-action="resend">Resend confirmation email</button><button type="button" data-account-action="reset">Reset password</button>' : ''}</div><p class="account-plan-note">Free includes the previous trading day. Pro unlocks live clusters and full history.</p>`;
+      content.innerHTML = `<button class="account-secondary" type="button" data-account-action="google">Continue with Google</button><button class="account-secondary" type="button" data-account-action="facebook">Continue with Facebook</button><form id="accountForm" class="account-form"><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" minlength="8" autocomplete="${accountMode === 'signup' ? 'new-password' : 'current-password'}" required></label><button class="account-primary" type="submit">${accountMode === 'signup' ? 'Create free account' : 'Sign in'}</button></form><div class="account-actions"><button type="button" data-account-action="email-link">${accountMode === 'signup' ? 'Create account with email link' : 'Email me a sign-in link'}</button><button type="button" data-account-action="switch">${accountMode === 'signup' ? 'Already have an account? Sign in' : 'Create a free account'}</button>${accountMode === 'signin' ? '<button type="button" data-account-action="resend">Resend confirmation email</button><button type="button" data-account-action="reset">Reset password</button>' : ''}</div><p class="account-plan-note">Free includes older reports, excluding today and yesterday (US Eastern time). Pro unlocks the latest data, Watchlist and History.</p>`;
       return;
     }
-    if (authState.recovery) {
+    if (account.recovery) {
       title.textContent = 'Set a new password';
-      content.innerHTML = `<p>${window.ClustrUtil.escapeHtml(authState.user.email || '')}</p><form id="passwordForm" class="account-form"><label>New password<input name="password" type="password" minlength="8" autocomplete="new-password" required></label><button class="account-primary" type="submit">Update password</button></form>`;
+      content.innerHTML = `<p>${window.ClustrUtil.escapeHtml(account.user.email || '')}</p><form id="passwordForm" class="account-form"><label>New password<input name="password" type="password" minlength="8" autocomplete="new-password" required></label><button class="account-primary" type="submit">Update password</button></form>`;
       return;
     }
     title.textContent = 'Your Clustr Market account';
     const permanent = isPermanentPro();
-    content.innerHTML = `<div class="account-profile"><span>${window.ClustrUtil.escapeHtml(authState.user.email || '')}</span><span class="account-plan-badge">${authState.role === 'admin' ? 'PRO · ADMIN' : permanent ? 'PERMANENT PRO' : authState.role === 'pro' ? 'PRO · ACTIVE' : 'FREE'}</span></div>` +
-      (authState.role === 'admin' ? `<section class="account-plan"><h2>Pro is active</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p><p class="account-plan-note">Your admin account includes permanent Pro access. No subscription is required.</p></section>` : authState.role === 'pro' ? `<section class="account-plan"><h2>${permanent ? 'Permanent Pro' : 'Pro is active'}</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p>${permanent ? '<p class="account-plan-note">Your Pro access has no expiry date and no recurring payments.</p>' : authState.plan?.current_period_end ? `<p class="account-plan-note">Current period ends ${new Date(authState.plan.current_period_end).toLocaleDateString()}.</p>` : ''}${authState.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage subscription</button>' : ''}</section>` :
-      `<section class="account-plan"><h2>Free plan</h2><p>Access the previous trading day’s clusters for free.</p><h3>Pro · 99 kr/month</h3><p>Unlock current clusters, weekly cluster history, trends, and the full archive.</p><button class="account-primary" type="button" data-account-action="checkout">Continue to secure checkout</button>${authState.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage billing</button>' : ''}</section>`) +
+    content.innerHTML = `<div class="account-profile"><span>${window.ClustrUtil.escapeHtml(account.user.email || '')}</span><span class="account-plan-badge">${account.role === 'admin' ? 'PRO · ADMIN' : permanent ? 'PERMANENT PRO' : account.role === 'pro' ? 'PRO · ACTIVE' : 'FREE'}</span></div>` +
+      (account.role === 'admin' ? `<section class="account-plan"><h2>Pro is active</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p><p class="account-plan-note">Your admin account includes permanent Pro access. No subscription is required.</p></section>` : account.role === 'pro' ? `<section class="account-plan"><h2>${permanent ? 'Permanent Pro' : 'Pro is active'}</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p>${permanent ? '<p class="account-plan-note">Your Pro access has no expiry date and no recurring payments.</p>' : account.plan?.current_period_end ? `<p class="account-plan-note">Current period ends ${new Date(account.plan.current_period_end).toLocaleDateString()}.</p>` : ''}${account.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage subscription</button>' : ''}</section>` :
+      `<section class="account-plan"><h2>Free plan</h2><p>Browse older reports. Today’s and yesterday’s reports, Watchlist and History are not included (US Eastern time).</p><h3>Pro · 99 kr/month</h3><p>Get the latest data, your personal Watchlist and interactive History.</p><button class="account-primary" type="button" data-account-action="checkout">Continue to secure checkout</button>${account.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage billing</button>' : ''}</section>`) +
       '<button class="account-secondary" type="button" data-account-action="logout">Sign out</button>';
   }
 
   function renderAdmin(message = '') {
     const note = document.getElementById('adminMessage');
     if (note) note.textContent = message;
+  }
+
+  async function setAccountPreview(value) {
+    if (authState.role !== 'admin' || !['', 'free', 'pro', 'permanent'].includes(value)) throw new Error('Administrator access is required.');
+    const cutoff = value === 'free' ? await window.ClustrApi.fetchFreeCutoff() : null;
+    window.ClustrApi.setPreviewCutoff(cutoff);
+    accountPreview = value;
+    publishes = []; currentGroups = []; groupsCache = {}; weeklyRenderId++;
+    window.ClustrStocks?.leave();
+    window.ClustrConnections?.hide();
+    await window.ClustrWatchlist?.init(hasProAccess() ? authState.user : null);
+    window.ClustrThemes.setAccess(getDisplayAccount().role);
+    renderProBadges(); renderPlanAccess();
+    const selectedView = view;
+    await refreshPublishes();
+    setNav(selectedView);
   }
 
   function appendPublishConsole(lines, reset = false) {
@@ -907,9 +965,10 @@
     try {
       const bootP = runBoot();
       authState = await window.ClustrAuth.restore();
-      await window.ClustrWatchlist?.init(authState.user);
+      await window.ClustrWatchlist?.init(hasProAccess() ? authState.user : null);
       window.ClustrThemes.setAccess(authState.role);
       renderProBadges();
+      renderPlanAccess();
       if (navAdmin) navAdmin.classList.toggle('hidden', authState.role !== 'admin');
       if (!authState.user) {
         await bootP;
@@ -929,6 +988,7 @@
       if (!publishes.length) {
         if (location.hash === '#/connections') setNav('connections');
         if (location.hash === '#/watchlist') setNav('watchlist');
+        if (location.hash === '#/atlas') setNav('atlas');
         if (status) status.textContent = 'No publishes yet';
         setBootStage(2, 'Your workspace is ready');
         await endBoot();
@@ -1010,8 +1070,12 @@
     if (!button) return;
     const action = button.getAttribute('data-account-action');
     try {
+      if (action === 'exit-preview') { await setAccountPreview(''); const choice = document.getElementById('accountPreviewChoice'); if (choice) choice.value = ''; return; }
+      if (authState.role === 'admin' && accountPreview && ['checkout', 'portal', 'logout'].includes(action)) throw new Error('This is an account preview. Exit preview to use real billing or sign out.');
       if (action === 'switch') { accountMode = accountMode === 'signup' ? 'signin' : 'signup'; renderAccount(); }
+      if (action === 'account') setNav('account');
       if (action === 'google') await window.ClustrAuth.signInWithGoogle();
+      if (action === 'facebook') await window.ClustrAuth.signInWithFacebook();
       if (action === 'email-link') {
         const email = document.querySelector('#accountForm [name="email"]')?.value.trim();
         if (!email) { renderAccount('Enter your email first.'); return; }
@@ -1028,8 +1092,11 @@
         if (!email) { renderAccount('Enter your email first.'); return; }
         await window.ClustrAuth.resendConfirmation(email); renderAccount('Confirmation email sent. Check your inbox and spam folder.');
       }
-      if (action === 'checkout') await window.ClustrAuth.checkout();
-      if (action === 'portal') await window.ClustrAuth.portal();
+      if (action === 'checkout' || action === 'portal') {
+        button.disabled = true;
+        try { await window.ClustrAuth[action === 'checkout' ? 'checkout' : 'portal'](); }
+        finally { button.disabled = false; }
+      }
       if (action === 'publish') {
         if (authState.role !== 'admin') throw new Error('Administrator access is required.');
         const market = 'US';
@@ -1048,8 +1115,23 @@
       if (action === 'logout') { await window.ClustrAuth.signOut(); window.location.reload(); }
     } catch (err) {
       if (action === 'publish') renderAdmin(err.message || 'Could not complete the publish.');
-      else renderAccount(err.message || 'Could not complete that action.');
+      else {
+        if (action === 'checkout' || action === 'portal') setNav('account');
+        renderAccount(err.message || 'Could not complete that action.');
+      }
     }
+  });
+
+  document.getElementById('accountPreviewChoice')?.addEventListener('change', async event => {
+    const choice = event.target;
+    const note = document.getElementById('accountPreviewStatus');
+    choice.disabled = true;
+    if (note) note.textContent = 'Loading account preview…';
+    try {
+      await setAccountPreview(choice.value);
+      if (note) note.textContent = accountPreview ? 'Preview active. Admin access is unchanged; billing and watchlist edits are disabled.' : 'Showing your actual Admin account.';
+    } catch (error) { if (note) note.textContent = error.message || 'Could not load preview.'; }
+    finally { choice.value = accountPreview; choice.disabled = false; }
   });
 
   document.addEventListener('submit', async event => {
@@ -1147,6 +1229,7 @@
   });
 
   window.ClustrApp = {
+    isAccountPreview: () => authState.role === 'admin' && !!accountPreview,
     jumpToCluster,
     showView: setNav,
     getGroups: () => scopedGroups(),

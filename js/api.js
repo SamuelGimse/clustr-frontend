@@ -7,13 +7,14 @@
 (function () {
   let fullPublishHistoryPromise = null, historySummaryPromise = null, historySummaries = [];
   let cacheSession = null;
+  let previewCutoff = null;
   const detailRequests = new Map();
 
   function resetCaches() {
     fullPublishHistoryPromise = null; historySummaryPromise = null; historySummaries = []; detailRequests.clear();
   }
   function syncSession() {
-    const token = window.ClustrAuth?.accessToken() || '';
+    const token = `${window.ClustrAuth?.accessToken() || ''}|${previewCutoff || ''}`;
     if (token !== cacheSession) { cacheSession = token; resetCaches(); }
     return token;
   }
@@ -25,7 +26,7 @@
       for (let offset = 0; ; offset += 100) {
         const page = await rest(`rpc/clustr_history_snapshots?p_limit=100&p_offset=${offset}`);
         if (owner !== syncSession()) throw new Error('Account changed while loading history.');
-        rows.push(...page);
+        rows.push(...page.filter(row => !previewCutoff || Date.parse(row.created_at) < Date.parse(previewCutoff)));
         if (page.length < 100) { historySummaries = rows; return rows; }
       }
     })();
@@ -65,6 +66,8 @@
   async function rest(path) {
     const { url, key } = creds();
     if (!url || !key) throw new Error('Missing Supabase config');
+    if (previewCutoff && path.startsWith('clustr_publishes?')) path += `&created_at=lt.${encodeURIComponent(previewCutoff)}`;
+    if (previewCutoff && path.startsWith('clustr_ai_summaries?')) path += `&summary_date=lt.${encodeURIComponent(new Date(previewCutoff).toLocaleDateString('en-CA', { timeZone: 'America/New_York' }))}`;
     const res = await fetch(`${url}/rest/v1/${path}`, {
       headers: {
         apikey: key,
@@ -437,6 +440,11 @@
   }
 
   window.ClustrApi = {
+    fetchFreeCutoff: () => rest('rpc/clustr_free_data_before'),
+    setPreviewCutoff: value => {
+      if (value !== null && !Number.isFinite(Date.parse(value))) throw new Error('Invalid preview cutoff');
+      previewCutoff = value; resetCaches();
+    },
     fetchPublishes,
     fetchPublishesInRange,
     fetchAllPublishes,

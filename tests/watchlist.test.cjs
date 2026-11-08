@@ -31,7 +31,7 @@ function session() {
     }
   };
   const context = { window }; vm.createContext(context); vm.runInContext(source, context);
-  return { api: window.ClustrWatchlist, cloud, calls, events, storage, setToken: value => { token = value; }, setHook: value => { hook = value; } };
+  return { api: window.ClustrWatchlist, cloud, calls, events, storage, setPreview: value => { window.ClustrApp = { isAccountPreview: () => value }; }, setToken: value => { token = value; }, setHook: value => { hook = value; } };
 }
 
 test('Watchlists persist per account with authenticated add/remove and no supplied owner', async () => {
@@ -49,6 +49,16 @@ test('Watchlists persist per account with authenticated add/remove and no suppli
   await s.api.setSaved({ symbol: 'NVDA' }, 'US', false);
   assert.equal(s.api.getItems().length, 0);
   assert.equal(s.cloud.get('Bearer Alice').size, 0);
+});
+
+test('Account preview cannot change saved watchlist data or persist preview filters', async () => {
+  const s = session(); await s.api.init({ id: 'Alice' }); s.setPreview(true);
+  const before = s.calls.length;
+  await assert.rejects(s.api.setSaved('NVDA', 'US', true), /disabled in account preview/);
+  s.api.setScope('watchlist'); s.api.setLinkType('defaults', false);
+  assert.equal(s.calls.length, before);
+  assert.equal(s.storage.size, 0);
+  assert.match(s.api.button('NVDA'), / disabled/);
 });
 
 test('Scope matches every relationship layer and article-only links without altering scores or raw data', () => {

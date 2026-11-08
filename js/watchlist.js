@@ -125,18 +125,19 @@
     if (!['all', 'watchlist'].includes(value) || value === scope || !user) return;
     if (value === 'watchlist' && !ready) return;
     scope = value; version++;
-    try { root.localStorage.setItem(`clustr-watchlist-scope:${user.id}`, scope); } catch {}
+    try { if (!root.ClustrApp?.isAccountPreview?.()) root.localStorage.setItem(`clustr-watchlist-scope:${user.id}`, scope); } catch {}
     notify(true);
   }
   function setLinkType(type,enabled){
     if(!user||!Object.hasOwn(LINK_TYPES,type)||linkTypes.has(type)===enabled)return;
     if(enabled)linkTypes.add(type);else linkTypes.delete(type);
     version++;
-    try{root.localStorage.setItem(`clustr-watchlist-links:${user.id}`,JSON.stringify([...linkTypes]));}catch{}
+    try{if(!root.ClustrApp?.isAccountPreview?.())root.localStorage.setItem(`clustr-watchlist-links:${user.id}`,JSON.stringify([...linkTypes]));}catch{}
     notify(true);
   }
 
   async function setSaved(raw, market, desired) {
+    if (root.ClustrApp?.isAccountPreview?.()) throw new Error('Watchlist edits are disabled in account preview.');
     const stock = stockRecord(raw, market);
     if (!stock) throw new Error('Enter a valid ticker and market.');
     if (!user || !ready) throw new Error('Load your signed-in watchlist before making changes.');
@@ -160,7 +161,7 @@
     if (!user || !stock) return '';
     const saved = entries.has(stock.key), busy = pending.has(stock.key);
     const label = `${saved ? 'Remove' : 'Add'} ${stock.symbol} ${saved ? 'from' : 'to'} watchlist`;
-    return `<button type="button" class="watch-star${saved ? ' is-saved' : ''}" data-watch-toggle data-watch-market="${stock.market}" data-watch-symbol="${esc(stock.symbol)}" data-watch-name="${esc(stock.name)}" aria-label="${esc(label)}" title="${esc(label)}" aria-pressed="${saved}"${busy || !ready ? ' disabled' : ''}${busy ? ' aria-busy="true"' : ''}><svg viewBox="0 0 24 24" width="18" height="18" fill="${saved ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.3.9-4.6 4.5 1.1 6.3-5.6-3-5.6 3 1.1-6.3L3 9.6l6.2-.9Z"/></svg></button>`;
+    return `<button type="button" class="watch-star${saved ? ' is-saved' : ''}" data-watch-toggle data-watch-market="${stock.market}" data-watch-symbol="${esc(stock.symbol)}" data-watch-name="${esc(stock.name)}" aria-label="${esc(label)}" title="${esc(label)}" aria-pressed="${saved}"${busy || !ready || root.ClustrApp?.isAccountPreview?.() ? ' disabled' : ''}${busy ? ' aria-busy="true"' : ''}><svg viewBox="0 0 24 24" width="18" height="18" fill="${saved ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.3.9-4.6 4.5 1.1 6.3-5.6-3-5.6 3 1.1-6.3L3 9.6l6.2-.9Z"/></svg></button>`;
   }
 
   function paintControls() {
@@ -176,14 +177,14 @@
       const note = bar.querySelector('[data-watch-note]');
       note.textContent = message || (loading ? 'Loading watchlist…' : isFiltered() ? !linkTypes.size?'No link types selected. Turn on a link type to show matching clusters.':entries.size ? 'Showing your saved stocks and linked clusters.' : 'Your watchlist is empty. Add stocks to see matching content.' : '');
       const links=bar.querySelector('[data-watch-links]');
-      if(links){links.hidden=!isFiltered();links.querySelectorAll('[data-watch-link]').forEach(control=>{control.setAttribute('aria-pressed',String(linkTypes.has(control.dataset.watchLink)));control.disabled=!ready;});}
+      if(links){links.hidden=!isFiltered();links.querySelectorAll('[data-watch-link]').forEach(control=>{control.checked=linkTypes.has(control.dataset.watchLink);control.disabled=!ready;});}
       bar.querySelector('[data-watch-refresh]').hidden = !message;
     }
     root.document.querySelectorAll('[data-watch-toggle]').forEach(control => {
       const stock = stockRecord({ symbol: control.dataset.watchSymbol, name: control.dataset.watchName }, control.dataset.watchMarket);
       if (!stock) return;
       const saved = entries.has(stock.key), busy = pending.has(stock.key);
-      control.disabled = !ready || busy;
+      control.disabled = !ready || busy || !!root.ClustrApp?.isAccountPreview?.();
       control.setAttribute('aria-pressed', String(saved)); control.classList.toggle('is-saved', saved);
       control.setAttribute('aria-label', `${saved ? 'Remove' : 'Add'} ${stock.symbol} ${saved ? 'from' : 'to'} watchlist`);
       control.title = control.getAttribute('aria-label');
