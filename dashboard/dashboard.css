@@ -153,13 +153,13 @@
 .dash-network-preview:focus-visible { outline:2px solid var(--accent); outline-offset:-4px; }
 .dash-network-preview .dash-panel-head { margin-bottom:0; }
 .dash-network-svg { display:block; width:100%; max-height:244px; }
-.dash-network-svg line { stroke:var(--text-meta); stroke-opacity:.45; stroke-width:1; }
+.dash-network-svg line { stroke:var(--cx-edge); stroke-opacity:.45; stroke-width:1; }
 .dash-network-svg .dash-network-default { stroke-dasharray:4 4; }
 .dash-network-svg text { fill:var(--text-meta); font-size:11px; }
-.dash-network-cluster { fill:var(--accent); }
-.dash-network-story { fill:var(--text-meta); }
-.dash-network-center { fill:var(--panel-2); stroke:var(--accent); stroke-width:1.5; }
-.dash-network-svg .dash-network-symbol { fill:var(--text); font-size:18px; font-weight:700; }
+.dash-network-cluster { fill:var(--cx-cluster); }
+.dash-network-story { fill:var(--cx-news); }
+.dash-network-center { fill:var(--cx-stock); stroke:var(--cx-stock); stroke-width:1.5; }
+.dash-network-svg .dash-network-symbol { fill:light-dark(#ffffff,#21152e); font-size:18px; font-weight:700; }
 .dash-network-preview p { margin:0 0 10px; font-size:12px; color:var(--text-meta); }
 .dash-network-open { display:block; font-size:12px; font-weight:600; }
 .dash-network-preview > small { display:block; margin-top:8px; color:var(--text-meta); font-size:10px; line-height:1.5; }
@@ -178,3 +178,22 @@
 .dash-watch-setup { min-height:40px; padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--panel-2); color:var(--text); font:inherit; font-size:12px; cursor:pointer; }
 .dash-watch-setup:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
 @media(max-width:760px) { .dash-network-svg text { font-size:14px; } }
+
+.dash-network-layout { display:grid; grid-template-columns:minmax(0,1fr) 120px; height:100%; }
+.dash-network-preview { min-width:0; }
+.dash-network-watchlist { min-width:0; padding:20px 10px; border-left:1px solid var(--border); }
+.dash-network-watchlist h3 { margin:0 0 5px; font-size:12px; }
+.dash-network-watchlist > small { display:block; margin-bottom:12px; color:var(--text-meta); font-size:10px; }
+.dash-network-stock-list { display:grid; gap:3px; max-height:320px; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+.dash-network-stock-list button { display:flex; align-items:center; justify-content:space-between; gap:6px; min-width:0; min-height:36px; padding:6px 8px; border:1px solid transparent; border-radius:7px; background:transparent; color:var(--text-meta); font:inherit; text-align:left; font-size:11px; cursor:pointer; }
+.dash-network-stock-list button strong { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.dash-network-stock-list button span { font-variant-numeric:tabular-nums; font-size:10px; }
+.dash-network-stock-list button[aria-pressed="true"] { background:color-mix(in srgb,var(--cx-stock) 12%,var(--panel)); border-color:color-mix(in srgb,var(--cx-stock) 35%,transparent); color:var(--text); }
+.dash-network-stock-list button:focus-visible { outline:2px solid var(--cx-stock); outline-offset:-2px; }
+.dash-network-stock-list button:disabled { opacity:.45; cursor:default; }
+@media(max-width:760px) {
+  .dash-network-layout { grid-template-columns:minmax(0,1fr); }
+  .dash-network-watchlist { padding:14px 16px; border-left:0; border-top:1px solid var(--border); }
+  .dash-network-stock-list { display:flex; max-height:none; overflow-x:auto; }
+  .dash-network-stock-list button { flex:0 0 auto; min-height:40px; gap:10px; }
+}

@@ -8,6 +8,7 @@
   let revision = 0;
   const market = 'US';
   let trendCluster = '';
+  let networkStock = '';
   let showAllFits = false;
   let cumulativeImpact = false;
   let resizeObserver = null;
@@ -34,7 +35,7 @@
     const publish = [...publishes].filter(row => String(row.market || 'US').toUpperCase() === market && Number.isFinite(Date.parse(row.created_at)))
       .sort((a,b) => Date.parse(b.created_at)-Date.parse(a.created_at) || Number(b.id)-Number(a.id))[0];
     if (!publish) return null;
-    if (!items.length) return {publish,total:0,stocks:[],graph:{nodes:[],edges:[]},stories:0,context:null};
+    if (!items.length) return {publish,total:0,items,stocks:[],graph:{nodes:[],edges:[]},stories:0,context:null};
     const { start, end } = network.windowRange(publish, 1);
     const rows = publishes.filter(row => String(row.market || 'US').toUpperCase() === market && Date.parse(row.created_at)>start && Date.parse(row.created_at)<=end)
       .map(row => ({publish:row,groups:groups.get(String(row.id)) || []}));
@@ -55,12 +56,14 @@
       return {node,clusters,stories,story,direct:direct.length>0,score:util.articleImpactScore(clusters.map(cluster=>cluster.score)),price:quote?.price??null,priceChange:quote?.priceChange??null};
     }).sort((a,b)=>b.clusters.length-a.clusters.length||b.stories.length-a.stories.length||a.node.label.localeCompare(b.node.label));
     const mostConnected=stocks[0];
-    return {publish,total:items.length,stocks,graph,stories:graph.nodes.filter(node=>node.type==='news').length,
+    return {publish,total:items.length,items,stocks,graph,stories:graph.nodes.filter(node=>node.type==='news').length,
       context:mostConnected?{publish,reportGroups:groups.get(String(publish.id))||[],windowGroups:scoped,reportCount:rows.length,days:1,focusId:mostConnected.node.id}:null};
   }
 
-  function networkPreview(recap, esc) {
-    const focus=recap.stocks[0],graph=recap.graph;
+  function selectedNetworkStock(recap) { return recap?.stocks.find(stock=>stock.node.id===networkStock) || recap?.stocks[0]; }
+
+  function networkPreview(recap, focus, esc) {
+    const graph=recap.graph;
     const clusters=focus.clusters.slice(0,6),ids=new Set(clusters.map(node=>node.id));
     const stories=graph.nodes.filter(node=>node.type==='news'&&graph.edges.some(edge=>ids.has(edge.from)&&edge.to===node.id)).slice(0,10);
     const points=new Map([[focus.node.id,{x:210,y:122}]]);
@@ -70,12 +73,21 @@
     return `<svg class="dash-network-svg" viewBox="0 0 420 244" aria-hidden="true">${edges.map(edge=>{const a=points.get(edge.from),b=points.get(edge.to);return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="${edge.kind==='Default exposure'?'dash-network-default':''}"/>`;}).join('')}${stories.map(node=>{const point=points.get(node.id);return `<circle cx="${point.x}" cy="${point.y}" r="3" class="dash-network-story"/>`;}).join('')}${clusters.map(node=>{const point=points.get(node.id);return `<g><circle cx="${point.x}" cy="${point.y}" r="6" class="dash-network-cluster"/><text x="${point.x}" y="${point.y+18}" text-anchor="middle">${esc(node.label.length>17?node.label.slice(0,16)+'…':node.label)}</text></g>`;}).join('')}<circle cx="210" cy="122" r="35" class="dash-network-center"/><text x="210" y="127" text-anchor="middle" class="dash-network-symbol" style="font-size:${focus.node.label.length>6?12:18}px">${esc(focus.node.label.length>9?focus.node.label.slice(0,8)+'…':focus.node.label)}</text></svg>`;
   }
 
+  function networkWatchlist(recap, selected, esc) {
+    const connected=new Map(recap.stocks.map(stock=>[stock.node.label,stock]));
+    const items=[...recap.stocks.map(stock=>({symbol:stock.node.label,name:stock.node.name})),...recap.items.filter(item=>!connected.has(item.symbol)).sort((a,b)=>a.symbol.localeCompare(b.symbol))];
+    return `<aside class="dash-network-watchlist" aria-label="Network preview watchlist"><h3>Watchlist</h3><small>Linked clusters</small><div class="dash-network-stock-list" role="group" aria-label="Choose a watchlist stock">${items.map(item=>{
+      const stock=connected.get(item.symbol),id=stock?.node.id||'';
+      return `<button type="button" data-dash-network-stock="${esc(id)}" aria-pressed="${id===selected.node.id}" aria-label="${esc(item.symbol)}, ${stock?.clusters.length||0} linked clusters" title="${esc(stock?item.name||item.symbol:'No connections in this window')}"${stock?'':' disabled'}><strong>${esc(item.symbol)}</strong><span>${stock?.clusters.length||0}</span></button>`;
+    }).join('')}</div></aside>`;
+  }
+
   function watchlistPanels(recap, esc) {
     if (!recap) return '';
     if (!recap.total) return '<section class="dash-panel dash-watch-empty"><div><p class="dash-kicker">YOUR WATCHLIST</p><h2>Your market, in one place</h2><p class="dash-footnote">Save a few stocks to see their linked news and connections here.</p></div><button type="button" class="dash-watch-setup" data-dash-nav="watchlist">Create your watchlist →</button></section>';
     const date=new Date(recap.publish.created_at).toLocaleString('en',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
-    const stock=recap.stocks[0];
-    return `<div class="dash-personal"><section class="dash-panel"><div class="dash-panel-head"><div><p class="dash-kicker">YOUR WATCHLIST</p><h2>What happened to your stocks</h2></div><button type="button" data-dash-nav="watchlist" aria-label="Manage watchlist">Manage →</button></div><p class="dash-watch-scope">Last 24 hours ending ${esc(date)} ET · ${recap.stocks.length}/${recap.total} stocks connected · ${recap.stories} linked stories</p><div class="dash-watch-list">${recap.stocks.length?recap.stocks.slice(0,3).map(item=>`<article class="dash-watch-stock"><div class="dash-watch-stock-head"><strong>${esc(item.node.label)}</strong><span>${item.clusters.length} ${item.clusters.length===1?'cluster':'clusters'}</span><span class="dash-score dash-score--${tone(item.score)}">${scoreText(item.score)} impact</span>${item.priceChange==null?'':`<span class="dash-watch-price dash-watch-price--${tone(item.priceChange)}">${item.priceChange>=0?'+':''}${item.priceChange.toFixed(2)}% price</span>`}</div>${item.story?`<p>${item.story.url?`<a href="${esc(item.story.url)}" target="_blank" rel="noopener noreferrer">${esc(item.story.label)}</a>`:esc(item.story.label)}</p><small>${item.direct?'Article mention':'Linked cluster story'} · ${esc(item.story.article.source||'Source unavailable')}</small>`:'<p>No linked story in this window.</p>'}</article>`).join(''):'<p class="dash-footnote">No saved connections for your stocks in this 24-hour window.</p>'}</div><p class="dash-footnote">Impact comes from linked clusters. Price changes use the latest saved stock report versus its prior appearance; they are not live quotes.</p></section>${stock?`<section class="dash-panel dash-network-panel"><a href="#/connections" class="dash-network-preview" data-dash-network aria-label="Open ${esc(stock.node.label)} in Network with the same report and 24-hour window"><div class="dash-panel-head"><div><p class="dash-kicker">YOUR NETWORK</p><h2>Most connected: ${esc(stock.node.label)}</h2></div><span aria-hidden="true">↗</span></div>${networkPreview(recap,esc)}<p>${stock.clusters.length} linked clusters · ${stock.stories.length} linked stories</p><span class="dash-network-open">Open this view in Network →</span><small>Up to 6 clusters and 10 stories shown. Dashed lines show default exposure.</small></a></section>`:''}</div>`;
+    const stock=selectedNetworkStock(recap);
+    return `<div class="dash-personal"><section class="dash-panel"><div class="dash-panel-head"><div><p class="dash-kicker">YOUR WATCHLIST</p><h2>What happened to your stocks</h2></div><button type="button" data-dash-nav="watchlist" aria-label="Manage watchlist">Manage →</button></div><p class="dash-watch-scope">Last 24 hours ending ${esc(date)} ET · ${recap.stocks.length}/${recap.total} stocks connected · ${recap.stories} linked stories</p><div class="dash-watch-list">${recap.stocks.length?recap.stocks.slice(0,3).map(item=>`<article class="dash-watch-stock"><div class="dash-watch-stock-head"><strong>${esc(item.node.label)}</strong><span>${item.clusters.length} ${item.clusters.length===1?'cluster':'clusters'}</span><span class="dash-score dash-score--${tone(item.score)}">${scoreText(item.score)} impact</span>${item.priceChange==null?'':`<span class="dash-watch-price dash-watch-price--${tone(item.priceChange)}">${item.priceChange>=0?'+':''}${item.priceChange.toFixed(2)}% price</span>`}</div>${item.story?`<p>${item.story.url?`<a href="${esc(item.story.url)}" target="_blank" rel="noopener noreferrer">${esc(item.story.label)}</a>`:esc(item.story.label)}</p><small>${item.direct?'Article mention':'Linked cluster story'} · ${esc(item.story.article.source||'Source unavailable')}</small>`:'<p>No linked story in this window.</p>'}</article>`).join(''):'<p class="dash-footnote">No saved connections for your stocks in this 24-hour window.</p>'}</div><p class="dash-footnote">Impact comes from linked clusters. Price changes use the latest saved stock report versus its prior appearance; they are not live quotes.</p></section>${stock?`<section class="dash-panel dash-network-panel"><div class="dash-network-layout" style="${window.ClustrGraphCanvas?.paletteStyle?.()||''}"><a href="#/connections" class="dash-network-preview" data-dash-network aria-label="Open ${esc(stock.node.label)} in Network with the same report and 24-hour window"><div class="dash-panel-head"><div><p class="dash-kicker">YOUR NETWORK</p><h2>${stock===recap.stocks[0]?'Most connected: ':''}${esc(stock.node.label)}</h2></div><span aria-hidden="true">↗</span></div>${networkPreview(recap,stock,esc)}<p>${stock.clusters.length} linked clusters · ${stock.stories.length} linked stories</p><span class="dash-network-open">Open this view in Network →</span><small>Up to 6 clusters and 10 stories shown. Dashed lines show default exposure.</small></a>${networkWatchlist(recap,stock,esc)}</div></section>`:''}</div>`;
   }
 
   function buildSummary(publishes, groups, selectedMarket, util, atlas, watchlist, network) {
@@ -324,10 +336,17 @@
         root.querySelector('[data-dash-cumulative]')?.focus({preventScroll:true});
         return;
       }
+      const stockButton=event.target.closest('[data-dash-network-stock]');
+      if(stockButton && !stockButton.disabled){
+        networkStock=stockButton.dataset.dashNetworkStock;
+        paint(root,scopedSummary());
+        root.querySelector('[data-dash-network-stock][aria-pressed="true"]')?.focus({preventScroll:true});
+        return;
+      }
       if (event.target.closest('[data-dash-network]')) {
         event.preventDefault();
-        const context=scopedSummary()?.watchlist?.context;
-        if (context) { window.ClustrWatchlist?.setScope('watchlist'); onNavigate('connections',context); }
+        const recap=scopedSummary()?.watchlist,stock=selectedNetworkStock(recap);
+        if (recap?.context && stock) { window.ClustrWatchlist?.setScope('watchlist'); onNavigate('connections',{...recap.context,focusId:stock.node.id}); }
         return;
       }
       const navButton = event.target.closest('[data-dash-nav]');
@@ -335,7 +354,7 @@
     };
   }
 
-  function invalidate() { cached = null; loading = null; revision++; }
+  function invalidate() { cached = null; loading = null; networkStock=''; revision++; }
 
   return { buildSummary, buildWatchlistRecap, impactDays, render, invalidate };
 });

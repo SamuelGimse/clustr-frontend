@@ -152,3 +152,13 @@ test('history errors reject rather than silently showing an incomplete window',a
   await assert.rejects(loadWindow(p,1,{fetchPublishesInRange:async()=>{throw Error('Offline');}}),/Offline/);
   await assert.rejects(loadWindow(p,1,{fetchPublishesInRange:async()=>[p],loadGroupsForPublish:async()=>{throw Error('Unavailable');}}),/Unavailable/);
 });
+
+
+test('Preview CSS variables derive from the same Network palette in both color modes',()=>{
+  const {palette,paletteStyle}=require('../connections/canvas');
+  const style=paletteStyle();
+  for(const type of ['cluster','stock','news','edge']) {
+    const rgb=light=>`rgb(${palette(light)[type].map(value=>Math.round(value*255)).join(' ')})`;
+    assert(style.includes(`--cx-${type}:light-dark(${rgb(true)},${rgb(false)})`));
+  }
+});
