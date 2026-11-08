@@ -4568,3 +4568,44 @@ html[data-theme] .account-theme-menu button:focus-visible { outline: 2px solid v
   html[data-theme] .nav-rail { background: transparent; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
   html[data-theme] :is(.nav-rail-brand, .nav-rail-btn:not(.is-active)) { color: var(--text); }
 }
+
+html[data-theme="minimal"] {
+  color-scheme: light;
+  --md-sys-color-surface: #fafbf9;
+  --md-sys-color-surface-container: transparent;
+  --md-sys-color-surface-container-high: #eff2ee;
+  --md-sys-color-surface-container-highest: #e7ece7;
+  --md-sys-color-on-surface: #1c2922;
+  --md-sys-color-on-surface-variant: #58675d;
+  --md-sys-color-primary: #246653;
+  --md-sys-color-on-primary: #fff;
+  --md-sys-color-primary-container: #e1eee8;
+  --md-sys-color-outline: #d8e0d9;
+  --md-sys-color-outline-variant: #c7d2c9;
+  --md-sys-color-up: #167a49;
+  --md-sys-color-down: #b74040;
+  --md-surface-container: transparent;
+  --md-on-surface: var(--text);
+  --md-on-surface-variant: var(--text-meta);
+  --md-outline: var(--border);
+  --md-primary: var(--accent);
+}
+.theme-menu button[data-theme="minimal"] { background: #fafbf9; color: #1c2922; border-color: #d8e0d9; --swatch-accent: #246653; }
+html[data-theme="minimal"] body { background: var(--bg); background-image: none; }
+html[data-theme="minimal"] .app-halos { display: none; }
+html[data-theme="minimal"] :is(.md-card, .cluster-card, .cluster-card:hover, .article-grid > *, .account-shell, .account-plan, .md-chart, .stance, .stance-history-panel, .price-bar, .movers-strip, .weekly-summary > div, .weekly-cluster, .weekly-ai-digest, .weekly-trend-panel, .weekly-cluster-summary, .weekly-cluster-history, .weekly-cluster-chart, .dash-metric, .dash-panel, .dash-trend-readout, .dash-market, .stocks-browser, .stocks-cluster, .stocks-search-tools, .stocks-tile, .atlas-stats span, .atlas-switch, .atlas-matrix, .atlas-detail, .atlas-detail-panel, .atlas-detail-score, .chart-folder, .chart-folder-tabs, .country-panel, .pm-browser, .pm-detail, .top-app-bar, .publish-nav, .events-sort-segmented) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-theme="minimal"] :is(.cluster-card, .weekly-cluster, .dash-panel, .stocks-cluster) { border-bottom: 1px solid var(--border); border-radius: 0; }
+html[data-theme="minimal"] :is(.account-form input, .account-publish-market select) { background: #fff; border-color: var(--border); color: var(--text); }
+html[data-theme="minimal"] :is(.account-primary, .account-actions .account-primary) { background: var(--accent); border-color: var(--accent); color: #fff; }
+html[data-theme="minimal"] :is(.nav-rail-btn.is-active, .weekly-tab.is-active) { background: transparent; box-shadow: none; color: var(--accent); }
+html[data-theme="minimal"] .weekly-tab.is-active { border-bottom: 2px solid var(--accent); border-radius: 0; }
+@media (max-width: 768px) {
+  html[data-theme="minimal"] .nav-rail { background: var(--bg); border-right: 1px solid var(--border); }
+  html[data-theme="minimal"] .mobile-topbar { background: var(--bg); }
+}

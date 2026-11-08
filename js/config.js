@@ -123,7 +123,8 @@ const THEMES = [
   'midnight',
   'slate',
   'graphite',
-  'pure-black'
+  'pure-black',
+  'minimal'
 ];
 
 /**
@@ -140,7 +141,8 @@ const LIGHT_THEMES = new Set([
   'berry-mint',
   'plum-cream',
   'forest-mist',
-  'sea-foam'
+  'sea-foam',
+  'minimal'
 ]);
 
 /**

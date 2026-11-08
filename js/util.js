@@ -90,7 +90,8 @@ function isLightTheme() {
       'berry-mint',
       'plum-cream',
       'forest-mist',
-      'sea-foam'
+      'sea-foam',
+      'minimal'
     ]);
   const t = document.documentElement.getAttribute('data-theme') || 'apple';
   if (t === 'grassy-hill' || t === 'aqua-classic' || t === 'aurora-glass' || t === 'old-school-rpg') return true;
