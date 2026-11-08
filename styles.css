@@ -4474,7 +4474,7 @@ html[data-theme="aurora-glass"] :is(.md-btn--tonal, .md-btn--icon, .day-item) { 
   --md-sys-color-surface-container-high: #e9ddba;
   --md-sys-color-surface-container-highest: #f1e5c5;
   --md-sys-color-on-surface: #2c2417;
-  --md-sys-color-on-surface-variant: #625537;
+  --md-sys-color-on-surface-variant: #514329;
   --md-sys-color-primary: #715615;
   --md-sys-color-on-primary: #fff2c9;
   --md-sys-color-primary-container: #d9c37c;
@@ -4482,11 +4482,12 @@ html[data-theme="aurora-glass"] :is(.md-btn--tonal, .md-btn--icon, .day-item) { 
   --md-sys-color-outline-variant: #a38d57;
   --md-sys-color-up: #326a2a;
   --md-sys-color-down: #a1362b;
-  --font-sans: Georgia, "Times New Roman", serif;
+  --font-sans: "Segoe UI", Verdana, sans-serif;
 }
 html[data-theme="old-school-rpg"] body {
-  background: repeating-linear-gradient(110deg, #c5b891 0 4px, #c9bc96 4px 8px);
+  background: #c5b891;
 }
+html[data-theme="old-school-rpg"]:not([data-font]) :is(h1, h2, h3, .cluster-name) { font-family: Georgia, "Times New Roman", serif; }
 html[data-theme="old-school-rpg"] .app-halos { display: none; }
 html[data-theme="old-school-rpg"] :is(.md-card, .cluster-card, .dash-panel, .dash-metric, .stocks-cluster, .stocks-browser, .atlas-matrix, .atlas-detail, .weekly-summary > div, .weekly-cluster, .weekly-ai-digest, .weekly-trend-panel, .pm-browser, .pm-detail, .account-shell, .country-panel) {
   background: linear-gradient(145deg, #eee2bc, #d9cba2);
@@ -4495,11 +4496,11 @@ html[data-theme="old-school-rpg"] :is(.md-card, .cluster-card, .dash-panel, .das
   box-shadow: inset 0 0 0 2px rgba(255, 247, 213, .55), 0 3px 8px rgba(53, 39, 20, .22);
 }
 html[data-theme="old-school-rpg"] :is(.nav-rail, .mobile-topbar, .top-app-bar, .theme-menu) {
-  background: linear-gradient(145deg, #504a38, #29291f);
+  background: linear-gradient(145deg, #eee2bc, #d9cba2);
   border-color: #a78944;
-  color: #f2dd9b;
+  color: var(--text);
 }
-html[data-theme="old-school-rpg"] .nav-rail-btn { color: #e7d6a0; }
+html[data-theme="old-school-rpg"] .nav-rail-btn { color: var(--text); }
 html[data-theme="old-school-rpg"] .nav-rail-btn.is-active { color: #fff0bd; background: #53623a; border: 1px solid #b6a25c; border-radius: 4px; }
 html[data-theme="old-school-rpg"] :is(.md-btn--tonal, .md-btn--icon, .day-item) {
   background: linear-gradient(#e9d796, #c6a75b);
@@ -4536,7 +4537,7 @@ html[data-theme="material"][data-color-mode="light"] .account-shell { border-col
 html[data-theme="grassy-hill"] .top-app-bar :is(.brand, .tagline) { color: #fff; }
 html[data-theme="aqua-classic"] :is(.account-primary, .account-actions .account-primary) { background: linear-gradient(#8fddff, #2589c8 52%, #1566aa); border-color: #2b79b0; }
 html[data-theme="aurora-glass"] :is(.md-card, .cluster-card, .dash-panel, .dash-metric, .stocks-cluster, .stocks-browser, .atlas-matrix, .atlas-detail, .weekly-summary > div, .weekly-cluster, .weekly-ai-digest, .weekly-trend-panel, .pm-browser, .pm-detail, .account-shell, .country-panel) { background: rgba(250, 253, 255, .94); }
-html[data-theme="old-school-rpg"] .nav-rail-brand { color: #f2dd9b; }
+html[data-theme="old-school-rpg"] :is(.nav-rail-brand, .brand, .mobile-brand) { color: var(--text); }
 
 @media (prefers-color-scheme: dark) {
   .theme-menu button[data-theme="apple"] { background: linear-gradient(135deg, #303033, #171719); color: #f5f5f7; border-color: #525256; --swatch-accent: #e5e5e7; }
