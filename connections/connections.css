@@ -37,3 +37,5 @@
 .cx-tools select{min-height:44px;padding:10px;border:1px solid var(--border,#34414d);border-radius:8px;background:var(--panel,#101c24);color:inherit;font:inherit}
 .cx-announcement{font-size:12px;color:var(--text-meta,#aab7be);min-height:18px}
 .cx-inspector [data-action="back"]{padding:12px 0;color:var(--accent,#80dfc4)}
+.cx-tools{flex-wrap:wrap}.cx-tools label.cx-period{width:auto;flex-shrink:0}.cx-scope{font-size:12px;line-height:1.6;color:var(--text-meta,#aab7be);margin:0 0 8px}.cx-scope button{color:inherit;background:transparent;border:1px solid var(--border,#34414d);border-radius:6px;min-height:44px;padding:8px 12px;cursor:pointer}
+@media(max-width:768px){.cx-tools label.cx-period{width:100%}}

@@ -1,5 +1,7 @@
 (function (root) {
   let currentScene = null;
+  let periodDays=1, revision=0;
+  const stockFields=['mentioned_stocks','close_stocks','original_stocks','fixed_stocks','default_stocks','direct_stocks','related_stocks','stocks'];
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function safeUrl(value) { try { const url = new URL(value); return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password ? url.href : ''; } catch { return ''; } }
   function storyKey(value) {
@@ -9,6 +11,59 @@
   }
   function matchesNode(node, query='', type='') {
     return (!type || node.type===type) && `${node.label} ${node.name||''} ${node.article?.source||''} ${node.article?.short_summary||''}`.toLowerCase().includes(query.toLowerCase());
+  }
+  function windowRange(publish,days) {
+    if(![1,2,3].includes(Number(days)))throw new Error('Choose 1, 2 or 3 days');
+    const end=Date.parse(publish?.created_at);
+    if(!Number.isFinite(end))throw new Error('Report date unavailable');
+    return {start:end-Number(days)*86400000,end};
+  }
+  function mergeReports(rows,market) {
+    const merged=new Map();
+    for(const {publish,groups} of [...rows].sort((a,b)=>Date.parse(b.publish.created_at)-Date.parse(a.publish.created_at))) {
+      if(String(publish.market||'').toUpperCase()!==market)continue;
+      for(const group of Array.isArray(groups)?groups:[]) {
+        if(!group||group.market&&String(group.market).toUpperCase()!==market)continue;
+        const name=root.ClustrTaxonomy?.canonicalName(group.name||group.group)||group.name||group.group||'Unnamed cluster';
+        const key=String(name).trim().toLowerCase();
+        if(!merged.has(key))merged.set(key,{...group,name,market,articles:[],...Object.fromEntries(stockFields.map(field=>[field,[]]))});
+        const item=merged.get(key);
+        for(const field of ['articles',...stockFields]) {
+          const seen=new Set(item[field].map(value=>field==='articles'?(safeUrl(value?.link)?storyKey(safeUrl(value.link)):JSON.stringify([value?.title,value?.source,value?.date])):String(value?.symbol||'').trim().toUpperCase()));
+          for(const value of Array.isArray(group[field])?group[field]:[]) {
+            if(!value||typeof value!=='object'||field!=='articles'&&value.resolved===false)continue;
+            const id=field==='articles'?(safeUrl(value.link)?storyKey(safeUrl(value.link)):JSON.stringify([value.title,value.source,value.date])):String(value.symbol||'').trim().toUpperCase();
+            if(!seen.has(id)){seen.add(id);item[field].push(value);}
+          }
+        }
+      }
+    }
+    return [...merged.values()];
+  }
+  async function loadWindow(publish,days,api) {
+    const range=windowRange(publish,days),market=String(publish.market||'').toUpperCase();
+    if(!market)throw new Error('Report market unavailable');
+    const rows=await api.fetchPublishesInRange(new Date(range.start),new Date(range.end));
+    const reports=new Map([...rows,publish].filter(p=>p&&String(p.market||'').toUpperCase()===market&&Date.parse(p.created_at)>range.start&&Date.parse(p.created_at)<=range.end).map(p=>[String(p.id??p.created_at),p]));
+    const data=await Promise.all([...reports.values()].map(async p=>({publish:p,groups:await api.loadGroupsForPublish(p)})));
+    return {groups:mergeReports(data,market),reports:reports.size,...range};
+  }
+  async function mount(groups,publish,focus=false) {
+    const request=++revision,days=periodDays;
+    const change=value=>{periodDays=Number(value);mount(groups,publish,true);};
+    const options={days,onDays:change,scope:'Loading saved reports…'};
+    render(groups,publish,options);
+    if(focus)document.getElementById('connectionsView')?.querySelector('[aria-label="Network time range"]')?.focus();
+    try {
+      const result=await loadWindow(publish,days,root.ClustrApi);
+      if(request!==revision)return;
+      const date=new Date(result.end).toLocaleString('en-GB',{timeZone:'Europe/Oslo',dateStyle:'medium',timeStyle:'short'});
+      render(result.groups,publish,{...options,scope:`Last ${days} ${days===1?'day':'days'} (${days*24} hours) ending ${date} Oslo · ${result.reports} reports · Latest cluster scores; links and stories combined across the window.`});
+    } catch(error) {
+      if(request!==revision)return;
+      render(groups,publish,{...options,scope:`Could not load the ${days}-day window. Showing the selected report only. ${error.message}`,retry:()=>mount(groups,publish,true)});
+    }
+    if(focus)document.getElementById('connectionsView')?.querySelector('[aria-label="Network time range"]')?.focus();
   }
   function buildGraph(groups, market) {
     const nodes = new Map(), edges = [], seen = new Set();
@@ -55,7 +110,7 @@
     }
     return result;
   }
-  function render(groups, publish) {
+  function render(groups, publish, options={}) {
     currentScene?.destroy();
     currentScene=null;
     const host = document.getElementById('connectionsView');
@@ -72,6 +127,10 @@
       <section class="cx-index"><h2>Every cluster. One connected market.</h2><div class="cx-clusters"></div></section>`;
     const svg=host.querySelector('svg'), inspector=host.querySelector('.cx-inspector'), index=host.querySelector('.cx-clusters');
     const byId=new Map(graph.nodes.map(n=>[n.id,n]));
+    const period=document.createElement('label');period.className='cx-period';period.textContent='Time range';
+    const days=document.createElement('select');days.setAttribute('aria-label','Network time range');days.innerHTML='<option value="1">Last 1 day</option><option value="2">Last 2 days</option><option value="3">Last 3 days</option>';days.value=String(options.days||1);days.onchange=()=>options.onDays?.(days.value);days.disabled=!options.onDays;period.append(days);host.querySelector('.cx-tools').append(period);
+    const scope=document.createElement('p');scope.className='cx-scope';scope.setAttribute('role','status');scope.textContent=options.scope||'Selected report only';host.querySelector('.cx-workspace').before(scope);
+    if(options.retry){const retry=document.createElement('button');retry.type='button';retry.textContent='Retry';retry.onclick=options.retry;scope.append(' ',retry);}
     const browse=document.createElement('select');browse.setAttribute('aria-label','Browse connection types');browse.innerHTML='<option value="">All nodes</option><option value="cluster">Clusters</option><option value="stock">Stocks</option><option value="news">News</option>';host.querySelector('.cx-tools').append(browse);
     browse.onchange=()=>{type=browse.value;selected=null;trail.length=0;paint();};
     const announce=document.createElement('p');announce.className='cx-announcement';announce.setAttribute('role','status');announce.setAttribute('aria-live','polite');host.querySelector('.cx-workspace').before(announce);
@@ -118,8 +177,8 @@
     host.querySelector('input').oninput=event=>{query=event.target.value.trim().toLowerCase();selected=null;trail.length=0;paint();};
     paint();
   }
-  function hide() { currentScene?.destroy();currentScene=null;document.getElementById('connectionsView')?.classList.add('hidden');const nav=document.getElementById('navConnections');nav?.classList.remove('is-active');nav?.setAttribute('aria-current','false'); }
-  const api={buildGraph,layout,safeUrl,matches:matchesNode,render,hide};
+  function hide() { revision++;currentScene?.destroy();currentScene=null;document.getElementById('connectionsView')?.classList.add('hidden');const nav=document.getElementById('navConnections');nav?.classList.remove('is-active');nav?.setAttribute('aria-current','false'); }
+  const api={buildGraph,layout,safeUrl,matches:matchesNode,windowRange,mergeReports,loadWindow,mount,render,hide};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   root.ClustrConnections=api;
   if(typeof document!=='undefined')document.getElementById('navConnections')?.addEventListener('click',()=>root.ClustrApp?.showView('connections'));

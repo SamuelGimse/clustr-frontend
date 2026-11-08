@@ -1,6 +1,6 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {buildGraph,layout,safeUrl,matches}=require('../connections/connections');
+const {buildGraph,layout,safeUrl,matches,windowRange,mergeReports,loadWindow}=require('../connections/connections');
 const {simulation}=require('../connections/canvas');
 test('connection renderer loads before app boot and navigation entry is present',()=>{
   const fs=require('node:fs'),path=require('node:path');
@@ -105,4 +105,39 @@ test('GPU adapter rejection falls back and gestures do not select accidentally',
   labels.onpointerup({pointerId:3,offsetX:600,offsetY:218});
   assert.equal(selections,1);
   scene.destroy();assert.ok(disconnected&&cancelled);
+});
+test('network windows are exactly 24, 48 or 72 hours ending at the selected report',()=>{
+  const publish={created_at:'2026-11-08T14:00:00Z'};
+  for(const days of [1,2,3])assert.equal(windowRange(publish,days).end-windowRange(publish,days).start,days*86400000);
+  assert.throws(()=>windowRange(publish,7));
+  assert.throws(()=>windowRange({},1));
+});
+test('multi-day networks merge clusters and preserve latest scores and evidence',()=>{
+  const rows=[{publish:{market:'US',created_at:'2026-11-07T14:00:00Z'},groups:[{name:'AI',stance_score:-4,reason:'Older',mentioned_stocks:[{symbol:'AMD'}],articles:[{title:'Older',link:'https://example.com/old'},{title:'Shared old',link:'https://example.com/shared?utm_source=old'}]}]},
+    {publish:{market:'US',created_at:'2026-11-08T14:00:00Z'},groups:[{name:'AI',stance_score:0,reason:'Latest',fixed_stocks:[{symbol:'NVDA'}],articles:[{title:'Shared latest',link:'https://example.com/shared'}]}]},
+    {publish:{market:'NO',created_at:'2026-11-08T14:00:00Z'},groups:[{name:'Wrong market'}]}];
+  const before=JSON.stringify(rows),groups=mergeReports(rows,'US');
+  assert.equal(groups.length,1);assert.equal(groups[0].stance_score,0);assert.equal(groups[0].reason,'Latest');
+  assert.equal(groups[0].articles.length,2);assert.equal(groups[0].articles[0].title,'Shared latest');
+  assert.equal(buildGraph(groups,'US').nodes.filter(n=>n.type==='stock').length,2);
+  assert.equal(JSON.stringify(rows),before,'saved publish objects are not mutated');
+});
+test('history fetch excludes future, wrong market and out-of-window reports',async()=>{
+  const selected={id:3,market:'US',created_at:'2026-11-08T14:00:00Z'};
+  const loaded=[];
+  const api={fetchPublishesInRange:async(start,end)=>{
+    assert.equal(end.toISOString(),selected.created_at.replace('Z','.000Z'));
+    assert.equal(end-start,2*86400000);
+    return [selected,{id:2,market:'US',created_at:'2026-11-07T14:00:00Z'},
+      {id:1,market:'US',created_at:'2026-11-06T14:00:00Z'},
+      {id:4,market:'NO',created_at:'2026-11-08T13:00:00Z'},
+      {id:5,market:'US',created_at:'2026-11-08T15:00:00Z'}];
+  },loadGroupsForPublish:async p=>{loaded.push(p.id);return [{name:'AI'}];}};
+  const result=await loadWindow(selected,2,api);
+  assert.equal(result.reports,2);assert.deepEqual(loaded.sort(),[2,3]);assert.equal(result.groups.length,1);
+});
+test('history errors reject rather than silently showing an incomplete window',async()=>{
+  const p={id:1,market:'US',created_at:'2026-11-08T14:00:00Z'};
+  await assert.rejects(loadWindow(p,1,{fetchPublishesInRange:async()=>{throw Error('Offline');}}),/Offline/);
+  await assert.rejects(loadWindow(p,1,{fetchPublishesInRange:async()=>[p],loadGroupsForPublish:async()=>{throw Error('Unavailable');}}),/Unavailable/);
 });

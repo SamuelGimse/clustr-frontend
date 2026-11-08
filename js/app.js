@@ -164,7 +164,7 @@
     if (which !== 'polymarket' && which !== 'atlas' && which !== 'dashboard' && which !== 'connections' && ['#/polymarket', '#/atlas', '#/dashboard', '#/connections'].includes(location.hash)) history.replaceState(null, '', location.pathname + location.search);
     if (which === 'connections') {
       history.replaceState(null, '', '#/connections');
-      window.ClustrConnections?.render(currentGroups, publishes[publishIndex]);
+      window.ClustrConnections?.mount(currentGroups, publishes[publishIndex]);
     } else if (which === 'dashboard') {
       history.replaceState(null, '', '#/dashboard');
       navDashboard?.classList.add('is-active');

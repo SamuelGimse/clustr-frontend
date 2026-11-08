@@ -2,12 +2,19 @@
 import('../connections/canvas.js').then(()=>{
 const shared={symbol:'NVDA',name:'NVIDIA'};
 const chipNews={title:'Chipmaker expands production capacity',source:'Example source',date:'2026-11-08',short_summary:'Sample story for testing the connection explorer.',link:'https://example.com/chips'};
-ClustrConnections.render([
+const groups=[
 {name:'Artificial Intelligence',market:'US',stance_score:3.1,reason:'Sample explanation: infrastructure spending links this cluster to chip suppliers.',mentioned_stocks:[shared],fixed_stocks:[{symbol:'MSFT',name:'Microsoft'}],articles:[chipNews,{title:'New AI infrastructure investment announced',source:'Example source',link:'https://example.com/ai'}]},
 {name:'Semiconductors',market:'US',stance_score:2.4,close_stocks:[shared,{symbol:'AMD',name:'AMD'}],articles:[chipNews]},
 {name:'Nuclear energy',market:'US',stance_score:1.8,fixed_stocks:[{symbol:'CEG',name:'Constellation Energy'}],articles:[{title:'Reactor permit enters final review',source:'Example source',link:'https://example.com/nuclear'}]},
 {name:'Shipping & trade',market:'US',stance_score:-2.1,close_stocks:[{symbol:'FRO',name:'Frontline'}],articles:[{title:'Route disruption changes shipping schedules',source:'Example source',link:'https://example.com/shipping'}]},
 {name:'US interest rates',market:'US',stance_score:0,fixed_stocks:[{symbol:'JPM',name:'JPMorgan'}],articles:[]}
-],{market:'US'});
+];
+const publish={id:3,market:'US',created_at:'2026-11-08T14:00:00Z',groups_json:groups};
+const history=[publish,
+{id:2,market:'US',created_at:'2026-11-07T12:00:00Z',groups_json:[{name:'Earlier day two',stance_score:2,articles:[{title:'Day two source',link:'https://example.com/day-two'}]}]},
+{id:1,market:'US',created_at:'2026-11-06T12:00:00Z',groups_json:[{name:'Earlier day three',stance_score:-1,stocks:[{symbol:'AAPL'}]}]},
+{id:4,market:'NO',created_at:'2026-11-08T12:00:00Z',groups_json:[{name:'Must not appear'}]}];
+window.ClustrApi={fetchPublishesInRange:async(start,end)=>history.filter(p=>Date.parse(p.created_at)>=start&&Date.parse(p.created_at)<=end),loadGroupsForPublish:async p=>p.groups_json};
+ClustrConnections.mount(groups,publish);
 });
 </script></body></html>
