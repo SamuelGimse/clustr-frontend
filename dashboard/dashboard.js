@@ -9,6 +9,7 @@
   let market = 'US';
   let trendCluster = '';
   let showAllFits = false;
+  let cumulativeImpact = false;
   let resizeObserver = null;
 
   function scoreText(score) {
@@ -92,23 +93,33 @@
     };
   }
 
-  function impactChart(series, fits, esc) {
-    const days = series.days, scored = days.filter(day => day.score != null);
+  function impactDays(days, cumulative=false) {
+    let total=0;
+    return days.map(day=>{
+      if(day.score==null||!Number.isFinite(day.score))return {...day,score:null};
+      total=Number((total+day.score).toFixed(10));
+      return {...day,score:cumulative?total:day.score};
+    });
+  }
+
+  function impactChart(series, fits, esc, cumulative=false) {
+    const days = impactDays(series.days,cumulative), scored = days.filter(day => day.score != null);
     if (!scored.length) return '<p class="dash-footnote">No numeric impacts are available for this cluster in these report days.</p>';
     const compact = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 600px)').matches;
     const width = compact ? Math.max(220, (document.getElementById('dashboardView')?.clientWidth || window.innerWidth) - 42) : 810;
     const left = compact ? 36 : 48, right = compact ? width - 12 : 762;
-    const forecast = regression.projectOneDay(fits.best, days.at(-1).date);
+    const forecast = cumulative ? null : regression.projectOneDay(fits.best, days.at(-1).date);
     const firstTime = Date.parse(days[0].date), lastTime = forecast?.point.time || Date.parse(days.at(-1).date), span = lastTime - firstTime;
     const x = time => span ? left + (time - firstTime) / span * (right - left) : (left + right) / 2;
-    const y = score => 220 - (score + 10) * 9;
+    const extent=cumulative?Math.max(10,Math.ceil(Math.max(...scored.map(day=>Math.abs(day.score)))/5)*5):10;
+    const y = score => 130 - score / extent * 90;
     const coord = (point, field) => `${x(point.time).toFixed(2)} ${y(Math.max(-1000, Math.min(1000, point[field]))).toFixed(2)}`;
     const area = samples => `M${samples.map(point => coord(point, 'upper')).join(' L')} L${[...samples].reverse().map(point => coord(point, 'lower')).join(' L')} Z`;
-    const best = fits.best;
+    const best = cumulative ? null : fits.best;
     const futureBand = forecast ? `<path class="dash-prediction" d="${area(forecast.band)}"><title>95% model-based prediction interval for a future news impact, including residual noise. Exponential intervals are approximate. Values outside the axis are clipped.</title></path>` : '';
     const zone = forecast ? `<rect class="dash-forecast-zone" x="${x(forecast.reportTime)}" y="40" width="${right - x(forecast.reportTime)}" height="180"/><line class="dash-forecast-divider" x1="${x(forecast.reportTime)}" x2="${x(forecast.reportTime)}" y1="40" y2="220"/>` : '';
     const band = best ? `<path class="dash-confidence" d="M${best.samples.map(point => coord(point, 'upper')).join(' L')} L${[...best.samples].reverse().map(point => coord(point, 'lower')).join(' L')} Z"><title>${best.kind === 'exponential' ? 'Approximate ' : ''}95% pointwise confidence interval for the fitted mean, conditional on the selected model and independent errors. Values outside the axis are clipped.</title></path>` : '';
-    const curves = fits.models.filter(model => model.fit && (showAllFits || model.fit === best)).map(model => {
+    const curves = (cumulative?[]:fits.models).filter(model => model.fit && (showAllFits || model.fit === best)).map(model => {
       const classes = `dash-fit dash-fit--${model.kind}${model.fit === best ? ' dash-fit--best' : ''}`;
       const extension = forecast ? regression.projectOneDay(model.fit, days.at(-1).date) : null;
       const past = `<path class="${classes}" d="M${model.fit.samples.map(point => coord(point, 'value')).join(' L')}"><title>${model.label} · R² ${model.fit.r2.toFixed(3)}</title></path>`;
@@ -119,7 +130,10 @@
     const labels = ticks.map(day => `<text x="${x(Date.parse(day.date)).toFixed(1)}" y="248" text-anchor="${day === days[0] ? 'start' : !forecast && day === days.at(-1) ? 'end' : 'middle'}">${esc(new Date(day.date).toLocaleDateString('en', { timeZone: 'Europe/Oslo', month: 'short', day: 'numeric' }))}</text>`).join('');
     const projectionLabel = forecast ? `<text x="${right}" y="28" text-anchor="end">+1 day</text><text x="${right}" y="248" text-anchor="end">${esc(new Date(forecast.point.time).toLocaleDateString('en', { timeZone: 'Europe/Oslo', month: 'short', day: 'numeric' }))}</text>` : '';
     const marker = forecast && Math.abs(forecast.point.value) <= 10 ? `<circle class="dash-projection-dot" cx="${right}" cy="${y(forecast.point.value)}" r="4"><title>Projected impact: ${scoreText(forecast.point.value)}</title></circle>` : '';
-    return `<svg class="dash-impact-chart" viewBox="0 0 ${width} 260" role="img" aria-label="${esc(series.name)}: scatter plot of ${scored.length} daily cluster impacts${forecast ? ', plus a one-day projection with a 95% prediction interval' : ''}${best ? ` with ${best.label.toLowerCase()} regression and a 95% confidence band` : ', insufficient days for regression'}"><defs><clipPath id="dash-trend-plot"><rect x="${left}" y="40" width="${right - left}" height="180"/></clipPath></defs>${[-10, -5, 0, 5, 10].map(score => `<line x1="${left}" x2="${right}" y1="${y(score)}" y2="${y(score)}" class="dash-gridline"/><text x="8" y="${y(score) + 4}">${score > 0 ? '+' : ''}${score}</text>`).join('')}<g clip-path="url(#dash-trend-plot)">${zone}${band}${futureBand}${curves}</g>${scored.map(day => `<circle cx="${x(Date.parse(day.date)).toFixed(1)}" cy="${y(day.score).toFixed(1)}" r="5" class="dash-observed-dot"><title>${esc(series.name)} · ${esc(new Date(day.date).toLocaleDateString('en', { timeZone: 'Europe/Oslo' }))}: ${scoreText(day.score)} news impact</title></circle>`).join('')}${marker}${labels}${projectionLabel}</svg>`;
+    let segmentStart=true;
+    const cumulativeLine=cumulative?`<path class="dash-cumulative-line" d="${days.map(day=>{if(day.score==null){segmentStart=true;return '';}const command=segmentStart?'M':'L';segmentStart=false;return `${command}${x(Date.parse(day.date)).toFixed(1)} ${y(day.score).toFixed(1)}`;}).join(' ')}"/>`:'';
+    const description=cumulative?`cumulative impact over ${scored.length} scored report days`:`scatter plot of ${scored.length} daily cluster impacts${forecast ? ', plus a one-day projection with a 95% prediction interval' : ''}${best ? ` with ${best.label.toLowerCase()} regression and a 95% confidence band` : ', insufficient days for regression'}`;
+    return `<svg class="dash-impact-chart" viewBox="0 0 ${width} 260" role="img" aria-label="${esc(series.name)}: ${description}"><defs><clipPath id="dash-trend-plot"><rect x="${left}" y="40" width="${right - left}" height="180"/></clipPath></defs>${[-extent, -extent/2, 0, extent/2, extent].map(score => `<line x1="${left}" x2="${right}" y1="${y(score)}" y2="${y(score)}" class="dash-gridline"/><text x="8" y="${y(score) + 4}">${score > 0 ? '+' : ''}${score}</text>`).join('')}<g clip-path="url(#dash-trend-plot)">${zone}${band}${futureBand}${curves}${cumulativeLine}</g>${scored.map(day => `<circle cx="${x(Date.parse(day.date)).toFixed(1)}" cy="${y(day.score).toFixed(1)}" r="5" class="dash-observed-dot"><title>${esc(series.name)} · ${esc(new Date(day.date).toLocaleDateString('en', { timeZone: 'Europe/Oslo' }))}: ${scoreText(day.score)} ${cumulative?'cumulative':'news'} impact</title></circle>`).join('')}${marker}${labels}${projectionLabel}</svg>`;
   }
 
   function coverageChart(days, esc) {
@@ -138,12 +152,16 @@
       || summary.clusterTrends[0];
     if (!series) return '<section class="dash-panel dash-panel--wide"><p class="dash-kicker">CLUSTER TREND</p><p>No cluster history is available.</p></section>';
     trendCluster = series.name;
-    const fits = regression.fitRegressions(series.days), best = fits.best;
+    const fits = cumulativeImpact?{best:null,models:[],points:[]}:regression.fitRegressions(series.days), best = fits.best;
     const forecast = regression.projectOneDay(best, series.days.at(-1).date);
     const projectionKeys = forecast ? '<span><i class="dash-key-projection"></i>+1 day projection</span><span><i class="dash-key-prediction"></i>95% prediction interval</span>' : '';
     const shown = fits.models.filter(model => model.fit && (showAllFits || model.fit === best));
     const options = summary.clusterTrends.map(item => `<option value="${esc(item.name)}"${item === series ? ' selected' : ''}>${esc(item.name)}</option>`).join('');
-    const controls = `<div class="dash-trend-controls"><label for="dashTrendCluster">Cluster</label><select id="dashTrendCluster" data-dash-cluster>${options}</select><label class="dash-show-fits"><input type="checkbox" data-dash-show-fits${showAllFits ? ' checked' : ''}>Show all regression fits</label></div>`;
+    const controls = `<div class="dash-trend-controls"><label for="dashTrendCluster">Cluster</label><select id="dashTrendCluster" data-dash-cluster>${options}</select><label class="dash-show-fits"><input type="checkbox" data-dash-cumulative${cumulativeImpact?' checked':''}>Cumulative impact</label><label class="dash-show-fits"><input type="checkbox" data-dash-show-fits${showAllFits ? ' checked' : ''}${cumulativeImpact?' disabled':''}>Show all regression fits</label></div>`;
+    if(cumulativeImpact){
+      const total=impactDays(series.days,true).filter(day=>day.score!=null).at(-1)?.score??null;
+      return `<section class="dash-panel dash-panel--wide dash-trend-panel"><div class="dash-panel-head"><div><p class="dash-kicker">CLUSTER TREND</p><h2>Cumulative news impact</h2><p class="dash-trend-scope">Latest approved report per Oslo day · running total over up to 14 report days</p></div>${controls}</div><div class="dash-trend-layout"><div>${impactChart(series,fits,esc,true)}<p class="dash-footnote">Running sum of ${esc(series.name)} daily scores, starting from zero at the beginning of this window. For example, −2 then −2 becomes −2 then −4. Missing scores leave gaps and do not add impact. The total is an impact index, not a percentage or a stock return.</p></div><div class="dash-trend-readout"><p class="dash-kicker">CUMULATIVE IMPACT</p><strong>${scoreText(total)}</strong><span>Sum of scored report days in this window</span><p>Daily regression fits and projections are hidden in cumulative mode. Switch it off to return to daily scores.</p></div></div></section>`;
+    }
     const keys = shown.map(model => `<span><i class="dash-key-model dash-key-model--${model.kind}${model.fit === best ? ' dash-key-best' : ''}"></i>${model.label}${model.fit === best ? ' · best' : ''}</span>`).join('');
     const legend = `<div class="dash-chart-key"><span><i class="dash-key-observed"></i>Cluster impact</span>${keys}${projectionKeys}${best ? '<span><i class="dash-key-confidence"></i>95% mean CI</span>' : ''}</div>`;
     const rows = fits.models.map(model => {
@@ -196,7 +214,7 @@
       const summary = buildSummary(cached.publishes, cached.groups, market, window.ClustrUtil, window.ClustrAtlas);
       const series = summary?.clusterTrends.find(item => item.name === trendCluster);
       const chart = root.querySelector('.dash-impact-chart');
-      if (series && chart) chart.outerHTML = impactChart(series, regression.fitRegressions(series.days), window.ClustrUtil.escapeHtml);
+      if (series && chart) chart.outerHTML = impactChart(series, cumulativeImpact?{best:null,models:[]}:regression.fitRegressions(series.days), window.ClustrUtil.escapeHtml,cumulativeImpact);
     });
     resizeObserver.observe(root);
   }
@@ -228,11 +246,13 @@
     root.onchange = event => {
       const selector = event.target.closest('[data-dash-cluster]');
       const showFits = event.target.closest('[data-dash-show-fits]');
-      if (!selector && !showFits) return;
+      const cumulative = event.target.closest('[data-dash-cumulative]');
+      if (!selector && !showFits && !cumulative) return;
       if (selector) trendCluster = selector.value;
+      else if(cumulative)cumulativeImpact=cumulative.checked;
       else showAllFits = showFits.checked;
       paint(root, buildSummary(cached.publishes, cached.groups, market, window.ClustrUtil, window.ClustrAtlas));
-      root.querySelector(selector ? '[data-dash-cluster]' : '[data-dash-show-fits]')?.focus({ preventScroll: true });
+      root.querySelector(selector ? '[data-dash-cluster]' : cumulative?'[data-dash-cumulative]':'[data-dash-show-fits]')?.focus({ preventScroll: true });
     };
     root.onclick = event => {
       const marketButton = event.target.closest('[data-dash-market]');
@@ -244,5 +264,5 @@
 
   function invalidate() { cached = null; loading = null; revision++; }
 
-  return { buildSummary, render, invalidate };
+  return { buildSummary, impactDays, render, invalidate };
 });

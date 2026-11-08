@@ -25,6 +25,7 @@
 .dash-impact-chart text { fill: var(--text-meta); font-size: 11px; }
 .dash-gridline { stroke: var(--border); stroke-width: 1; }
 .dash-observed-dot { fill: var(--accent); stroke: var(--panel); stroke-width: 2; }
+.dash-cumulative-line { fill:none; stroke:var(--accent); stroke-width:2.5; }
 .dash-fit { fill: none; stroke-width: 2; stroke-dasharray: 7 5; }
 .dash-fit--linear { stroke: color-mix(in srgb, var(--text) 30%, #8cbdad); }
 .dash-fit--logarithmic { stroke: color-mix(in srgb, var(--text) 30%, #d1b17c); }

@@ -1,0 +1,6 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard test fixture</title><link rel="stylesheet" href="../dashboard/dashboard.css"><style>body{margin:0;padding:24px;background:#101820;color:#e7f1ed;font:14px system-ui;--border:#2b3a41;--panel:#101c24;--panel-2:#14232c;--text:#e7f1ed;--text-meta:#9aaeb2;--accent:#80dfc4}main{max-width:1400px;margin:auto}.fixture{font:11px monospace;color:#9aaeb2}@media(max-width:600px){body{padding:12px}}</style></head><body><main><p class="fixture">DASHBOARD TEST FIXTURE — SAMPLE DATA, NOT A LIVE REPORT</p><section id="dashboardView"></section></main>
+<script src="../js/cluster-taxonomy.js"></script><script src="../js/util.js"></script><script src="../atlas/atlas.js"></script><script src="../dashboard/regression.js"></script><script src="../dashboard/dashboard.js"></script><script>
+const publishes=Array.from({length:8},(_,i)=>({id:i+1,market:'US',created_at:`2026-11-0${i+1}T12:00:00Z`}));
+window.ClustrApi={fetchAllPublishes:async()=>publishes,loadGroupsForPublish:async()=>[{name:'Energy',stance_score:-2},{name:'AI',stance_score:1}]};
+ClustrDashboard.render(document.getElementById('dashboardView'),()=>{});
+</script></body></html>

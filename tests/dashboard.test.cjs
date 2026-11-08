@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const atlas = require('../atlas/atlas.js');
-const { buildSummary, render, invalidate } = require('../dashboard/dashboard.js');
+const { buildSummary, impactDays, render, invalidate } = require('../dashboard/dashboard.js');
 
 global.window = {};
 require('../js/util.js');
@@ -77,4 +77,40 @@ test('Dashboard selection, scatter points and all-model comparison remain cluste
   assert.match(root.innerHTML, /Original-scale R²/);
   root.onclick({ target: { closest: selector => selector === '[data-dash-market]' ? { dataset: { dashMarket: 'NO' } } : null } });
   assert.match(root.innerHTML, /No approved NO publishes/);
+});
+
+test('Cumulative impact sums signed daily scores without inventing missing days or changing saved data',()=>{
+  const days=[-2,-2,null,0,3,NaN].map((score,index)=>({date:`2026-11-0${index+1}`,score}));
+  assert.deepEqual(impactDays(days,true).map(day=>day.score),[-2,-4,null,-4,-1,null]);
+  assert.deepEqual(impactDays(days).map(day=>day.score),[-2,-2,null,0,3,null]);
+  assert.equal(days[1].score,-2);
+  assert.deepEqual(impactDays([],true),[]);
+  assert.deepEqual(impactDays([{score:null}],true),[{score:null}]);
+  assert.equal(impactDays([{score:0.1},{score:0.2}],true)[1].score,0.3);
+});
+
+test('Cumulative toggle expands the zero-centered axis and restores daily fits when switched off',async()=>{
+  const publishes=[1,2,3].map(id=>({id,market:'US',created_at:`2026-11-0${id}T12:00:00Z`}));
+  window.ClustrApi={fetchAllPublishes:async()=>publishes,loadGroupsForPublish:async()=>[{name:'Energy',stance_score:-8},{name:'AI',stance_score:2}]};
+  window.ClustrAtlas=atlas;
+  let focused='';
+  const root={innerHTML:'',querySelector:selector=>({focus(){focused=selector;}})};
+  invalidate();await render(root,()=>{});
+  root.onclick({target:{closest:selector=>selector==='[data-dash-market]'?{dataset:{dashMarket:'US'}}:null}});
+  const change=(field,value)=>root.onchange({target:{closest:selector=>selector===field?value:null}});
+  change('[data-dash-cluster]',{value:'Energy'});
+  change('[data-dash-cumulative]',{checked:true});
+  assert.match(root.innerHTML,/Energy: cumulative impact over 3 scored report days/);
+  assert.match(root.innerHTML,/-24 cumulative impact/);
+  assert.match(root.innerHTML,/>−?\-25<\/text>/);
+  assert.match(root.innerHTML,/y1="130" y2="130"/);
+  assert.match(root.innerHTML,/data-dash-show-fits[^>]*disabled/);
+  assert(!root.innerHTML.includes('class="dash-prediction"'));
+  assert.equal(focused,'[data-dash-cumulative]');
+  change('[data-dash-cluster]',{value:'AI'});
+  assert.match(root.innerHTML,/6 cumulative impact/);
+  change('[data-dash-cumulative]',{checked:false});
+  assert.match(root.innerHTML,/AI: scatter plot of 3 daily cluster impacts/);
+  assert(!root.innerHTML.includes('class="dash-cumulative-line"'));
+  assert.match(root.innerHTML,/class="dash-confidence"/);
 });
