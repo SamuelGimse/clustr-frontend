@@ -6,9 +6,9 @@ Clustr Market uses Supabase Google, Facebook, email/password, and passwordless e
 
 Free can read reports before yesterday's midnight in US Eastern time: Friday is available on Sunday. Watchlist and interactive History require Pro, alongside existing Pro-only features. Verified Stripe webhooks grant the 99 NOK/month subscription. Billing requires Stripe secrets and a successful sandbox checkout test before live sales.
 
-Admin's Account preview selector shows Free, subscribed Pro or Founding 20 without losing actual Admin access. Preview filters report dates and disables real billing, sign-out and Watchlist edits. Exit preview to return to the actual account.
+Admin's Account preview selector shows Free, subscribed Pro or Lifetime Pro without losing actual Admin access. Preview filters report dates and disables real billing, sign-out and Watchlist edits. Exit preview to return to the actual account.
 
-Founding 20 is a limited complimentary lifetime Pro grant. The Account page shows remaining places while the offer is open. Signing up does not reserve a place: after confirming an email and signing in, a Free user must press Accept & claim Founding 20. The claim is enforced by the Supabase RPC in `clustr-backend`.
+Lifetime Pro is a limited complimentary lifetime Pro grant. The Account page shows remaining places while the offer is open. Signing up does not reserve a place: after confirming an email and signing in, a Free user must press Accept & claim Lifetime Pro. The claim is enforced by the Supabase RPC in `clustr-backend`.
 
 Administrators can start a full publish from Account while the private `clustr-backend` service is running locally on port 3001. The backend checks the Supabase admin role before it runs the pipeline.
 

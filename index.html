@@ -291,7 +291,7 @@
         <section class="account-shell account-plan admin-preview-controls">
           <h2>Account preview</h2><p>Preview account types without changing your real Admin permissions or subscription.</p>
           <label for="accountPreviewChoice">View app as</label>
-          <select id="accountPreviewChoice"><option value="">Admin (actual account)</option><option value="free">Free</option><option value="pro">Pro subscription</option><option value="permanent">Founding 20</option></select>
+          <select id="accountPreviewChoice"><option value="">Admin (actual account)</option><option value="free">Free</option><option value="pro">Pro subscription</option><option value="permanent">Lifetime Pro</option></select>
           <p id="accountPreviewStatus" role="status"></p>
         </section>
         <div class="account-shell"><div class="account-eyebrow">CLUSTR MARKET / ADMIN</div><h1>Admin tools</h1><p id="adminMessage" class="account-message" role="status"></p><section class="account-plan admin-plan"><div class="admin-publish-head"><div><h2>Full publish</h2><p>Fetch news and movers, score articles, group related stories, map stocks, snapshot prices, and save a new publish.</p></div><span class="account-publish-market">United States</span><button class="account-primary" type="button" data-account-action="publish">Run full publish</button><span class="account-plan-note">The backend on this PC must be running. One publish can run at a time.</span></div><div class="admin-monitor-grid"><section class="admin-monitor-panel"><h3>Live filtering &amp; grouping</h3><canvas id="publishChart" class="publish-chart" role="img" aria-label="Live article filtering and cluster progress"></canvas><p id="publishProgressText" class="account-plan-note">Waiting for a publish.</p></section><section class="admin-monitor-panel"><h3>Publish console</h3><pre id="publishConsole" class="publish-console" aria-live="polite"></pre></section><section class="admin-monitor-panel admin-model-panel"><h3>Live filter model &amp; reply</h3><p id="publishModelName" class="account-plan-note">Model: waiting for publish</p><p id="publishModelActivity" class="account-plan-note">Waiting for filtering.</p><p id="publishModelArticle" class="account-plan-note"></p><pre id="publishModelReply" class="publish-model-reply" aria-live="polite">The newest model reply will appear here.</pre></section></div></section></div>
@@ -305,7 +305,7 @@
   <script src="js/config.js?v=publish-push-1"></script>
   <script src="js/util.js?v=event-scores-1"></script>
   <script src="js/quotes.js?v=news-session-quotes-1"></script>
-  <script src="js/auth.js?v=publish-push-1"></script>
+  <script src="js/auth.js?v=lifetime-pro-1"></script>
   <script src="js/push.js?v=publish-push-1"></script>
   <script src="js/cluster-taxonomy.js?v=curated-baskets-1"></script>
   <script src="js/api.js?v=curated-baskets-1"></script>
@@ -323,6 +323,6 @@
   <script src="connections/canvas.js?v=network-watchlist-1"></script>
   <script src="connections/connections.js?v=stock-news-network-layout-1"></script>
   <script src="js/pro-preview.js?v=2"></script>
-  <script src="js/app.js?v=persistent-pro-badge-1"></script>
+  <script src="js/app.js?v=lifetime-pro-1"></script>
 </body>
 </html>
