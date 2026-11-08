@@ -1,6 +1,13 @@
 .view-toolbar { display:flex; align-items:center; gap:12px; margin:0 0 16px; min-width:0; }
 .watchlist-scope { display:flex; flex:1; align-items:center; gap:8px; min-width:0; }
 .watchlist-scope[hidden], .watch-filter-menu[hidden] { display:none; }
+.watch-scope-indicator { display:inline-flex; align-items:center; gap:6px; padding:5px 9px; border:1px solid var(--accent); border-radius:999px; background:color-mix(in srgb, var(--accent) 13%, var(--bg)); color:var(--text); font-size:11px; font-weight:700; line-height:1.4; white-space:nowrap; }
+.watch-scope-indicator[hidden] { display:none; }
+.watch-scope-dot { display:inline-grid; place-items:center; width:17px; height:17px; border-radius:50%; background:var(--accent); color:var(--bg); font-size:11px; line-height:1; }
+html[data-watchlist-filtered] #navWatchlist { position:relative; }
+html[data-watchlist-filtered] #navWatchlist::after { content:'★'; position:absolute; top:3px; right:3px; display:grid; place-items:center; width:18px; height:18px; border-radius:50%; background:var(--accent); color:var(--bg); box-shadow:0 0 0 2px var(--bg); font-size:11px; line-height:1; }
+html[data-watchlist-filtered] :is(#eventsView,#weeklyView,#atlasView,#dashboardView,#connectionsView,#stocksView,#daysView,#signalView)::before { content:'★  FILTERED TO WATCHLIST'; display:table; margin:0 0 12px; padding:6px 10px; border:1px solid var(--accent); border-radius:999px; background:color-mix(in srgb, var(--accent) 13%, var(--bg)); color:var(--text); font-size:11px; font-weight:700; letter-spacing:.04em; line-height:1.3; }
+html[data-watchlist-filtered] :is(.chart-folder,#weeklyChart,.dash-trend-panel,.atlas-detail-panel:has(.atlas-line))::before, html[data-watchlist-filtered] .cx-map-caption::after { content:'★  WATCHLIST SCOPE'; display:table; margin:8px 10px; padding:3px 7px; border:1px solid var(--accent); border-radius:999px; color:var(--text); font-size:10px; font-weight:700; letter-spacing:.03em; line-height:1.4; }
 html[data-theme] .view-toolbar .view-sort-picker select { height:36px; min-height:36px; min-width:0; padding:0 28px 0 10px; border:1px solid var(--border); border-radius:8px; background:var(--panel); color:var(--text); font:inherit; font-size:12px; cursor:pointer; }
 .watch-scope-controls { display:inline-flex; flex:0 0 auto; align-items:center; gap:2px; padding:2px; border:1px solid var(--border); border-radius:10px; background:transparent; }
 html[data-theme] .watch-scope-controls button { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:30px; margin:0; padding:0 10px; border:0; border-radius:7px; background:transparent; color:var(--text-meta); box-shadow:none; font:inherit; font-size:12px; line-height:1.4; white-space:nowrap; cursor:pointer; }
