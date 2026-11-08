@@ -14,7 +14,7 @@
     fullPublishHistoryPromise = null; historySummaryPromise = null; historySummaries = []; detailRequests.clear();
   }
   function syncSession() {
-    const token = `${window.ClustrAuth?.accessToken() || ''}|${previewCutoff || ''}`;
+    const token = `${window.ClustrAuth?.sessionKey?.() ?? window.ClustrAuth?.accessToken() ?? ''}|${previewCutoff || ''}`;
     if (token !== cacheSession) { cacheSession = token; resetCaches(); }
     return token;
   }
@@ -68,13 +68,21 @@
     if (!url || !key) throw new Error('Missing Supabase config');
     if (previewCutoff && path.startsWith('clustr_publishes?')) path += `&created_at=lt.${encodeURIComponent(previewCutoff)}`;
     if (previewCutoff && path.startsWith('clustr_ai_summaries?')) path += `&summary_date=lt.${encodeURIComponent(new Date(previewCutoff).toLocaleDateString('en-CA', { timeZone: 'America/New_York' }))}`;
-    const res = await fetch(`${url}/rest/v1/${path}`, {
+    const auth = window.ClustrAuth;
+    let token = auth?.getAccessToken ? await auth.getAccessToken() : auth?.accessToken() || '';
+    const send = () => fetch(`${url}/rest/v1/${path}`, {
       headers: {
         apikey: key,
-        Authorization: `Bearer ${window.ClustrAuth?.accessToken() || key}`,
+        Authorization: `Bearer ${token || key}`,
         Accept: 'application/json'
       }
     });
+    let res = await send();
+    if (res.status === 401 && token && auth?.getAccessToken) {
+      token = await auth.getAccessToken(token);
+      if (!token) throw new Error('Your session expired. Sign in again to continue.');
+      res = await send();
+    }
     if (!res.ok) {
       const t = await res.text();
       throw new Error(`Supabase ${res.status}: ${t.slice(0, 160)}`);
