@@ -5,7 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   const osloDate = new Intl.DateTimeFormat('en', { timeZone: 'Europe/Oslo', year: 'numeric', month: '2-digit', day: '2-digit' });
   const osloTime = new Intl.DateTimeFormat('en', { timeZone: 'Europe/Oslo', hour: '2-digit', minute: '2-digit', hour12: false });
-  const state = { mode: 'days', search: '', selected: '' };
+  const state = { mode: 'days', entity: 'clusters', search: '', selected: '' };
   let cached = null;
   let loading = null;
   let revision = 0;
@@ -52,9 +52,45 @@
         theme.entries[index] = entry;
       }
     });
+    const stocks = new Map();
+    const layers = [
+      ['Article mention', ['mentioned_stocks']],
+      ['Close link', ['close_stocks', 'direct_stocks']],
+      ['Related stock', ['original_stocks', 'related_stocks']],
+      ['Cluster default', ['fixed_stocks', 'default_stocks', 'default_symbols']],
+      ['Connected mover', ['connected_winners', 'connected_losers', 'movers']],
+      ['Cluster link', ['stocks']]
+    ];
+    for (const theme of themes.values()) {
+      theme.entries.forEach((entry, index) => {
+        if (!entry) return;
+        const market = String(entry.group.market || entry.publish.market || 'US').toUpperCase();
+        const linked = new Map();
+        for (const [label, fields] of layers) for (const field of fields) for (const raw of entry.group[field] || []) {
+          const stock = typeof raw === 'string' ? { symbol: raw } : raw;
+          const symbol = util.normalizeSymbol(stock?.symbol);
+          if (stock?.resolved === false || !util.isQuoteSymbol(symbol)) continue;
+          if (!linked.has(symbol)) linked.set(symbol, { name: stock.name || symbol, layers: new Set() });
+          if (linked.get(symbol).name === symbol && stock.name) linked.get(symbol).name = stock.name;
+          linked.get(symbol).layers.add(label);
+        }
+        for (const [symbol, info] of linked) {
+          const key = `${market}:${symbol}`;
+          if (!stocks.has(key)) stocks.set(key, { name: symbol, symbol, market, company: info.name, entries: Array(columns.length).fill(null), count: 0 });
+          const row = stocks.get(key);
+          if (row.company === symbol && info.name !== symbol) row.company = info.name;
+          if (!row.entries[index]) { row.entries[index] = { publish: entry.publish, links: [], score: null }; row.count++; }
+          row.entries[index].links.push({ theme: theme.name, score: entry.score, layers: [...info.layers] });
+        }
+      });
+    }
+    for (const row of stocks.values()) for (const entry of row.entries) if (entry) {
+      entry.score = util.articleImpactScore(entry.links.map(link => link.score));
+    }
     return {
       columns,
       themes: [...themes.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+      stocks: [...stocks.values()].sort((a, b) => b.count - a.count || a.symbol.localeCompare(b.symbol) || a.market.localeCompare(b.market)),
       themeCount: allThemes.size,
       publishCount: ordered.length,
       dayCount: new Set(ordered.map(publish => dayOf(publish.created_at))).size,
@@ -83,25 +119,50 @@
     return `<svg class="atlas-line" viewBox="0 0 560 124" role="img" aria-label="News impact trajectory for ${window.ClustrUtil.escapeHtml(theme.name)}"><line x1="24" x2="536" y1="60" y2="60" class="atlas-zero"/><path d="${path}" class="atlas-path"/>${points.map(point => `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="4" class="atlas-point atlas-point--${tone(point.score)}"><title>${window.ClustrUtil.escapeHtml(new Date(point.label).toLocaleString('en', { timeZone: 'Europe/Oslo' }))}: ${scoreText(point.score)}</title></circle>`).join('')}</svg>`;
   }
 
+  function drawStocks(root, model, query) {
+    const esc = window.ClustrUtil.escapeHtml;
+    const rows = model.stocks.filter(row => !query || row.symbol.toLowerCase().includes(query) || String(row.company).toLowerCase().includes(query));
+    const selected = rows.flatMap(row => row.entries.map((entry, index) => entry ? { row, entry, index } : null).filter(Boolean))
+      .find(item => `${item.entry.publish.id}|${item.row.market}:${item.row.symbol}` === state.selected)
+      || (() => { const row = rows[0]; if (!row) return null; const index = row.entries.findLastIndex(Boolean); return { row, entry: row.entries[index], index }; })();
+    if (selected) state.selected = `${selected.entry.publish.id}|${selected.row.market}:${selected.row.symbol}`;
+    root.querySelector('#atlasStats').innerHTML = `<span><strong>${rows.length}</strong> stocks shown · ${model.stocks.length} available</span><span><strong>${model.storyCount}</strong> distinct stories</span><span><strong>${model.publishCount}</strong> reports</span>`;
+    root.querySelector('#atlasLegendText').textContent = 'Cell number = linked-cluster news impact · smaller number = linked clusters';
+    const matrix = root.querySelector('#atlasMatrix');
+    const previousScroll = matrix.scrollLeft;
+    const hadTable = !!matrix.querySelector('table');
+    matrix.innerHTML = rows.length ? `<table class="atlas-table"><thead><tr><th scope="col">Stock</th>${model.columns.map(publish => `<th scope="col" title="${esc(new Date(publish.created_at).toLocaleString('en', { timeZone: 'Europe/Oslo' }))}"><span>${dayOf(publish.created_at).slice(5)}</span>${state.mode === 'publishes' ? `<small>${osloTime.format(new Date(publish.created_at))}</small>` : ''}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr><th scope="row" title="${esc(row.company)}"><span>${esc(row.symbol)} <small>${esc(row.market)}</small></span><small>${row.count} ${state.mode === 'days' ? 'days' : 'reports'} · ${esc(row.company)}</small></th>${row.entries.map((entry, index) => entry ? `<td><button type="button" class="atlas-cell atlas-cell--${tone(entry.score)} ${selected?.row === row && selected.index === index ? 'is-selected' : ''}" style="--strength:${Math.round(10 + Math.abs(entry.score || 0) * 7)}%" data-atlas-stock="${esc(row.market + ':' + row.symbol)}" data-atlas-index="${index}" aria-pressed="${selected?.row === row && selected.index === index}" aria-label="${esc(row.symbol)}, ${esc(new Date(entry.publish.created_at).toLocaleString('en', { timeZone: 'Europe/Oslo' }))}, linked cluster news impact ${scoreText(entry.score)}, ${entry.links.length} clusters"><strong>${scoreText(entry.score)}</strong><small>${entry.links.length} clusters</small></button></td>` : '<td class="atlas-blank" aria-label="No linked cluster in this report">·</td>').join('')}</tr>`).join('')}</tbody></table>` : '<p class="atlas-note">No stocks match this search.</p>';
+    matrix.scrollLeft = hadTable ? previousScroll : state.mode === 'publishes' ? matrix.scrollWidth : 0;
+    const detail = root.querySelector('#atlasDetail');
+    if (!selected) { detail.innerHTML = '<p class="atlas-note">Choose a stock to inspect its linked clusters.</p>'; return; }
+    const { row, entry, index } = selected;
+    const prior = row.entries.slice(0, index).filter(Boolean).at(-1);
+    const change = prior?.score != null && entry.score != null ? entry.score - prior.score : null;
+    detail.innerHTML = `<div class="atlas-detail-head"><div><p class="atlas-eyebrow">SELECTED STOCK SNAPSHOT</p><h2>${esc(row.symbol)} · ${esc(row.company)}</h2><p>${esc(new Date(entry.publish.created_at).toLocaleString('en', { timeZone: 'Europe/Oslo' }))} · ${esc(row.market)} · ${entry.links.length} linked clusters</p></div><div class="atlas-detail-score atlas-detail-score--${tone(entry.score)}"><strong>${scoreText(entry.score)}</strong><span>linked-cluster news impact${change == null ? '' : ` · ${change >= 0 ? '+' : ''}${change.toFixed(1)} vs prior snapshot`}</span></div></div><div class="atlas-detail-grid"><section class="atlas-detail-panel"><h3>Linked impact over time</h3>${lineChart(row, model)}<p class="atlas-note">This combines scored cluster associations, not stock returns or an article-level stock score.</p></section><section class="atlas-detail-panel"><h3>Contributing clusters</h3><div class="atlas-stock-links">${entry.links.map(link => `<div><strong>${esc(link.theme)}</strong><b class="atlas-link-score atlas-link-score--${tone(link.score)}">${scoreText(link.score)}</b><small>${esc(link.layers.join(' · '))}</small></div>`).join('')}</div></section></div>`;
+  }
+
   function draw(root) {
     if (!cached) return;
     const util = window.ClustrUtil;
     const esc = util.escapeHtml;
     const model = buildModel(cached.publishes, cached.groups, state.mode, util);
     const query = state.search.trim().toLowerCase();
+    root.querySelector('#atlasScope').textContent = `${model.columns.length} ${state.mode === 'days' ? 'latest daily snapshots' : 'publish snapshots'} from ${model.publishCount} available publishes · ${model.dayCount} Oslo calendar days`;
+    root.querySelectorAll('[data-atlas-mode], [data-atlas-entity]').forEach(button => {
+      const active = button.dataset.atlasMode === state.mode || button.dataset.atlasEntity === state.entity;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+    root.querySelector('#atlasSearchLabel').firstChild.textContent = state.entity === 'stocks' ? 'Find stock ' : 'Find theme or default stock ';
+    if (state.entity === 'stocks') { drawStocks(root, model, query); return; }
     const themes = model.themes.filter(theme => !query || theme.name.toLowerCase().includes(query) || theme.entries.some(entry =>
       (entry?.group.fixed_stocks || entry?.group.default_stocks || []).some(stock => String(stock.symbol || '').toLowerCase().includes(query))));
     const selected = themes.flatMap(theme => theme.entries.map((entry, index) => entry ? { theme, entry, index } : null).filter(Boolean))
       .find(item => `${item.entry.publish.id}|${item.theme.name}` === state.selected)
       || (() => { const theme = themes[0]; if (!theme) return null; const index = theme.entries.findLastIndex(Boolean); return { theme, entry: theme.entries[index], index }; })();
     if (selected) state.selected = `${selected.entry.publish.id}|${selected.theme.name}`;
-    root.querySelector('#atlasScope').textContent = `${model.columns.length} ${state.mode === 'days' ? 'latest daily snapshots' : 'publish snapshots'} from ${model.publishCount} available publishes · ${model.dayCount} Oslo calendar days`;
     root.querySelector('#atlasStats').innerHTML = `<span><strong>${model.themes.length}</strong> themes shown · ${model.themeCount} available</span><span><strong>${model.storyCount}</strong> distinct stories</span><span><strong>${model.publishCount}</strong> reports</span>`;
-    root.querySelectorAll('[data-atlas-mode]').forEach(button => {
-      const active = button.dataset.atlasMode === state.mode;
-      button.classList.toggle('is-active', active);
-      button.setAttribute('aria-pressed', String(active));
-    });
+    root.querySelector('#atlasLegendText').textContent = 'Cell number = impact score · smaller number = distinct stories';
     const matrix = root.querySelector('#atlasMatrix');
     const previousScroll = matrix.scrollLeft;
     const hadTable = !!matrix.querySelector('table');
@@ -139,19 +200,34 @@
       }
       loading = null;
     }
-    root.innerHTML = `<div class="atlas-shell"><header class="atlas-head"><div><p class="atlas-eyebrow">CLUSTR / HISTORY</p><h1>Cluster Atlas</h1><p>See how news themes change across the publishes available to your account.</p></div><div id="atlasStats" class="atlas-stats"></div></header><div class="atlas-toolbar"><div class="atlas-switch" role="group" aria-label="History granularity"><button type="button" data-atlas-mode="days">Latest each day</button><button type="button" data-atlas-mode="publishes">Every publish</button></div><label>Find theme or default stock<input id="atlasSearch" type="search" placeholder="AI, energy, NVDA…" autocomplete="off" value="${window.ClustrUtil.escapeHtml(state.search)}"></label></div><p id="atlasScope" class="atlas-scope"></p><div class="atlas-legend"><span><i class="atlas-swatch atlas-swatch--down"></i> Negative news</span><span><i class="atlas-swatch atlas-swatch--flat"></i> Neutral</span><span><i class="atlas-swatch atlas-swatch--up"></i> Positive news</span><span>Cell number = impact score · smaller number = distinct stories</span></div><div id="atlasMatrix" class="atlas-matrix" tabindex="0" aria-label="Scrollable cluster impact table"></div><section id="atlasDetail" class="atlas-detail" aria-live="polite"></section></div>`;
+    root.innerHTML = `<div class="atlas-shell"><header class="atlas-head"><div><p class="atlas-eyebrow">CLUSTR / HISTORY</p><h1>Cluster Atlas</h1><p>See how news themes change across the publishes available to your account.</p></div><div id="atlasStats" class="atlas-stats"></div></header><div class="atlas-toolbar"><div class="atlas-switch" role="group" aria-label="Atlas rows"><button type="button" data-atlas-entity="clusters">Clusters</button><button type="button" data-atlas-entity="stocks">Stocks</button></div><div class="atlas-switch" role="group" aria-label="History granularity"><button type="button" data-atlas-mode="days">Latest each day</button><button type="button" data-atlas-mode="publishes">Every publish</button></div><label id="atlasSearchLabel">Find theme or default stock <input id="atlasSearch" type="search" placeholder="AI, energy, NVDA…" autocomplete="off" value="${window.ClustrUtil.escapeHtml(state.search)}"></label></div><p id="atlasScope" class="atlas-scope"></p><div class="atlas-legend"><span><i class="atlas-swatch atlas-swatch--down"></i> Negative news</span><span><i class="atlas-swatch atlas-swatch--flat"></i> Neutral</span><span><i class="atlas-swatch atlas-swatch--up"></i> Positive news</span><span id="atlasLegendText">Cell number = impact score · smaller number = distinct stories</span></div><div id="atlasMatrix" class="atlas-matrix" tabindex="0" aria-label="Scrollable news impact table"></div><section id="atlasDetail" class="atlas-detail" aria-live="polite"></section></div>`;
     root.querySelector('#atlasSearch').addEventListener('input', event => { state.search = event.target.value; draw(root); });
-    root.querySelector('.atlas-switch').addEventListener('click', event => {
+    root.querySelector('[aria-label="History granularity"]').addEventListener('click', event => {
       const button = event.target.closest('[data-atlas-mode]');
       if (!button) return;
       state.mode = button.dataset.atlasMode;
       state.selected = '';
       draw(root);
     });
+    root.querySelector('[aria-label="Atlas rows"]').addEventListener('click', event => {
+      const button = event.target.closest('[data-atlas-entity]');
+      if (!button) return;
+      state.entity = button.dataset.atlasEntity;
+      state.selected = '';
+      draw(root);
+    });
     root.querySelector('#atlasMatrix').addEventListener('click', event => {
-      const button = event.target.closest('[data-atlas-theme]');
+      const button = event.target.closest('[data-atlas-theme], [data-atlas-stock]');
       if (!button) return;
       const model = buildModel(cached.publishes, cached.groups, state.mode, window.ClustrUtil);
+      if (button.dataset.atlasStock) {
+        const row = model.stocks.find(stock => stock.market + ':' + stock.symbol === button.dataset.atlasStock);
+        const entry = row?.entries[Number(button.dataset.atlasIndex)];
+        if (!entry) return;
+        state.selected = `${entry.publish.id}|${button.dataset.atlasStock}`;
+        draw(root);
+        return;
+      }
       const entry = model.themes.find(theme => theme.name === button.dataset.atlasTheme)?.entries[Number(button.dataset.atlasIndex)];
       if (!entry) return;
       state.selected = `${entry.publish.id}|${button.dataset.atlasTheme}`;

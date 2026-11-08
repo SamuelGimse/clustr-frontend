@@ -7,7 +7,8 @@
 .atlas-stats { display: flex; flex-wrap: wrap; gap: 8px; }
 .atlas-stats span { display: grid; gap: 3px; min-width: 104px; padding: 12px 14px; border: 1px solid var(--atlas-edge); border-radius: 12px; background: var(--atlas-card); color: var(--atlas-muted); font-size: 11px; }
 .atlas-stats strong { color: var(--text); font-size: 23px; font-variant-numeric: tabular-nums; }
-.atlas-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.atlas-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-bottom: 12px; }
+.atlas-toolbar label { margin-left: auto; }
 .atlas-switch { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--atlas-edge); border-radius: 12px; background: var(--atlas-card); }
 .atlas-switch button { border: 0; border-radius: 9px; padding: 9px 13px; background: transparent; color: var(--atlas-muted); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 .atlas-switch button.is-active { background: var(--accent); color: var(--md-sys-color-on-primary); }
@@ -67,6 +68,11 @@
 .atlas-observations div { display: flex; flex-wrap: wrap; gap: 4px 8px; padding-bottom: 6px; border-bottom: 1px solid var(--atlas-edge); font-size: 11px; }
 .atlas-observations b { color: var(--accent); }
 .atlas-observations small { margin-left: auto; color: var(--atlas-muted); }
+.atlas-stock-links { display: grid; gap: 7px; max-height: 210px; overflow: auto; }
+.atlas-stock-links div { display: grid; grid-template-columns: 1fr auto; gap: 3px 8px; padding: 7px 0; border-bottom: 1px solid var(--atlas-edge); font-size: 12px; }
+.atlas-stock-links small { grid-column: 1 / -1; color: var(--atlas-muted); font-size: 10px; }
+.atlas-link-score--up { color: var(--up); }
+.atlas-link-score--down { color: var(--down); }
 .atlas-loading, .atlas-error { padding: 30px; border: 1px solid var(--border); border-radius: 14px; background: var(--panel); color: var(--text-meta); }
 .atlas-error { color: var(--down); }
 @media (max-width: 860px) {
@@ -74,6 +80,7 @@
   .atlas-stats { width: 100%; }
   .atlas-stats span { flex: 1; min-width: 85px; }
   .atlas-toolbar label { width: 100%; }
+  .atlas-toolbar label { margin-left: 0; }
   .atlas-detail-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 560px) {

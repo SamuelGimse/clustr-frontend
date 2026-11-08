@@ -33,3 +33,19 @@ test('Atlas keeps all snapshots and uses the latest report on each Oslo day', ()
   assert.deepEqual(snapshots.columns.map(publish => publish.id), [1, 2, 3]);
   assert.equal(snapshots.themes[0].count, 3);
 });
+
+test('Stock rows combine linked cluster scores once per cluster and keep link types', () => {
+  const publishes = [{ id: 4, created_at: '2026-11-07T10:00:00Z', market: 'US' }];
+  const groups = new Map([['4', [
+    { name: 'Defense', articles: [{ rating: 3 }], fixed_stocks: [{ symbol: 'LMT', name: 'Lockheed Martin' }], close_stocks: [{ symbol: 'LMT' }] },
+    { name: 'Conflict', articles: [{ rating: -2 }], mentioned_stocks: [{ symbol: 'LMT' }] },
+    { name: 'Energy', articles: [{ rating: 0 }], fixed_stocks: [{ symbol: 'XOM' }] }
+  ]]]);
+  const model = buildModel(publishes, groups, 'days', util);
+  const lmt = model.stocks.find(stock => stock.symbol === 'LMT');
+  assert.equal(lmt.company, 'Lockheed Martin');
+  assert.equal(lmt.entries[0].links.length, 2);
+  assert.equal(lmt.entries[0].score, util.articleImpactScore([3, -2]));
+  assert.deepEqual(lmt.entries[0].links[0].layers, ['Close link', 'Cluster default']);
+  assert.equal(model.stocks.find(stock => stock.symbol === 'XOM').entries[0].score, 0);
+});
