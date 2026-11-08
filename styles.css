@@ -4181,6 +4181,13 @@ html[data-theme="material"][data-color-mode="light"] :is(.nav-rail-btn.is-active
 .stock-sidebar .price-value, .stock-sidebar .technical-metrics strong { font-size: 15px; line-height: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .stock-sidebar .technical-metrics-note, .stock-sidebar .quote-asof { grid-column: 1 / -1; margin: 0; }
 .stock-analysis .price-bar, .stock-analysis .chart-folder { margin: 0; }
+html[data-theme] .toggle-articles {
+  margin: 12px 0 6px;
+  background: #fff;
+  color: #171717;
+  border: 1px solid #d0d0d0;
+}
+html[data-theme] .toggle-articles:hover { background: #eee; }
 .price-bar-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .technical-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .technical-metrics span, .technical-metrics-note, .quote-asof { color: var(--text-meta); font-size: 11px; }
