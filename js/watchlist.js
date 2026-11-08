@@ -231,10 +231,12 @@
       const toggle = event.target.closest('[data-watch-toggle]'), scopeButton = event.target.closest('[data-watch-scope]');
       if (toggle) { event.preventDefault(); event.stopPropagation(); const stock = { symbol: toggle.dataset.watchSymbol, name: toggle.dataset.watchName }; setSaved(stock, toggle.dataset.watchMarket, !includes(stock, toggle.dataset.watchMarket)).catch(() => {}); }
       if (scopeButton) setScope(scopeButton.dataset.watchScope);
-      const link=event.target.closest('[data-watch-link]');if(link)setLinkType(link.dataset.watchLink,!linkTypes.has(link.dataset.watchLink));
       if (event.target.closest('[data-watch-manage]')) root.ClustrApp?.showView('watchlist');
       if (event.target.closest('[data-watch-refresh]')) refresh();
       if (event.target.closest('[data-watch-more]')) { limit += 24; paintManager(); }
+    });
+    root.document.addEventListener('change', event => {
+      const link=event.target.closest('[data-watch-link]');if(link)setLinkType(link.dataset.watchLink,link.checked);
     });
     root.document.addEventListener('input', event => { if (event.target.matches('[data-watch-search]')) { search = event.target.value; limit = 12; paintManager(); } });
     root.document.addEventListener('submit', async event => {
