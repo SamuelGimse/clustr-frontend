@@ -33,12 +33,14 @@
   const signalView = document.getElementById('signalView');
   const mindView = document.getElementById('mindView');
   const weeklyView = document.getElementById('weeklyView');
+  const stocksView = document.getElementById('stocksView');
   const polymarketView = document.getElementById('polymarketView');
   const navPolymarket = document.getElementById('navPolymarket');
   const accountView = document.getElementById('accountView');
   const adminView = document.getElementById('adminView');
 
   const navEvents = document.getElementById('navEvents');
+  const navStocks = document.getElementById('navStocks');
   const navMap = document.getElementById('navMap');
   const navDays = document.getElementById('navDays');
   const navSignal = document.getElementById('navSignal');
@@ -133,7 +135,7 @@
     const R = window.ClustrRender;
     const MapApi = window.ClustrMap;
 
-    [navEvents, navMap, navDays, navSignal, navMind, navWeekly, navAccount, navAdmin, navPolymarket].forEach(b => {
+    [navEvents, navStocks, navMap, navDays, navSignal, navMind, navWeekly, navAccount, navAdmin, navPolymarket].forEach(b => {
       if (b) {
         b.classList.remove('is-active');
         b.setAttribute('aria-current', 'false');
@@ -147,8 +149,10 @@
     if (signalView) signalView.classList.add('hidden');
     if (mindView) mindView.classList.add('hidden');
     if (weeklyView) weeklyView.classList.add('hidden');
+    if (stocksView) stocksView.classList.add('hidden');
     if (accountView) accountView.classList.add('hidden');
     if (adminView) adminView.classList.add('hidden');
+    if (which !== 'stocks') window.ClustrStocks?.leave();
 
     if (which !== 'polymarket' && location.hash === '#/polymarket') history.replaceState(null, '', location.pathname + location.search);
     if (which === 'polymarket') {
@@ -216,6 +220,11 @@
           setTimeout(() => Mind.invalidate && Mind.invalidate(), 40);
         }
       }
+    } else if (which === 'stocks') {
+      navStocks?.classList.add('is-active');
+      navStocks?.setAttribute('aria-current', 'page');
+      stocksView?.classList.remove('hidden');
+      window.ClustrStocks?.mount(stocksView, authState.role);
     } else if (which === 'weekly') {
       if (navWeekly) {
         navWeekly.classList.add('is-active');
@@ -948,6 +957,7 @@
 
   if (navPolymarket) navPolymarket.addEventListener('click', () => setNav('polymarket'));
   if (navEvents) navEvents.addEventListener('click', () => setNav('events'));
+  if (navStocks) navStocks.addEventListener('click', () => setNav('stocks'));
   document.querySelectorAll('[data-event-sort]').forEach(button => button.addEventListener('click', async () => {
     eventSort = button.getAttribute('data-event-sort') || 'impact';
     closeEventSortMenu();

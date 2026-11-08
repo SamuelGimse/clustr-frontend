@@ -49,6 +49,21 @@
     );
   }
 
+  /** Fetch every visible publish in the range, including weeks over 100 releases. */
+  async function fetchPublishesInRange(from, to) {
+    const start = new Date(from), end = new Date(to);
+    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start > end) throw new Error('Invalid publish range');
+    const all = new Map();
+    for (let offset = 0; ; offset += 100) {
+      const params = new URLSearchParams({ select: 'id,title,notes,market,created_at,groups_json', notes: 'like.PULSE pipeline*', order: 'created_at.desc,id.desc', limit: '100', offset: String(offset) });
+      params.append('created_at', `gte.${start.toISOString()}`);
+      params.append('created_at', `lte.${end.toISOString()}`);
+      const page = await rest(`clustr_publishes?${params}`);
+      page.forEach(publish => all.set(String(publish.id), publish));
+      if (page.length < 100) return [...all.values()];
+    }
+  }
+
   /**
    * Load every publish available to the current visitor, one REST page at a time.
    * This is only used by stance history so the Events landing view stays quick.
@@ -381,6 +396,7 @@
 
   window.ClustrApi = {
     fetchPublishes,
+    fetchPublishesInRange,
     fetchAiSummaries,
     fetchClustersForPublish,
     loadGroupsForPublish,
