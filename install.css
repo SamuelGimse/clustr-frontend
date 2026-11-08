@@ -1,0 +1,7 @@
+.install-banner[hidden], .install-help[hidden] { display: none; }
+.install-banner { position: relative; z-index: 60; display: flex; align-items: center; gap: 12px; padding: calc(10px + env(safe-area-inset-top)) 16px 10px; background: #152a2a; color: #f5f5f7; font: 14px/1.4 system-ui, sans-serif; }
+.install-banner strong { flex: 1; }
+.install-banner button { min-height: 44px; padding: 8px 12px; border: 1px solid #7ddcd0; border-radius: 10px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.install-banner button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.install-help { position: relative; z-index: 60; margin: 0; padding: 12px 16px; background: #152a2a; color: #f5f5f7; font: 14px/1.5 system-ui, sans-serif; }
+@media (min-width: 769px), (display-mode: standalone) { .install-banner, .install-help { display: none; } }
