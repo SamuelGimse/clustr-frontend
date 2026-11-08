@@ -95,6 +95,7 @@ function isLightTheme() {
     ]);
   const t = document.documentElement.getAttribute('data-theme') || 'apple';
   if (t === 'grassy-hill' || t === 'aqua-classic' || t === 'aurora-glass' || t === 'old-school-rpg') return true;
+  if (document.documentElement.getAttribute('data-color-mode') === 'dark') return false;
   if ((t === 'apple' || t === 'material') && document.documentElement.getAttribute('data-color-mode') === 'light') return true;
   if (t === 'apple' || t === 'material') {
     return !window.matchMedia('(prefers-color-scheme: dark)').matches;

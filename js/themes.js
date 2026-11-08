@@ -6,13 +6,37 @@
   const DEFAULT_THEME = 'apple';
   const STORAGE_KEY = 'clustr-theme';
   const WALLPAPER_KEY = 'clustr-wallpaper';
+  const FONT_KEY = 'clustr-font';
+  const SCREEN_STYLE_KEY = 'clustr-screen-style';
 
   const root = document.documentElement;
   const themeMenu = document.getElementById('themeMenu');
   const wallpaperToggle = document.getElementById('wallpaperToggle');
+  const fontChoice = document.getElementById('fontChoice');
+  const screenStyleChoice = document.getElementById('screenStyleChoice');
   const proButtons = [...(themeMenu?.querySelectorAll('[data-pro-theme]') || [])];
   const proThemes = new Set(proButtons.map(button => button.getAttribute('data-theme')));
   let proAccess = false;
+  let selectedTheme = DEFAULT_THEME;
+
+  function setFont(value) {
+    const font = ['sans', 'serif', 'mono', 'fira'].includes(value) ? value : 'theme';
+    if (font === 'theme') root.removeAttribute('data-font');
+    else root.setAttribute('data-font', font);
+    if (fontChoice) fontChoice.value = font;
+    try { localStorage.setItem(FONT_KEY, font); } catch (e) { /* ignore */ }
+  }
+
+  function setScreenStyle(value, persist = true) {
+    if (value === 'crt' && !proAccess) return;
+    const style = value === 'crt' ? 'crt' : 'clean';
+    if (style === 'clean' && selectedTheme === 'glass-crt') applyTheme(DEFAULT_THEME, persist);
+    root.setAttribute('data-screen-style', style);
+    if (screenStyleChoice) screenStyleChoice.value = style;
+    if (persist) {
+      try { localStorage.setItem(SCREEN_STYLE_KEY, style); } catch (e) { /* ignore */ }
+    }
+  }
 
   /**
    * @returns {boolean}
@@ -50,11 +74,14 @@
   function applyTheme(name, persist = true) {
     const theme = (name || '').trim() || DEFAULT_THEME;
     if (proThemes.has(theme) && !proAccess) return;
+    selectedTheme = theme;
     // Clustr is the renamed legacy dark design, kept byte-for-byte compatible.
-    const appliedTheme = theme === 'clustr' ? 'dark' : theme === 'apple-light' ? 'apple' : theme === 'material-light' ? 'material' : theme;
+    const appliedTheme = theme === 'clustr' ? 'dark' : theme === 'apple-light' || theme === 'glass-crt' ? 'apple' : theme === 'material-light' ? 'material' : theme;
     root.setAttribute('data-theme', appliedTheme);
     if (theme === 'apple-light' || theme === 'material-light') root.setAttribute('data-color-mode', 'light');
+    else if (theme === 'apple' || theme === 'glass-crt') root.setAttribute('data-color-mode', 'dark');
     else root.removeAttribute('data-color-mode');
+    if (theme === 'glass-crt' || theme === 'crt' || theme === 'dos-amber') setScreenStyle('crt', persist);
     if (persist) {
       try { localStorage.setItem(STORAGE_KEY, theme); } catch (e) { /* ignore */ }
     }
@@ -96,10 +123,15 @@
       button.setAttribute('aria-label', `${button.textContent.trim()}, Pro theme`);
       button.title = proAccess ? 'Pro theme' : 'Available with Pro';
     });
+    if (screenStyleChoice) screenStyleChoice.disabled = !proAccess;
     let saved;
     try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) { /* ignore */ }
     if (proAccess && proThemes.has(saved)) applyTheme(saved, false);
     if (!proAccess && proThemes.has(saved)) applyTheme(DEFAULT_THEME, false);
+    let savedStyle;
+    try { savedStyle = localStorage.getItem(SCREEN_STYLE_KEY); } catch (e) { /* ignore */ }
+    const retroTheme = ['glass-crt', 'crt', 'dos-amber'].includes(selectedTheme);
+    setScreenStyle(proAccess && (savedStyle === 'crt' || !savedStyle && retroTheme || selectedTheme === 'glass-crt') ? 'crt' : 'clean', false);
   }
 
   function setWallpaper(enabled) {
@@ -113,6 +145,11 @@
   try { wallpaperEnabled = localStorage.getItem(WALLPAPER_KEY) === 'on'; } catch (e) {}
   setWallpaper(wallpaperEnabled);
   wallpaperToggle?.addEventListener('change', () => setWallpaper(wallpaperToggle.checked));
+  fontChoice?.addEventListener('change', () => setFont(fontChoice.value));
+  screenStyleChoice?.addEventListener('change', () => setScreenStyle(screenStyleChoice.value));
+  let savedFont;
+  try { savedFont = localStorage.getItem(FONT_KEY); } catch (e) { /* ignore */ }
+  setFont(savedFont);
 
   if (themeMenu) {
     themeMenu.querySelectorAll('[data-theme]').forEach(btn => {

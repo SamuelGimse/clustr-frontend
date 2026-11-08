@@ -11,7 +11,7 @@ test('Theme picker shows only the requested choices and light variants stay ligh
   assert.match(html, /<section id="accountView"[\s\S]*?<div id="themeMenu"/);
   assert.doesNotMatch(html, /id="themeBtn"/);
   assert.deepEqual([...menu.matchAll(/data-theme="([^"]+)"[^>]*>([^<]+)</g)].map(match => [match[1], match[2]]), [
-    ['apple', 'Glass'], ['apple-light', 'Glass Light'], ['material', 'Material'],
+    ['apple', 'Glass Dark'], ['apple-light', 'Glass Light'], ['glass-crt', 'Glass × CRT'], ['material', 'Material'],
     ['material-light', 'Material Light'], ['clustr', 'Clustr'], ['minimal', 'Minimal'], ['minimal-dark', 'Minimal Dark'], ['pure-black', 'Black'],
     ['crt', 'CRT Tube'], ['dos-amber', 'DOS Amber'], ['grassy-hill', 'Grassy Hill'],
     ['aqua-classic', 'Aqua Classic'], ['aurora-glass', 'Aurora Glass'],
@@ -77,13 +77,16 @@ test('Pro theme badges follow subscription access and keep the saved choice', ()
   const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
   const html = read('index.html');
   const proIds = [...html.matchAll(/<button[^>]+data-theme="([^"]+)"[^>]+data-pro-theme[^>]*>/g)].map(match => match[1]);
-  assert.deepEqual(proIds, ['pure-black', 'crt', 'dos-amber', 'grassy-hill', 'aqua-classic', 'aurora-glass', 'old-school-rpg']);
+  assert.deepEqual(proIds, ['glass-crt', 'material', 'material-light', 'clustr', 'minimal', 'minimal-dark', 'pure-black', 'crt', 'dos-amber', 'grassy-hill', 'aqua-classic', 'aurora-glass', 'old-school-rpg']);
+  assert.deepEqual([...html.matchAll(/<button[^>]+data-theme="([^"]+)"(?![^>]*data-pro-theme)[^>]*>/g)].map(match => match[1]), ['apple', 'apple-light']);
   const buttons = proIds.map(theme => ({
     theme, textContent: theme, disabled: true, classList: { toggle() {} },
     getAttribute(name) { return name === 'data-theme' ? this.theme : null; },
     setAttribute() {}, addEventListener() {}
   }));
   const menu = { querySelectorAll(selector) { return selector === '[data-pro-theme]' ? buttons : buttons; } };
+  const fontChoice = { value: 'theme', addEventListener(_name, handler) { this.change = handler; } };
+  const screenStyleChoice = { value: 'clean', disabled: true, addEventListener(_name, handler) { this.change = handler; } };
   const attributes = new Map();
   const storage = new Map([['clustr-theme', 'pure-black']]);
   const context = {
@@ -93,7 +96,7 @@ test('Pro theme badges follow subscription access and keep the saved choice', ()
         setAttribute: (name, value) => attributes.set(name, value),
         removeAttribute: name => attributes.delete(name)
       },
-      getElementById: id => id === 'themeMenu' ? menu : null,
+      getElementById: id => ({ themeMenu: menu, fontChoice, screenStyleChoice })[id] || null,
       querySelectorAll: () => []
     },
     localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },
@@ -106,11 +109,29 @@ test('Pro theme badges follow subscription access and keep the saved choice', ()
   assert.equal(storage.get('clustr-theme'), 'pure-black');
   context.window.ClustrThemes.applyTheme('crt');
   assert.equal(attributes.get('data-theme'), 'apple');
+  context.window.ClustrThemes.applyTheme('glass-crt');
+  assert.notEqual(attributes.get('data-screen-style'), 'crt');
   context.window.ClustrThemes.setAccess('pro');
   assert.equal(attributes.get('data-theme'), 'pure-black');
   assert.ok(buttons.every(button => !button.disabled));
+  assert.equal(screenStyleChoice.disabled, false);
+  context.window.ClustrThemes.applyTheme('glass-crt');
+  assert.equal(attributes.get('data-theme'), 'apple');
+  assert.equal(attributes.get('data-color-mode'), 'dark');
+  assert.equal(attributes.get('data-screen-style'), 'crt');
+  fontChoice.value = 'fira';
+  fontChoice.change();
+  assert.equal(attributes.get('data-font'), 'fira');
+  screenStyleChoice.value = 'clean';
+  screenStyleChoice.change();
+  assert.equal(storage.get('clustr-theme'), 'apple');
+  assert.equal(attributes.get('data-screen-style'), 'clean');
+  context.window.ClustrThemes.applyTheme('glass-crt');
   context.window.ClustrThemes.setAccess('free');
   assert.equal(attributes.get('data-theme'), 'apple');
   assert.ok(buttons.every(button => button.disabled));
-  assert.equal(storage.get('clustr-theme'), 'pure-black');
+  assert.equal(screenStyleChoice.disabled, true);
+  assert.equal(attributes.get('data-screen-style'), 'clean');
+  assert.equal(storage.get('clustr-theme'), 'glass-crt');
+  assert.equal(attributes.get('data-font'), 'fira');
 });
