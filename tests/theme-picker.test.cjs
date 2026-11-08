@@ -74,6 +74,37 @@ test('Theme picker shows only the requested choices and light variants stay ligh
   assert.equal(context.window.ClustrUtil.isLightTheme(), false);
 });
 
+test('Wallpaper themes start with wallpaper and retain an explicit off choice on reload', () => {
+  const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+  const attributes = new Map();
+  const storage = new Map([['clustr-theme', 'grassy-hill'], ['clustr-wallpaper', 'off']]);
+  const wallpaperToggle = { checked: false, addEventListener(_name, handler) { this.change = handler; } };
+  const context = {
+    document: {
+      documentElement: {
+        setAttribute: (name, value) => attributes.set(name, value),
+        removeAttribute: name => attributes.delete(name)
+      },
+      getElementById: id => id === 'wallpaperToggle' ? wallpaperToggle : null,
+      querySelectorAll: () => []
+    },
+    localStorage: { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
+    window: { matchMedia: () => ({ matches: true }) }
+  };
+  vm.createContext(context);
+  vm.runInContext(read('js/themes.js'), context);
+  assert.equal(attributes.get('data-wallpaper'), 'on');
+  assert.equal(wallpaperToggle.checked, true);
+  wallpaperToggle.checked = false;
+  wallpaperToggle.change();
+  context.window.ClustrThemes.initTheme();
+  assert.equal(attributes.get('data-wallpaper'), undefined);
+  for (const theme of ['aqua-classic', 'aurora-glass', 'grassy-hill']) {
+    context.window.ClustrThemes.applyTheme(theme);
+    assert.equal(attributes.get('data-wallpaper'), 'on');
+  }
+});
+
 test('Pro theme badges follow subscription access and keep the saved choice', () => {
   const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
   const html = read('index.html');

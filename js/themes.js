@@ -6,6 +6,7 @@
   const DEFAULT_THEME = 'apple';
   const STORAGE_KEY = 'clustr-theme';
   const WALLPAPER_KEY = 'clustr-wallpaper';
+  const WALLPAPER_CHOICE_KEY = 'clustr-wallpaper-choice';
   const FONT_KEY = 'clustr-font';
   const SURFACE_STYLE_KEY = 'clustr-surface-style';
   const SCREEN_STYLE_KEY = 'clustr-screen-style';
@@ -18,6 +19,7 @@
   const screenStyleChoice = document.getElementById('screenStyleChoice');
   const proButtons = [...(themeMenu?.querySelectorAll('[data-pro-theme]') || [])];
   const proThemes = new Set([...proButtons.map(button => button.getAttribute('data-theme')), 'glass-crt', 'minimal', 'minimal-dark']);
+  const wallpaperThemes = new Set(['grassy-hill', 'aqua-classic', 'aurora-glass']);
   let proAccess = false;
   let selectedTheme = DEFAULT_THEME;
 
@@ -97,6 +99,11 @@
     if (persist) {
       try { localStorage.setItem(STORAGE_KEY, theme); } catch (e) { /* ignore */ }
     }
+    if (wallpaperThemes.has(theme)) {
+      let explicitChoice = null;
+      try { explicitChoice = localStorage.getItem(WALLPAPER_CHOICE_KEY); } catch (e) {}
+      if (persist || explicitChoice === null) setWallpaper(true, persist);
+    }
 
     if (themeMenu) {
       themeMenu.querySelectorAll('[data-theme]').forEach(btn => {
@@ -163,16 +170,21 @@
     setScreenStyle(proAccess && (savedStyle === 'crt' || !savedStyle && retroTheme) ? 'crt' : 'clean', false);
   }
 
-  function setWallpaper(enabled) {
+  function setWallpaper(enabled, persist = true) {
     if (enabled) root.setAttribute('data-wallpaper', 'on');
     else root.removeAttribute('data-wallpaper');
     if (wallpaperToggle) wallpaperToggle.checked = enabled;
-    try { localStorage.setItem(WALLPAPER_KEY, enabled ? 'on' : 'off'); } catch (e) {}
+    if (persist) {
+      try {
+        localStorage.setItem(WALLPAPER_KEY, enabled ? 'on' : 'off');
+        localStorage.setItem(WALLPAPER_CHOICE_KEY, enabled ? 'on' : 'off');
+      } catch (e) {}
+    }
   }
 
   let wallpaperEnabled = false;
   try { wallpaperEnabled = localStorage.getItem(WALLPAPER_KEY) === 'on'; } catch (e) {}
-  setWallpaper(wallpaperEnabled);
+  setWallpaper(wallpaperEnabled, false);
   wallpaperToggle?.addEventListener('change', () => setWallpaper(wallpaperToggle.checked));
   fontChoice?.addEventListener('change', () => setFont(fontChoice.value));
   surfaceStyleChoice?.addEventListener('change', () => setSurfaceStyle(surfaceStyleChoice.value));
