@@ -40,7 +40,7 @@ test('custom domain, auth redirect and Home Screen launch use the same HTTPS roo
   const base = new URL('manifest.webmanifest', redirect);
   assert.equal(new URL(manifest.scope, base).href, redirect);
   assert.equal(new URL(manifest.start_url, base).href, redirect + '#/events');
-  assert.match(html, /js\/config\.js\?v=clustrmarket-1/);
+  assert.match(html, /<script src="js\/config\.js\?v=[^"\s]+"><\/script>/);
 });
 
 test('Home Screen icons exist with the declared PNG dimensions', () => {

@@ -111,7 +111,7 @@
   async function foundingStatus() { return request('/rest/v1/rpc/clustr_founding20_status','POST',{},await getAccessToken()); }
   async function claimFounding20() {
     const token = await getAccessToken();
-    if (!token) throw new Error('Sign in before claiming Founding 20.');
+    if (!token) throw new Error('Sign in before claiming Lifetime Pro.');
     return request('/rest/v1/rpc/clustr_claim_founding20','POST',{},token);
   }
   async function signInWithProvider(provider) { const redirect=cfg().AUTH_REDIRECT_URL || root.location.origin+root.location.pathname; const { error } = await getOAuthClient().auth.signInWithOAuth({ provider, options: { redirectTo: redirect } }); if (error) throw error; }

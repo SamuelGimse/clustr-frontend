@@ -1375,12 +1375,6 @@ html.boot-lock body {
   width: min(400px, calc(100vw - 40px));
   padding: 38px 32px 28px;
   text-align: center;
-  background: var(--glass-card, var(--panel));
-  border: 1px solid var(--glass-edge, var(--border));
-  border-radius: 32px;
-  box-shadow: var(--glass-shadow, var(--md-sys-elevation-2));
-  backdrop-filter: blur(28px) saturate(110%);
-  -webkit-backdrop-filter: blur(28px) saturate(110%);
   animation: boot-reveal 600ms cubic-bezier(.16, 1, .3, 1) both;
 }
 .boot-mark {
@@ -1417,7 +1411,7 @@ html.boot-lock body {
 @keyframes boot-ambient-drift { to { transform: translate3d(4%, -3%, 0) scale(1.08); } }
 @keyframes boot-reveal { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
 @media (max-width: 480px) {
-  .boot-panel { padding: 30px 24px 24px; border-radius: 28px; }
+  .boot-panel { padding: 30px 24px 24px; }
   .boot-wordmark { font-size: 42px; }
   .boot-steps { gap: 14px; }
 }
@@ -4752,4 +4746,16 @@ html[data-screen-style="crt"] :is(.nav-rail-btn.is-active, .cluster-card, .md-ca
   clip-path: inset(50%) !important;
   white-space: nowrap !important;
   border: 0 !important;
+}
+
+/* Account status stays with the persistent navigation. */
+.nav-pro-badge { align-self:flex-start; margin:0 8px 10px; }
+.dock-pro-badge { display:none; }
+@media (min-width:769px) {
+  html[data-theme] .page-brand-bar { display:none; }
+}
+@media (max-width:768px) {
+  html[data-theme] .top-app-bar .dock-pro-badge:not([hidden]) { display:inline-flex; padding:0; border:0; background:transparent; color:inherit; font-size:11px; gap:4px; }
+  html[data-theme] .burger-btn:has(.dock-pro-badge:not([hidden])) .burger-label { display:none; }
+  html[data-theme] .top-app-bar:has(.dock-pro-badge:not([hidden])).is-scroll-hidden { transform:none; opacity:1; visibility:visible; pointer-events:auto; }
 }

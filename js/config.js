@@ -10,6 +10,7 @@
 const SUPABASE_URL = 'https://yrykmwjcarytyroofiar.supabase.co';
 const AUTH_REDIRECT_URL = 'https://clustrmarket.com/';
 const PUBLISH_API_URL = 'http://127.0.0.1:3001';
+const VAPID_PUBLIC_KEY = 'BH8RiNUZ2hSNA3vd6hxFZ0XrCGVW5QtUFqffhhZY7sxp_K5-OUKIrwkDAlHE6-5iwUxbL6MeZ1-Y1x_XY3HWvMw';
 
 /**
  * Supabase anon / publishable key (safe for browser).
@@ -182,6 +183,7 @@ window.ClustrConfig = {
   SUPABASE_ANON_KEY,
   AUTH_REDIRECT_URL,
   PUBLISH_API_URL,
+  VAPID_PUBLIC_KEY,
   QUOTE_API_URL,
   BOOT_LINES,
   COUNTRY_COORDS,
