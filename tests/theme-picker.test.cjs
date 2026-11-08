@@ -87,8 +87,8 @@ test('Pro theme badges follow subscription access and keep the saved choice', ()
   }));
   const menu = { querySelectorAll(selector) { return selector === '[data-pro-theme]' ? buttons : buttons; } };
   const fontChoice = { value: 'theme', addEventListener(_name, handler) { this.change = handler; } };
-  const minimalOption = { disabled: true };
-  const surfaceStyleChoice = { value: 'original', querySelector: () => minimalOption, addEventListener(_name, handler) { this.change = handler; } };
+  const proStyles = [{ disabled: true }, { disabled: true }];
+  const surfaceStyleChoice = { value: 'original', querySelectorAll: () => proStyles, addEventListener(_name, handler) { this.change = handler; } };
   const screenStyleChoice = { value: 'clean', disabled: true, addEventListener(_name, handler) { this.change = handler; } };
   const attributes = new Map();
   const storage = new Map([['clustr-theme', 'pure-black']]);
@@ -117,7 +117,7 @@ test('Pro theme badges follow subscription access and keep the saved choice', ()
   context.window.ClustrThemes.setAccess('pro');
   assert.equal(attributes.get('data-theme'), 'pure-black');
   assert.ok(buttons.every(button => !button.disabled));
-  assert.equal(minimalOption.disabled, false);
+  assert.ok(proStyles.every(option => !option.disabled));
   assert.equal(screenStyleChoice.disabled, false);
   context.window.ClustrThemes.applyTheme('apple');
   surfaceStyleChoice.value = 'glass';
@@ -135,6 +135,12 @@ test('Pro theme badges follow subscription access and keep the saved choice', ()
   fontChoice.value = 'fira';
   fontChoice.change();
   assert.equal(attributes.get('data-font'), 'fira');
+  for (const font of ['roboto', 'verdana', 'cambria', 'roboto-mono']) {
+    assert.match(html, new RegExp(`<option value="${font}">`));
+    fontChoice.value = font;
+    fontChoice.change();
+    assert.equal(attributes.get('data-font'), font);
+  }
   screenStyleChoice.value = 'clean';
   screenStyleChoice.change();
   assert.equal(storage.get('clustr-theme'), 'apple');
@@ -148,14 +154,21 @@ test('Pro theme badges follow subscription access and keep the saved choice', ()
   context.window.ClustrThemes.setAccess('free');
   assert.equal(attributes.get('data-theme'), 'apple');
   assert.ok(buttons.every(button => button.disabled));
-  assert.equal(minimalOption.disabled, true);
+  assert.ok(proStyles.every(option => option.disabled));
   assert.equal(attributes.get('data-surface-style'), 'glass');
   assert.equal(screenStyleChoice.disabled, true);
   assert.equal(attributes.get('data-screen-style'), 'clean');
   assert.equal(storage.get('clustr-surface-style'), 'minimal');
-  assert.equal(attributes.get('data-font'), 'fira');
+  assert.equal(attributes.get('data-font'), 'roboto-mono');
   context.window.ClustrThemes.setAccess('pro');
   assert.equal(attributes.get('data-surface-style'), 'minimal');
+  surfaceStyleChoice.value = 'outline';
+  surfaceStyleChoice.change();
+  assert.equal(attributes.get('data-surface-style'), 'outline');
+  context.window.ClustrThemes.setAccess('free');
+  assert.equal(attributes.get('data-surface-style'), 'glass');
+  context.window.ClustrThemes.setAccess('pro');
+  assert.equal(attributes.get('data-surface-style'), 'outline');
   storage.set('clustr-theme', 'glass-crt');
   context.window.ClustrThemes.initTheme();
   context.window.ClustrThemes.setAccess('pro');

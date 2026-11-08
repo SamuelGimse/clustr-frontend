@@ -22,7 +22,7 @@
   let selectedTheme = DEFAULT_THEME;
 
   function setFont(value) {
-    const font = ['sans', 'serif', 'mono', 'fira'].includes(value) ? value : 'theme';
+    const font = ['sans', 'roboto', 'verdana', 'serif', 'cambria', 'mono', 'roboto-mono', 'fira'].includes(value) ? value : 'theme';
     if (font === 'theme') root.removeAttribute('data-font');
     else root.setAttribute('data-font', font);
     if (fontChoice) fontChoice.value = font;
@@ -40,8 +40,8 @@
   }
 
   function setSurfaceStyle(value, persist = true) {
-    if (value === 'minimal' && !proAccess) return;
-    const style = ['glass', 'minimal'].includes(value) ? value : 'original';
+    if (['minimal', 'outline'].includes(value) && !proAccess) return;
+    const style = ['glass', 'minimal', 'outline'].includes(value) ? value : 'original';
     if (style === 'original') root.removeAttribute('data-surface-style');
     else root.setAttribute('data-surface-style', style);
     if (surfaceStyleChoice) surfaceStyleChoice.value = style;
@@ -148,8 +148,7 @@
       button.title = proAccess ? 'Pro theme' : 'Available with Pro';
     });
     if (screenStyleChoice) screenStyleChoice.disabled = !proAccess;
-    const minimalOption = surfaceStyleChoice?.querySelector('option[value="minimal"]');
-    if (minimalOption) minimalOption.disabled = !proAccess;
+    surfaceStyleChoice?.querySelectorAll('[data-pro-style]').forEach(option => { option.disabled = !proAccess; });
     let saved;
     try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) { /* ignore */ }
     if (proAccess && proThemes.has(saved)) applyTheme(saved, false);
@@ -157,7 +156,7 @@
     let savedSurfaceStyle;
     try { savedSurfaceStyle = localStorage.getItem(SURFACE_STYLE_KEY); } catch (e) { /* ignore */ }
     const surfaceStyle = savedSurfaceStyle || (selectedTheme === 'apple' || selectedTheme === 'apple-light' ? 'glass' : 'original');
-    setSurfaceStyle(!proAccess && surfaceStyle === 'minimal' ? 'glass' : surfaceStyle, false);
+    setSurfaceStyle(!proAccess && ['minimal', 'outline'].includes(surfaceStyle) ? 'glass' : surfaceStyle, false);
     let savedStyle;
     try { savedStyle = localStorage.getItem(SCREEN_STYLE_KEY); } catch (e) { /* ignore */ }
     const retroTheme = ['crt', 'dos-amber'].includes(selectedTheme);
