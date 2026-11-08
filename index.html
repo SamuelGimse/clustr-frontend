@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Clustr — world events mapped to stocks for retail investors." />
   <title>Clustr</title>
+  <link rel="icon" type="image/svg+xml" sizes="any" href="favicon.svg?v=1" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=mobile-audit-1" />
+  <link rel="stylesheet" href="styles.css?v=brand-logo-1" />
   <link rel="stylesheet" href="polymarket.css?v=1" />
 </head>
 <body>
@@ -56,16 +57,6 @@
     </div>
   </div>
 
-  <!-- Mobile sticky top bar + burger -->
-  <div class="mobile-topbar" id="mobileTopbar">
-    <button type="button" id="burgerBtn" class="burger-btn" aria-label="Open menu" aria-expanded="false" aria-controls="side">
-      <span class="burger-lines" aria-hidden="true">
-        <span></span><span></span><span></span>
-      </span>
-    </button>
-    <div class="mobile-brand">clustr</div>
-    <span class="pro-badge" data-pro-badge hidden></span>
-  </div>
   <div class="nav-backdrop" id="navBackdrop" hidden></div>
 
   <div class="shell">
@@ -171,7 +162,11 @@
     <main class="main" id="main">
       <header class="top-app-bar">
         <div class="top-app-bar-text">
-          <div class="app-brand-row"><div class="brand">clustr</div><span class="pro-badge" data-pro-badge hidden></span></div>
+          <div class="app-brand-row">
+            <button type="button" id="burgerBtn" class="burger-btn" aria-label="Open menu" aria-expanded="false" aria-controls="side"><span class="burger-lines" aria-hidden="true"><span></span><span></span><span></span></span></button>
+            <div class="brand"><img class="brand-mark" src="favicon.svg?v=1" width="24" height="24" alt="" aria-hidden="true" />clustr</div>
+            <span class="pro-badge" data-pro-badge hidden></span>
+          </div>
           <div class="tagline">World events. Mapped to stocks.</div>
         </div>
         <div class="publish-nav" aria-label="Publish navigation">
@@ -296,7 +291,7 @@
   <script src="js/themes.js?v=mobile-audit-1"></script>
   <script src="js/map.js?v=repo-exact"></script>
   <script src="js/mindmap.js?v=mobile-audit-1"></script>
-  <script src="js/render.js?v=card-spacing-2"></script>
+  <script src="js/render.js?v=stance-badge-1"></script>
   <script src="js/signal.js?v=repo-exact"></script>
   <script src="js/polymarket.js?v=1"></script>
   <script src="js/app.js?v=admin-pro-1"></script>

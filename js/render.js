@@ -632,7 +632,7 @@
   }
 
   /**
-   * Stance badge + button (panel mounts in .stance-aside).
+   * Stance badge; history is available in the expanded chart tabs.
    * @param {Object} group
    * @param {number|null} _sectorAvg
    * @returns {string}
@@ -665,14 +665,6 @@
 
     return `
       <div class="stance-wrap">
-        <button type="button" class="stance-history-icon-btn" data-stance-history="1"
-          title="Stance history" aria-label="Stance history">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-            <path d="M3 12a9 9 0 1 0 9-9"/>
-            <path d="M3 4v5h5"/>
-            <path d="M12 7v5l3 2"/>
-          </svg>
-        </button>
       <div class="stance stance-${util.escapeHtml(stance)}">
           <div class="stance-title">${util.escapeHtml(stanceText.split(' — ')[0])}</div>
           <div class="stance-sub">${util.escapeHtml(

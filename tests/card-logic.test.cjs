@@ -15,6 +15,7 @@ assert.equal(util.exponentialMeanRating([null, '', undefined]), null);
 assert(util.exponentialMeanRating([1, 0, 0, 0]) >= 0);
 assert.match(audit.clusterScoreHtml({articles:[{rating:1}]}), /POS/);
 assert.match(audit.stanceHtml({articles:[{rating:1}]}), /Constructive/);
+assert(!audit.stanceHtml({articles:[{rating:1}]}).includes('data-stance-history'));
 assert(!audit.clusterScoreHtml({articles:[{rating:0}]}).includes('NO SCORES'));
 assert.equal(audit.historyRowScore({stance:'constructive'}), null);
 assert.equal(audit.historyRowScore({stanceScore:0}), 0);
