@@ -53,18 +53,31 @@ test('Cumulative stance uses the last publish per US calendar day, retains zero 
   assert.deepEqual(plain(audit.stanceChartSeries(midnight, { cumulativeStance: true }).stanceData.map(point => point.y)), [3, 7]);
 });
 
-test('A missing price interval breaks the cumulative chain instead of inventing later performance', () => {
+test('Missing prices leave gaps and later segments restart at zero without inventing whole-period performance', () => {
   const { audit } = setup();
   const incomplete = rows.map((row, i) => ({ ...row, defaultRet: i === 1 ? null : row.defaultRet }));
   const series = audit.stanceChartSeries(incomplete, { cumulativePrice: true });
   assert.equal(series.retData[0].y, 0); near(series.retData[1].y, 10);
-  assert.deepEqual(plain(series.retData.slice(2).map(point => point.y)), [null, null]);
+  assert.deepEqual(plain(series.retData.slice(2).map(point => point.y)), [null, 0, 0]);
+  assert.equal(series.retData[3].baseline, true);
+  assert.equal(series.retData[3].segment, 2);
+  assert.equal(series.priceSegments, 2);
   assert.equal(series.priceIncomplete, true);
   assert.deepEqual(plain(audit.stanceChartSeries(incomplete).retData.map(point => point.y)), [10, null, 0]);
   for (const bad of [Infinity, NaN, -101]) {
-    assert.equal(audit.stanceChartSeries([{ ...rows[0], defaultRet: bad }], { cumulativePrice: true }).retData[1].y, null);
+    assert.equal(audit.stanceChartSeries([{ ...rows[0], defaultRet: bad }], { cumulativePrice: true }).retData[0].y, null);
   }
   near(audit.stanceChartSeries([{ ...rows[0], defaultRet: -100 }, rows[1]], { cumulativePrice: true }).retData[2].y, -100);
+});
+
+test('Missing leading prices do not create a false baseline or hide later usable returns', () => {
+  const { audit } = setup();
+  const series = audit.stanceChartSeries(rows.map((row, i) => ({ ...row, defaultRet: i === 0 ? null : 5 })), { cumulativePrice: true });
+  assert.equal(series.retData[0].y, null);
+  assert.equal(series.retData[1].baseline, true);
+  assert.equal(series.retData[1].x, Date.parse(rows[1].date));
+  near(series.retData[2].y, 5); near(series.retData[3].y, 10.25);
+  assert.equal(series.priceSegments, 1);
 });
 
 test('Switches independently rebuild the chart, preserve zero-centered axes and restore original data', () => {

@@ -419,17 +419,33 @@
         g => String(g.name || '').trim().toLowerCase() === name
       );
       if (!match) continue;
-      // ONLY cluster defaults (fixed / default list)
-      const defaults = match.fixed_stocks || match.default_stocks || [];
+      // Other links can supply same-publish prices, but never expand the default basket.
+      const prices = {}, ranks = {};
+      const util = window.ClustrUtil;
+      const priceFields = ['fixed_stocks', 'default_stocks', 'default_symbols', 'mentioned_stocks', 'close_stocks', 'direct_stocks', 'original_stocks', 'related_stocks', 'stocks', 'connected_winners', 'connected_losers', 'movers'];
+      for (const group of groups) for (const field of priceFields) for (const stock of Array.isArray(group[field]) ? group[field] : []) {
+        if (!stock || typeof stock !== 'object' || stock.resolved === false) continue;
+        if (String(stock.market || group.market || p.market).toUpperCase() !== String(p.market).toUpperCase()) continue;
+        const symbol = util.normalizeSymbol(stock.symbol);
+        if (!util.isQuoteSymbol(symbol)) continue;
+        for (const [rank, value] of [stock.priceAtPublish, stock.price_at_publish, stock.price].entries()) {
+          if (!['number', 'string'].includes(typeof value) || String(value).trim() === '' || !Number.isFinite(Number(value)) || Number(value) <= 0) continue;
+          if (!(symbol in prices) || rank < ranks[symbol]) { prices[symbol] = Number(value); ranks[symbol] = rank; }
+          break;
+        }
+      }
+      const defaults = ['fixed_stocks', 'default_stocks', 'default_symbols'].flatMap(field => Array.isArray(match[field]) ? match[field] : []);
       const seen = new Set();
       const defs = [];
-      for (const s of defaults) {
-        const sym = String((s && s.symbol) || '').toUpperCase();
-        if (!sym || seen.has(sym)) continue;
+      for (const raw of defaults) {
+        const s = typeof raw === 'string' ? { symbol: raw } : raw;
+        const sym = util.normalizeSymbol(s?.symbol);
+        if (s?.resolved === false || !util.isQuoteSymbol(sym) || seen.has(sym)) continue;
+        if (String(s.market || match.market || p.market).toUpperCase() !== String(p.market).toUpperCase()) continue;
         seen.add(sym);
         defs.push({
           symbol: sym,
-          priceAtPublish: s.priceAtPublish ?? s.price ?? null
+          priceAtPublish: prices[sym] ?? null
         });
       }
       const stanceScore = window.ClustrUtil.articleImpactScore((match.articles || []).map(article => article.rating ?? article.score)) ?? window.ClustrUtil.numericStance(match.stance_score ?? match.cluster_score);
@@ -441,7 +457,8 @@
         date: p.created_at || '',
         title: p.title || '',
         publishId: p.id,
-        defaults: defs
+        defaults: defs,
+        prices
       });
     }
     return rows;

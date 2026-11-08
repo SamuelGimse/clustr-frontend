@@ -242,7 +242,8 @@
     const symSet = new Set();
     for (const h of useLatestQuote ? history.slice(-1) : []) {
       for (const s of h.defaults || []) {
-        if (s.symbol) symSet.add(U().normalizeSymbol(s.symbol));
+        const symbol = typeof s === 'string' ? s : s?.symbol;
+        if (symbol) symSet.add(U().normalizeSymbol(symbol));
       }
     }
 
@@ -255,13 +256,15 @@
       }
     }
 
-    function priceMapFromDefaults(defaults) {
+    function priceMapFromDefaults(defaults, prices = {}) {
       const map = {};
-      for (const s of defaults || []) {
-        const sym = U().normalizeSymbol(s.symbol);
+      for (const raw of defaults || []) {
+        const s = typeof raw === 'string' ? { symbol: raw } : raw;
+        const sym = U().normalizeSymbol(s?.symbol);
         if (!sym) continue;
-        const px = s.priceAtPublish ?? s.price;
-        if (px == null || Number(px) === 0) continue;
+        const px = [s.priceAtPublish, s.price_at_publish, s.price, prices[sym]].find(value =>
+          ['number', 'string'].includes(typeof value) && String(value).trim() !== '' && Number.isFinite(Number(value)) && Number(value) > 0);
+        if (px == null) continue;
         map[sym] = Number(px);
       }
       return map;
@@ -269,7 +272,7 @@
 
     return history.map((h, i) => {
       const isLast = i === history.length - 1;
-      const startMap = priceMapFromDefaults(h.defaults);
+      const startMap = priceMapFromDefaults(h.defaults, h.prices);
       let endMap = {};
       let priceBasis = 'next';
 
@@ -280,7 +283,8 @@
           if (live && live.price != null && (!Number.isFinite(Date.parse(live.asOf)) || Date.parse(live.asOf) >= Date.parse(h.date))) endMap[sym] = Number(live.price);
         }
       } else {
-        endMap = priceMapFromDefaults(history[i + 1].defaults);
+        const next = history[i + 1];
+        endMap = { ...next.prices, ...priceMapFromDefaults(next.defaults, next.prices) };
       }
 
       const deltas = [];
@@ -288,7 +292,8 @@
         const pub = startMap[sym];
         const fwd = endMap[sym];
         if (!Number.isFinite(fwd) || fwd < 0 || !Number.isFinite(pub) || pub <= 0) continue;
-        deltas.push(((fwd - pub) / pub) * 100);
+        const change = ((fwd - pub) / pub) * 100;
+        if (Number.isFinite(change)) deltas.push(change);
       }
 
       const defaultRet =
@@ -368,22 +373,28 @@
       if (score != null) totalStance += score;
       return { x: Date.parse(row.date), y: score == null ? null : cumulativeStance ? totalStance : score };
     });
-    let wealth = 1, priceIncomplete = false;
-    const retData = cumulativePrice ? [{ x: timestamps[0], y: 0, baseline: true }] : [];
+    let wealth = 1, priceIncomplete = false, segmentOpen = false, priceSegments = 0, pricedIntervals = 0;
+    const retData = [];
     rows.forEach((row, i) => {
       const value = row.defaultRet;
       let y = Number.isFinite(value) && value >= -100 ? value : null;
+      if (y != null) pricedIntervals++;
       if (cumulativePrice) {
-        if (y == null) priceIncomplete = true;
-        if (!priceIncomplete) {
+        if (y == null) {
+          priceIncomplete = true; segmentOpen = false;
+        } else {
+          if (!segmentOpen) {
+            wealth = 1; segmentOpen = true; priceSegments++;
+            retData.push({ x: timestamps[i], y: 0, baseline: true, segment: priceSegments });
+          }
           wealth *= 1 + y / 100;
-          if (!Number.isFinite(wealth)) priceIncomplete = true;
+          if (!Number.isFinite(wealth)) { priceIncomplete = true; segmentOpen = false; }
         }
-        y = priceIncomplete ? null : (wealth - 1) * 100;
+        y = !segmentOpen ? null : (wealth - 1) * 100;
       }
-      retData.push({ x: timestamps[i + 1] ?? lastTime, y, source: row });
+      retData.push({ x: timestamps[i + 1] ?? lastTime, y, source: row, segment: cumulativePrice ? priceSegments : undefined });
     });
-    return { stanceData, retData, priceIncomplete };
+    return { stanceData, retData, priceIncomplete, priceSegments, pricedIntervals };
   }
 
   /**
@@ -445,7 +456,7 @@
             spanGaps: false
           },
           {
-            label: cumulativePrice ? 'Cumulative matched-default return %' : 'Defaults → next publish / latest quote %',
+            label: cumulativePrice ? series.priceSegments > 1 ? 'Cumulative price % · rebased at gaps' : 'Cumulative matched-default return %' : 'Defaults → next publish / latest quote %',
             data: retData,
             yAxisID: 'yRet',
             borderColor: accent,
@@ -480,8 +491,8 @@
               title: items => items[0] ? new Date(items[0].parsed.x).toLocaleString() : '',
               label: item => item.datasetIndex === 0
                 ? `${cumulativeStance ? 'Cumulative stance index' : 'Stance'}: ${item.parsed.y ?? 'unavailable'}`
-                : item.raw.baseline ? 'Price baseline: 0%'
-                : `${cumulativePrice ? 'Compounded matched-default return' : 'Interval return'}: ${U().formatPct(item.parsed.y)} · ${item.raw.source.sampleN}/${item.raw.source.totalN} stocks priced · ${item.raw.source.priceBasis}`
+                : item.raw.baseline ? `Price segment ${item.raw.segment} baseline: 0%`
+                : `${cumulativePrice ? `Segment ${item.raw.segment} compounded return` : 'Interval return'}: ${U().formatPct(item.parsed.y)} · ${item.raw.source.sampleN}/${item.raw.source.totalN} stocks priced · ${item.raw.source.priceBasis}`
             }
           }
         },
@@ -553,7 +564,9 @@
       const series = mountStanceChart(canvas, enriched, { cumulativeStance, cumulativePrice });
       const stanceNote = cumulativeStance ? 'Stance sums the latest score per US calendar day; missing scores remain gaps. This is an index, not a percentage.' : 'Stance shows each publish’s score (−10 to +10).';
       const priceNote = cumulativePrice ? 'Price compounds equal-weight returns for matched default stocks, rebalanced at each publish; basket membership and coverage can change. This is not a fixed-basket buy-and-hold return.' : 'Price shows each interval return to the next publish or latest available quote.';
-      if (note) note.textContent = `${stanceNote} ${priceNote}${cumulativePrice && series?.priceIncomplete ? ' Cumulative price stops at the first missing interval. Turn it off to see later interval returns.' : ''} Summary cards below remain interval averages.`;
+      const gapNote = cumulativePrice && series?.priceIncomplete ? ' Missing intervals remain gaps. Later priced segments restart at 0%; segments are not a continuous whole-period return.' : '';
+      const emptyNote = series?.pricedIntervals === 0 ? ' No comparable prices are available for this cluster yet.' : '';
+      if (note) note.textContent = `${stanceNote} ${priceNote}${gapNote}${emptyNote} Summary cards below remain interval averages.`;
     };
     for (const toggle of [stanceToggle, priceToggle]) toggle?.addEventListener('click', () => {
       toggle.setAttribute('aria-checked', String(toggle.getAttribute('aria-checked') !== 'true'));

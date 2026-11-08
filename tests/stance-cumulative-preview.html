@@ -7,7 +7,7 @@
 <script>
 fetch('../js/render.js').then(response=>response.text()).then(source=>{
   new Function(source.replace('  window.ClustrRender = {','  window.ChartPreview = { mountStanceHistory, stanceChartShellHtml };\n  window.ClustrRender = {'))();
-  const rows=[-6,-6,2,1,-3,5,4,4].map((stanceScore,index)=>({date:new Date(Date.now()-(8-index)*86400000).toISOString(),stanceScore,defaultRet:[2,-1,3,-2,1,2,-1,.5][index],priceBasis:index===7?'latest quote':'next',sampleN:index===3?2:3,totalN:3}));
+  const rows=[-6,-6,2,1,-3,5,4,4].map((stanceScore,index)=>({date:new Date(Date.now()-(8-index)*86400000).toISOString(),stanceScore,defaultRet:[null,-1,3,null,1,2,-1,.5][index],priceBasis:index===7?'latest quote':'next',sampleN:index===0||index===3?0:3,totalN:3}));
   const host=document.getElementById('chart');host.innerHTML=ChartPreview.stanceChartShellHtml();ChartPreview.mountStanceHistory(host,rows);
 });
 </script></body></html>
