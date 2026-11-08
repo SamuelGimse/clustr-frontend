@@ -10,7 +10,7 @@
     winner: ['connected_winners'], loser: ['connected_losers'], mover: ['movers'],
     linked: ['stocks']
   };
-  const LABELS = { mentioned: 'Article mention', close: 'Close link', related: 'Related stock', defaults: 'Cluster default', winner: 'Connected winner', loser: 'Connected loser', mover: 'Session mover', linked: 'Cluster link' };
+  const LABELS = { mentioned: 'Article mention', close: 'Close link', related: 'Related stock', defaults: 'Theme comparison basket', winner: 'Connected winner', loser: 'Connected loser', mover: 'Session mover', linked: 'Cluster link' };
   let root, items = [], selected = '', mode = 'clusters', query = '';
   let generation = 0, active = false, listScroll = 0;
   let reportData=[];
@@ -141,7 +141,7 @@
     detail.innerHTML = `<button type="button" class="stocks-back" data-stock-back><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>Back to stocks</button>
       <div class="stocks-selection"><div><span class="stocks-eyebrow">${esc(stock.market)} · STOCK CONNECTIONS</span><h2 id="stocksSelectedHeading" tabindex="-1">${esc(stock.symbol)}</h2><p>${esc(stock.name)}</p></div><span class="stocks-selection-count">${stock.links.size}<small>linked clusters</small></span></div>
       <fieldset class="stocks-link-filter"><legend>Show connections</legend><label><input type="radio" name="stock-links" value="articles" ${mode === 'articles' ? 'checked' : ''}><span>Mentioned in articles <b>${articleLinks.length}</b></span></label><label><input type="radio" name="stock-links" value="clusters" ${mode === 'clusters' ? 'checked' : ''}><span>Mentioned in clusters <b>${stock.links.size}</b></span></label></fieldset>
-      <p class="stocks-filter-note">${mode === 'articles' ? 'Explicit mentions recorded in source articles.' : 'All links: article mentions, close links, related stocks and cluster defaults.'} Impact scores describe clusters, not stock returns.</p>
+      <p class="stocks-filter-note">${mode === 'articles' ? 'Explicit mentions recorded in source articles.' : 'All links: article mentions, close links, related stocks and theme comparison baskets.'} Impact scores describe clusters, not stock returns.</p>
       <p class="stocks-link-count" role="status">${links.length} linked cluster${links.length === 1 ? '' : 's'}</p>
       <div class="stocks-clusters">${links.length ? links.map(clusterHtml).join('') : '<p class="stocks-empty">No explicit article mentions for this stock in the last seven days. Choose “Mentioned in clusters” to see its other links.</p>'}</div>`;
   }

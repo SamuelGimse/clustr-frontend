@@ -755,7 +755,7 @@
     const mentioned = group.mentioned_stocks || [];
     const close = group.close_stocks || group.direct_stocks || [];
     const original = group.original_stocks || group.related_stocks || [];
-    const fixed = String(group.name || group.group || '').trim().toLowerCase() === 'earnings shocks' ? [] : group.fixed_stocks || group.default_stocks || [];
+    const fixed = (window.ClustrTaxonomy?.defaultBasketAllowed(group.name || group.group) ?? true) ? group.fixed_stocks || group.default_stocks || [] : [];
     const winners =
       group.connected_winners ||
       (group.movers || []).filter(

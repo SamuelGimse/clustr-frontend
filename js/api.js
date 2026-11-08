@@ -329,7 +329,7 @@
       if (Array.isArray(rows) && rows.length) {
         return rows.filter(r => Date.parse(r.created_at) <= historyContext(context).cutoff).map(r => {
           // ONLY cluster defaults — never close links / stocks bag
-          const defaults = String(name).toLowerCase().trim() === 'earnings shocks' ? [] : Array.isArray(r.fixed_stocks) ? r.fixed_stocks : [];
+          const defaults = !window.ClustrTaxonomy.defaultBasketAllowed(name) ? [] : Array.isArray(r.fixed_stocks) ? r.fixed_stocks : [];
           const seen = new Set();
           const defs = [];
           for (const s of defaults) {

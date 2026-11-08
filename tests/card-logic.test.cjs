@@ -10,6 +10,15 @@ const util = context.window.ClustrUtil;
 let renderSource = read('render.js');
 vm.runInContext(renderSource.replace('  window.ClustrRender = {', '  window.audit = {stockBuckets, sameEventHtml, clusterScoreHtml, stanceHtml, historyRowScore, basketSincePublish, weeklyVelocity, attachDefaultReturns, mountStanceChart, renderRelatedClusters};\n  window.ClustrRender = {'), context);
 const audit = context.window.audit;
+context.window.ClustrTaxonomy = require('../js/cluster-taxonomy.js');
+for (const name of ['Earnings shocks','Regulation & policy','Climate & disasters','Aviation accidents','Crypto hacks','Other','Fusion energy']) {
+  const input = {name,fixed_stocks:[{symbol:'AAPL'}],default_symbols:['AAPL'],mentioned_stocks:[{symbol:'LLY'}]};
+  const [clean] = context.window.ClustrTaxonomy.mergeGroups([input]);
+  assert.equal(clean.fixed_stocks.length,0);
+  assert.equal(clean.default_symbols.length,0);
+  assert.equal(clean.mentioned_stocks[0].symbol,'LLY');
+  assert(!audit.stockBuckets(input).groups.some(g=>g.id==='fixed'));
+}
 const legacyEarnings = {name:'Earnings shocks',fixed_stocks:[{symbol:'AAPL'}],default_symbols:['AAPL'],mentioned_stocks:[{symbol:'KDP'}],articles:[{rating:3}]};
 const [cleanEarnings] = require('../js/cluster-taxonomy.js').mergeGroups([legacyEarnings]);
 assert.equal(cleanEarnings.fixed_stocks.length,0);

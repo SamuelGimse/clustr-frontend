@@ -29,6 +29,10 @@
     return aliases.get(normalize(cleaned)) || cleaned;
   }
 
+  function defaultBasketAllowed(name) {
+    return !['earnings shocks', 'regulation and policy', 'climate and disasters', 'aviation accidents', 'crypto hacks', 'other', 'fusion energy'].includes(normalize(canonicalName(name)));
+  }
+
   function clusterScore(articles) {
     const events = new Map();
     articles.forEach((article, index) => {
@@ -75,7 +79,7 @@
       const group = { ...sourceGroup, ...(Array.isArray(sourceGroup.articles) ? { articles: sourceGroup.articles.map(a => a.event_id ? { ...a, event_id: `${normalize(original)}:${a.event_id}` } : a) } : {}) };
       const name = canonicalName(original);
       if (!name) continue;
-      if (normalize(name) === 'earnings shocks') {
+      if (!defaultBasketAllowed(name)) {
         group.fixed_stocks = [];
         group.default_stocks = [];
         group.default_symbols = [];
@@ -114,5 +118,5 @@
     });
   }
 
-  return { families, canonicalName, clusterScore, mergeGroups };
+  return { families, canonicalName, clusterScore, mergeGroups, defaultBasketAllowed };
 });
