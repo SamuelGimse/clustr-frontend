@@ -230,9 +230,53 @@
     return out;
   }
 
+  const historyCache = new Map();
+  async function getHistoricalPrices(symbols, dates, market = 'US') {
+    const times = dates.map(Date.parse).filter(Number.isFinite);
+    if (!times.length || !['US', 'NO'].includes(market)) return {};
+    const from = new Date(Math.max(Math.min(...times), Date.now() - 710 * 86400000)).toISOString();
+    const to = new Date(Math.min(Date.now(), Math.max(...times))).toISOString();
+    const { url, key: anon } = creds();
+    if (!url || !anon) return {};
+    const list = [...new Set(symbols.map(key).filter(Boolean))];
+    const out = {};
+    let next = 0;
+    await Promise.all(Array.from({ length: Math.min(4, list.length) }, async () => {
+      while (next < list.length) {
+        const symbol = list[next++];
+        const cacheKey = [symbol, market, from, to].join(':');
+        let hit = historyCache.get(cacheKey);
+        if (!hit || hit.expires <= Date.now()) {
+          const promise = (async () => {
+            try {
+              const rows = [];
+              for (let start = Date.parse(from); start <= Date.parse(to);) {
+                const end = Math.min(start + 90 * 86400000, Date.parse(to));
+                const params = new URLSearchParams({ symbol, market, from: new Date(start).toISOString(), to: new Date(end).toISOString() });
+                const res = await fetch(url + '/functions/v1/price-history?' + params, { headers: authHeaders(), signal: AbortSignal.timeout(15000) });
+                if (!res.ok) throw new Error('Historical prices HTTP ' + res.status);
+                const data = await res.json();
+                if (Array.isArray(data.prices)) rows.push(...data.prices);
+                start = end + 1;
+              }
+              return rows;
+            } catch { return []; }
+          })();
+          hit = { promise, expires: Date.now() + 3600000 };
+          if (historyCache.size >= 256) historyCache.delete(historyCache.keys().next().value);
+          historyCache.set(cacheKey, hit);
+          promise.then(rows => { if (!rows.length) hit.expires = Date.now() + 60000; });
+        }
+        out[symbol] = await hit.promise;
+      }
+    }));
+    return out;
+  }
+
   window.ClustrQuotes = {
     getQuote: getQuote,
     getQuotes: getQuotes,
+    getHistoricalPrices: getHistoricalPrices,
     isEnabled: function () {
       const c = creds();
       return !!(c.url && c.key);

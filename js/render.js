@@ -270,6 +270,32 @@
       return map;
     }
 
+    const missingSymbols = new Set();
+    history.slice(0, -1).forEach((h, i) => {
+      const start = priceMapFromDefaults(h.defaults, h.prices);
+      const next = history[i + 1];
+      const end = { ...next.prices, ...priceMapFromDefaults(next.defaults, next.prices) };
+      for (const raw of h.defaults || []) {
+        const symbol = U().normalizeSymbol(typeof raw === 'string' ? raw : raw?.symbol);
+        if (symbol && (!(start[symbol] > 0) || !(end[symbol] > 0))) missingSymbols.add(symbol);
+      }
+    });
+    let historical = {};
+    if (missingSymbols.size && window.ClustrQuotes?.getHistoricalPrices) {
+      try { historical = await window.ClustrQuotes.getHistoricalPrices([...missingSymbols], history.map(h => h.date), context.market || selected?.market || 'US'); }
+      catch (err) { console.warn('Historical price backfill unavailable', err); }
+    }
+    function historicalAt(symbol, date) {
+      const target = Date.parse(date);
+      let best = null;
+      for (const point of historical[symbol] || []) {
+        const time = Date.parse(point.asOf);
+        if (Number.isFinite(time) && time <= target && target - time <= 7 * 86400000 &&
+            typeof point.price === 'number' && Number.isFinite(point.price) && point.price > 0 && (!best || time > best.time)) best = { price: point.price, time };
+      }
+      return best?.price;
+    }
+
     return history.map((h, i) => {
       const isLast = i === history.length - 1;
       const startMap = priceMapFromDefaults(h.defaults, h.prices);
@@ -288,6 +314,21 @@
       }
 
       const deltas = [];
+      let historicalN = 0;
+      if (!isLast) {
+        for (const raw of h.defaults || []) {
+          const symbol = U().normalizeSymbol(typeof raw === 'string' ? raw : raw?.symbol);
+          if (startMap[symbol] > 0 && endMap[symbol] > 0) continue;
+          // Use both historical endpoints together; don't mix split-adjusted history with raw snapshots.
+          const start = historicalAt(symbol, h.date);
+          const end = historicalAt(symbol, history[i + 1].date);
+          if (start > 0 && end > 0) {
+            startMap[symbol] = start;
+            endMap[symbol] = end;
+            historicalN++;
+          }
+        }
+      }
       for (const sym of Object.keys(startMap)) {
         const pub = startMap[sym];
         const fwd = endMap[sym];
@@ -300,7 +341,8 @@
         deltas.length > 0
           ? deltas.reduce((a, b) => a + b, 0) / deltas.length
           : null;
-      return { ...h, defaultRet, sampleN: deltas.length, totalN: (h.defaults || []).length, priceBasis };
+      if (historicalN) priceBasis = 'next · historical hourly backfill (' + historicalN + ')';
+      return { ...h, defaultRet, sampleN: deltas.length, totalN: (h.defaults || []).length, priceBasis, historicalN };
     });
   }
 
@@ -384,8 +426,8 @@
           priceIncomplete = true; segmentOpen = false;
         } else {
           if (!segmentOpen) {
-            wealth = 1; segmentOpen = true; priceSegments++;
-            retData.push({ x: timestamps[i], y: 0, baseline: true, segment: priceSegments });
+            segmentOpen = true; priceSegments++;
+            retData.push({ x: timestamps[i], y: (wealth - 1) * 100, baseline: true, segment: priceSegments });
           }
           wealth *= 1 + y / 100;
           if (!Number.isFinite(wealth)) { priceIncomplete = true; segmentOpen = false; }
@@ -456,7 +498,7 @@
             spanGaps: false
           },
           {
-            label: cumulativePrice ? series.priceSegments > 1 ? 'Cumulative price % · rebased at gaps' : 'Cumulative matched-default return %' : 'Defaults → next publish / latest quote %',
+            label: cumulativePrice ? series.priceIncomplete ? 'Partial cumulative price % · missing intervals excluded' : 'Cumulative matched-default return %' : 'Defaults → next publish / latest quote %',
             data: retData,
             yAxisID: 'yRet',
             borderColor: accent,
@@ -491,8 +533,8 @@
               title: items => items[0] ? new Date(items[0].parsed.x).toLocaleString() : '',
               label: item => item.datasetIndex === 0
                 ? `${cumulativeStance ? 'Cumulative stance index' : 'Stance'}: ${item.parsed.y ?? 'unavailable'}`
-                : item.raw.baseline ? `Price segment ${item.raw.segment} baseline: 0%`
-                : `${cumulativePrice ? `Segment ${item.raw.segment} compounded return` : 'Interval return'}: ${U().formatPct(item.parsed.y)} · ${item.raw.source.sampleN}/${item.raw.source.totalN} stocks priced · ${item.raw.source.priceBasis}`
+                : item.raw.baseline ? `Accumulation ${item.raw.segment > 1 ? 'resumes' : 'starts'}: ${U().formatPct(item.parsed.y)}`
+                : `${cumulativePrice ? 'Compounded priced intervals' : 'Interval return'}: ${U().formatPct(item.parsed.y)} · ${item.raw.source.sampleN}/${item.raw.source.totalN} stocks priced · ${item.raw.source.priceBasis}`
             }
           }
         },
@@ -564,9 +606,10 @@
       const series = mountStanceChart(canvas, enriched, { cumulativeStance, cumulativePrice });
       const stanceNote = cumulativeStance ? 'Stance sums the latest score per US calendar day; missing scores remain gaps. This is an index, not a percentage.' : 'Stance shows each publish’s score (−10 to +10).';
       const priceNote = cumulativePrice ? 'Price compounds equal-weight returns for matched default stocks, rebalanced at each publish; basket membership and coverage can change. This is not a fixed-basket buy-and-hold return.' : 'Price shows each interval return to the next publish or latest available quote.';
-      const gapNote = cumulativePrice && series?.priceIncomplete ? ' Missing intervals remain gaps. Later priced segments restart at 0%; segments are not a continuous whole-period return.' : '';
+      const gapNote = cumulativePrice && series?.priceIncomplete ? ' Unpriced intervals remain gaps and are excluded. Accumulation resumes from the last known value, never resets to 0%. This partial index is not a complete whole-period return.' : '';
+      const historyNote = enriched.some(row => row.historicalN > 0) ? ' Missing snapshots are backfilled using completed historical hourly bars at or before each publish (up to 7 days old); these are approximate publish-time prices, not exact executions.' : '';
       const emptyNote = series?.pricedIntervals === 0 ? ' No comparable prices are available for this cluster yet.' : '';
-      if (note) note.textContent = `${stanceNote} ${priceNote}${gapNote}${emptyNote} Summary cards below remain interval averages.`;
+      if (note) note.textContent = `${stanceNote} ${priceNote}${historyNote}${gapNote}${emptyNote} Summary cards below remain interval averages.`;
     };
     for (const toggle of [stanceToggle, priceToggle]) toggle?.addEventListener('click', () => {
       toggle.setAttribute('aria-checked', String(toggle.getAttribute('aria-checked') !== 'true'));

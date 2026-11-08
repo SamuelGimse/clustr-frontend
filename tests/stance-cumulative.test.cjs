@@ -53,12 +53,13 @@ test('Cumulative stance uses the last publish per US calendar day, retains zero 
   assert.deepEqual(plain(audit.stanceChartSeries(midnight, { cumulativeStance: true }).stanceData.map(point => point.y)), [3, 7]);
 });
 
-test('Missing prices leave gaps and later segments restart at zero without inventing whole-period performance', () => {
+test('Missing prices leave gaps but accumulation never resets to zero', () => {
   const { audit } = setup();
   const incomplete = rows.map((row, i) => ({ ...row, defaultRet: i === 1 ? null : row.defaultRet }));
   const series = audit.stanceChartSeries(incomplete, { cumulativePrice: true });
   assert.equal(series.retData[0].y, 0); near(series.retData[1].y, 10);
-  assert.deepEqual(plain(series.retData.slice(2).map(point => point.y)), [null, 0, 0]);
+  assert.equal(series.retData[2].y, null);
+  near(series.retData[3].y, 10); near(series.retData[4].y, 10);
   assert.equal(series.retData[3].baseline, true);
   assert.equal(series.retData[3].segment, 2);
   assert.equal(series.priceSegments, 2);

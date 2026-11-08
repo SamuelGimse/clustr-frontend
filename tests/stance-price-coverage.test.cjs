@@ -14,6 +14,44 @@ function setup() {
   vm.runInContext(read('render.js').replace('  window.ClustrRender = {', '  window.enrichRows = attachDefaultReturns;\n  window.ClustrRender = {'), context);
   return context.window;
 }
+test('Missing snapshots use paired historical prices without changing publishes', async () => {
+  const app = setup();
+  const history = [
+    { date: '2026-11-02T14:00:00Z', defaults: [{ symbol: 'AAA', priceAtPublish: 999 }] },
+    { date: '2026-11-03T14:00:00Z', defaults: [{ symbol: 'AAA' }] },
+    { date: '2026-11-04T14:00:00Z', defaults: [{ symbol: 'AAA', priceAtPublish: 999 }] },
+  ];
+  const before = JSON.stringify(history);
+  app.ClustrQuotes.getHistoricalPrices = async (symbols, dates, market) => {
+    assert.equal(symbols.join(','), 'AAA');
+    assert.equal(market, 'US');
+    return { AAA: [
+      { asOf: '2026-11-02T13:00:00Z', price: 100 },
+      { asOf: '2026-11-03T13:00:00Z', price: 110 },
+      { asOf: '2026-11-04T13:00:00Z', price: 121 },
+      { asOf: '2026-11-04T15:00:00Z', price: 99999 },
+    ] };
+  };
+  const result = await app.enrichRows(history, { market: 'US' });
+  near(result[0].defaultRet, 10);
+  near(result[1].defaultRet, 10);
+  assert.equal(result[0].historicalN, 1);
+  assert.equal(JSON.stringify(history), before);
+});
+
+test('Stale, future and invalid historical prices cannot fill gaps', async () => {
+  const app = setup();
+  const history = [
+    { date: '2026-11-02T14:00:00Z', defaults: [{ symbol: 'AAA' }] },
+    { date: '2026-11-03T14:00:00Z', defaults: [{ symbol: 'AAA' }] },
+  ];
+  app.ClustrQuotes.getHistoricalPrices = async () => ({ AAA: [
+    { asOf: '2026-10-01T13:00:00Z', price: 100 },
+    { asOf: '2026-11-02T13:00:00Z', price: null },
+    { asOf: '2026-11-04T13:00:00Z', price: 110 },
+  ] });
+  assert.equal((await app.enrichRows(history))[0].defaultRet, null);
+});
 const publish = (id, groups, market = 'US') => ({ id, market, created_at: `2026-11-0${id}T15:00:00Z`, groups_json: groups });
 const near = (a, b) => assert(Math.abs(a - b) < 1e-9, `${a} != ${b}`);
 
