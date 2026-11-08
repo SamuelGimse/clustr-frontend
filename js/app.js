@@ -56,6 +56,7 @@
   const navAdmin = document.getElementById('navAdmin');
   let authState = { session: null, user: null, role: 'free', plan: null };
   let accountMode = 'signin';
+  let appleSignInEnabled = false;
   let publishChart = null;
 
   function eventClusterScore(group) {
@@ -621,7 +622,7 @@
     note.textContent = message;
     if (!authState.user) {
       title.textContent = accountMode === 'signup' ? 'Create your free account' : 'Sign in to Clustr Market';
-      content.innerHTML = `<button class="account-secondary" type="button" data-account-action="google">Continue with Google</button><form id="accountForm" class="account-form"><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" minlength="8" autocomplete="${accountMode === 'signup' ? 'new-password' : 'current-password'}" required></label><button class="account-primary" type="submit">${accountMode === 'signup' ? 'Create free account' : 'Sign in'}</button></form><div class="account-actions"><button type="button" data-account-action="switch">${accountMode === 'signup' ? 'Already have an account? Sign in' : 'Create a free account'}</button>${accountMode === 'signin' ? '<button type="button" data-account-action="resend">Resend confirmation email</button><button type="button" data-account-action="reset">Reset password</button>' : ''}</div><p class="account-plan-note">Free includes the previous trading day. Pro unlocks live clusters and full history.</p>`;
+      content.innerHTML = `<button class="account-secondary" type="button" data-account-action="google">Continue with Google</button>${appleSignInEnabled ? '<button class="account-secondary" type="button" data-account-action="apple">Continue with Apple</button>' : ''}<form id="accountForm" class="account-form"><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" minlength="8" autocomplete="${accountMode === 'signup' ? 'new-password' : 'current-password'}" required></label><button class="account-primary" type="submit">${accountMode === 'signup' ? 'Create free account' : 'Sign in'}</button></form><div class="account-actions"><button type="button" data-account-action="email-link">${accountMode === 'signup' ? 'Create account with email link' : 'Email me a sign-in link'}</button><button type="button" data-account-action="switch">${accountMode === 'signup' ? 'Already have an account? Sign in' : 'Create a free account'}</button>${accountMode === 'signin' ? '<button type="button" data-account-action="resend">Resend confirmation email</button><button type="button" data-account-action="reset">Reset password</button>' : ''}</div><p class="account-plan-note">Free includes the previous trading day. Pro unlocks live clusters and full history.</p>`;
       return;
     }
     if (authState.recovery) {
@@ -912,6 +913,7 @@
       renderProBadges();
       if (navAdmin) navAdmin.classList.toggle('hidden', authState.role !== 'admin');
       if (!authState.user) {
+        appleSignInEnabled = (await window.ClustrAuth.availableMethods().catch(() => ({ apple: false }))).apple;
         await bootP;
         setNav('account');
         if (authState.authError) renderAccount(authState.authError);
@@ -1012,6 +1014,13 @@
     try {
       if (action === 'switch') { accountMode = accountMode === 'signup' ? 'signin' : 'signup'; renderAccount(); }
       if (action === 'google') await window.ClustrAuth.signInWithGoogle();
+      if (action === 'apple') await window.ClustrAuth.signInWithApple();
+      if (action === 'email-link') {
+        const email = document.querySelector('#accountForm [name="email"]')?.value.trim();
+        if (!email) { renderAccount('Enter your email first.'); return; }
+        await window.ClustrAuth.signInWithEmailLink(email, accountMode === 'signup');
+        renderAccount('Sign-in link sent. Check your inbox and open the link in this browser.');
+      }
       if (action === 'reset') {
         const email = document.querySelector('#accountForm [name="email"]')?.value.trim();
         if (!email) { renderAccount('Enter your email first.'); return; }
