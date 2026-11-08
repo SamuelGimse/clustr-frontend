@@ -164,7 +164,7 @@ test('Overview network click preserves the active report, focus and window rathe
   window.ClustrApi={fetchHistorySummaries:async()=>{fetched++;return publishes;},loadGroupsForPublish:async publish=>groups.get(String(publish.id))};
   const root={innerHTML:'',querySelector:()=>({focus(){}})};
   invalidate();await render(root,(view,context)=>{navigation={view,context};});
-  assert.match(root.innerHTML,/What happened to your stocks/);assert.match(root.innerHTML,/Most connected: NVDA/);assert.match(root.innerHTML,/&lt;Saved headline&gt;/);assert.doesNotMatch(root.innerHTML,/Future headline|Future only|href="javascript:/);
+  assert.match(root.innerHTML,/What happened to NVDA/);assert.match(root.innerHTML,/Most connected: NVDA/);assert.match(root.innerHTML,/&lt;Saved headline&gt;/);assert.doesNotMatch(root.innerHTML,/Future headline|Future only|href="javascript:/);
   root.onclick({preventDefault(){prevented=true;},target:{closest:selector=>selector==='[data-dash-network]'?{}:null}});
   assert(prevented);assert.equal(scope,'watchlist');assert.equal(navigation.view,'connections');assert.equal(navigation.context.publish.id,3);assert.equal(navigation.context.focusId,'stock:US:NVDA');assert.equal(navigation.context.days,1);assert.equal(fetched,1);
   delete window.ClustrApp;delete window.ClustrWatchlist;delete window.ClustrConnections;invalidate();
@@ -174,7 +174,7 @@ test('Overview network click preserves the active report, focus and window rathe
 test('Preview watchlist selection updates its graph and opens that stock with the same report context',async()=>{
   const network=require('../connections/connections.js'),watch=require('../js/watchlist.js'),canvas=require('../connections/canvas.js');
   const publishes=[1,2].map(id=>({id,market:'US',created_at:`2026-11-0${id}T12:00:00Z`}));
-  const groups=new Map(publishes.map(publish=>[String(publish.id),[{name:'Chips',stance_score:3,fixed_stocks:[{symbol:'NVDA'},{symbol:'AMD'}]},{name:'AI',stance_score:4,fixed_stocks:[{symbol:'NVDA'}]}]]));
+  const groups=new Map(publishes.map(publish=>[String(publish.id),[{name:'Chips',stance_score:3,fixed_stocks:[{symbol:'NVDA'},{symbol:'AMD'}],articles:[{title:'Shared chip news',link:'https://example.com/chips'}]},{name:'AI',stance_score:4,fixed_stocks:[{symbol:'NVDA'}],articles:[{title:'NVIDIA-only AI news',link:'https://example.com/nvda'}]}]]));
   let navigation,focused=0;
   window.ClustrUtil=util;window.ClustrAtlas=atlas;window.ClustrConnections=network;window.ClustrGraphCanvas=canvas;
   window.ClustrWatchlist={filterGroupMap:rows=>rows,getItems:()=>['NVDA','AMD','UNLINKED'].map(symbol=>({symbol,market:'US'})),linkedGroups:(rows,market)=>watch.scopeGroups(rows,market,new Set(['US:NVDA','US:AMD','US:UNLINKED'])),setScope(){}};
@@ -183,7 +183,7 @@ test('Preview watchlist selection updates its graph and opens that stock with th
   invalidate();await render(root,(view,context)=>{navigation={view,context};});
   assert.match(root.innerHTML,/Most connected: NVDA/);assert.match(root.innerHTML,/aria-label="UNLINKED, 0 linked clusters"[^>]* disabled/);assert(root.innerHTML.includes(canvas.paletteStyle()));
   root.onclick({target:{closest:selector=>selector==='[data-dash-network-stock]'?{dataset:{dashNetworkStock:'stock:US:AMD'},disabled:false}:null}});
-  assert.match(root.innerHTML,/<h2>AMD<\/h2>/);assert.match(root.innerHTML,/data-dash-network-stock="stock:US:AMD" aria-pressed="true"/);assert.equal(focused,1);
+  assert.match(root.innerHTML,/What happened to AMD/);assert.match(root.innerHTML,/Shared chip news/);assert.doesNotMatch(root.innerHTML,/NVIDIA-only AI news/);assert.match(root.innerHTML,/<h2>AMD<\/h2>/);assert.match(root.innerHTML,/data-dash-network-stock="stock:US:AMD" aria-pressed="true"/);assert.equal(focused,1);
   root.onclick({preventDefault(){},target:{closest:selector=>selector==='[data-dash-network]'?{}:null}});
   assert.equal(navigation.view,'connections');assert.equal(navigation.context.focusId,'stock:US:AMD');assert.equal(navigation.context.publish.id,2);assert.equal(navigation.context.days,1);
   delete window.ClustrWatchlist;delete window.ClustrConnections;delete window.ClustrGraphCanvas;invalidate();

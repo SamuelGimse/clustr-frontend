@@ -197,3 +197,5 @@
   .dash-network-stock-list { display:flex; max-height:none; overflow-x:auto; }
   .dash-network-stock-list button { flex:0 0 auto; min-height:40px; gap:10px; }
 }
+
+.dash-selected-stock-metrics { margin-bottom:12px; }
