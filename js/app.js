@@ -157,7 +157,7 @@
     if (adminView) adminView.classList.add('hidden');
     if (which !== 'stocks') window.ClustrStocks?.leave();
 
-    if (which !== 'polymarket' && location.hash === '#/polymarket') history.replaceState(null, '', location.pathname + location.search);
+    if (which !== 'polymarket' && which !== 'atlas' && ['#/polymarket', '#/atlas'].includes(location.hash)) history.replaceState(null, '', location.pathname + location.search);
     if (which === 'polymarket') {
       navPolymarket?.classList.add('is-active');
       navPolymarket?.setAttribute('aria-current', 'page');
@@ -236,6 +236,7 @@
       if (weeklyView) weeklyView.classList.remove('hidden');
       renderWeekly();
     } else if (which === 'atlas') {
+      history.replaceState(null, '', '#/atlas');
       navAtlas?.classList.add('is-active');
       navAtlas?.setAttribute('aria-current', 'page');
       atlasView?.classList.remove('hidden');
@@ -928,6 +929,7 @@
       warmGroupsCache(14);
       if (location.hash === '#/polymarket') setNav('polymarket');
       else if (location.hash === '#/admin' && authState.role === 'admin') setNav('admin');
+      else if (location.hash === '#/atlas') setNav('atlas');
       else if (location.hash === '#/account' || new URLSearchParams(location.search).has('checkout')) setNav('account');
       else setNav('events');
       setBootStage(2, 'Your workspace is ready');
