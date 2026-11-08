@@ -2729,6 +2729,11 @@ html[data-theme="sea-foam"]
 }
 .article-category-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .article-card[hidden] { display: none !important; }
+.same-event { margin: 8px 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); background: var(--panel); font-size: 13px; }
+.same-event summary { cursor: pointer; font-weight: 650; }
+.same-event p, .same-event ul { margin: 8px 0 0; }
+.same-event ul { padding-left: 18px; }
+.same-event li + li { margin-top: 6px; }
 .cluster-market-signals { margin: 12px 0; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel-2); }
 .cluster-market-signals-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; margin-bottom: 9px; font-size: 12px; }
 .cluster-market-signals-head span { color: var(--text-meta); }
@@ -4158,6 +4163,7 @@ html[data-theme="material"][data-color-mode="light"] :is(.nav-rail-btn.is-active
 .cluster-card.is-expanded .cluster-drivers { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; }
 .cluster-details { margin-top: 18px; padding-top: 16px; }
 .stock-panel { margin: 0 0 14px; }
+.stock-group-context { margin: 10px 0 12px; color: var(--text-meta); font-size: 13px; line-height: 1.5; }
 .stock-panel-head { display: grid; grid-template-columns: auto minmax(0, 240px) minmax(0, 1fr); gap: 12px; }
 .stock-panel-head .md-label { margin: 0; }
 .stock-panel-head .stock-group-select { width: 100%; min-width: 0; }
@@ -4176,6 +4182,17 @@ html[data-theme="material"][data-color-mode="light"] :is(.nav-rail-btn.is-active
 .stock-sidebar .price-value, .stock-sidebar .technical-metrics strong { font-size: 15px; line-height: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .stock-sidebar .technical-metrics-note, .stock-sidebar .quote-asof { grid-column: 1 / -1; margin: 0; }
 .stock-analysis .price-bar, .stock-analysis .chart-folder { margin: 0; }
+html[data-theme] button.md-btn.toggle-articles {
+  margin: 12px 0 6px;
+  background: #fff;
+  color: #171717;
+  border: 1px solid #d0d0d0;
+}
+html[data-theme] button.md-btn.toggle-articles:is(:hover, :focus-visible, :active) {
+  background: #eee;
+  color: #171717;
+  border-color: #b5b5b5;
+}
 .price-bar-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .technical-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .technical-metrics span, .technical-metrics-note, .quote-asof { color: var(--text-meta); font-size: 11px; }

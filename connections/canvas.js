@@ -2,6 +2,11 @@
   function palette(light){return light
     ? {cluster:[8/255,92/255,71/255],stock:[102/255,46/255,158/255],news:[64/255,82/255,102/255],edge:[25/255,87/255,76/255]}
     : {cluster:[.50,.87,.77],stock:[.80,.64,.91],news:[.66,.74,.79],edge:[.50,.87,.77]};}
+  function paletteStyle() {
+    const light=palette(true),dark=palette(false);
+    const rgb=value=>`rgb(${value.map(channel=>Math.round(channel*255)).join(' ')})`;
+    return Object.keys(dark).map(type=>`--cx-${type}:light-dark(${rgb(light[type])},${rgb(dark[type])})`).join(';');
+  }
   function simulation(graph, initial) {
     const ids=new Map(graph.nodes.map((n,i)=>[n.id,i]));
     const positions=new Float32Array(graph.nodes.length*2),velocities=new Float32Array(positions.length);
@@ -87,5 +92,5 @@ var o:Out;o.uv=corners[v];o.p=vec4f(center+corners[v]*radius,0,1);o.color=color;
     gpuRenderer(pixels).then(result=>{if(closed){result?.destroy();return;}renderer=result;container.querySelector('.cx-backend').textContent=renderer?'WebGPU':'Canvas 2D';renderer?.lost.then(fallback);resize();}).catch(fallback);
     return{update(id,text,kind=''){selected=id;query=text;type=kind;request();},zoom(amount){scale=Math.max(.4,Math.min(4,scale+amount));request();},reset(){scale=1;offsetX=offsetY=0;request();},destroy(){closed=true;cancelAnimationFrame(frame);observer.disconnect();themeObserver?.disconnect();colorMode?.removeEventListener?.('change',request);renderer?.destroy();}};
   }
-  const api={simulation,mount,palette};if(typeof module!=='undefined'&&module.exports)module.exports=api;root.ClustrGraphCanvas=api;
+  const api={simulation,mount,palette,paletteStyle};if(typeof module!=='undefined'&&module.exports)module.exports=api;root.ClustrGraphCanvas=api;
 })(typeof window==='undefined'?globalThis:window);

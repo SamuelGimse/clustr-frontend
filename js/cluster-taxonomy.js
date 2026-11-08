@@ -29,7 +29,24 @@
     return aliases.get(normalize(cleaned)) || cleaned;
   }
 
+  function defaultBasketAllowed(name) {
+    return !['earnings shocks', 'regulation and policy', 'climate and disasters', 'aviation accidents', 'crypto hacks', 'other', 'fusion energy'].includes(normalize(canonicalName(name)));
+  }
+
   function clusterScore(articles) {
+    const events = new Map();
+    articles.forEach((article, index) => {
+      const value = article.rating ?? article.score;
+      if (value == null || String(value).trim() === '' || !Number.isFinite(Number(value)) || Math.abs(Number(value)) > 10) return;
+      const key = article.event_id || `article:${index}`;
+      if (!events.has(key)) events.set(key, []);
+      events.get(key).push(Number(value));
+    });
+    articles = [...events.values()].map(values => {
+      values.sort((a, b) => a - b);
+      const mid = Math.floor(values.length / 2);
+      return { rating: values.length % 2 ? values[mid] : (values[mid - 1] + values[mid]) / 2 };
+    });
     const ratings = articles.filter(article => article.rating != null && article.rating !== '')
       .map(article => Number(article.rating)).filter(Number.isFinite)
       .map(rating => Math.max(-10, Math.min(10, rating))).filter(rating => rating !== 0);
@@ -56,10 +73,17 @@
 
   function mergeGroups(groups) {
     const result = new Map();
-    for (const group of groups || []) {
-      const original = group.name || group.group || group.title || '';
+    for (const sourceGroup of groups || []) {
+      const original = sourceGroup.name || sourceGroup.group || sourceGroup.title || '';
+      // Event IDs belong to their source cluster, not to another cluster's aliases.
+      const group = { ...sourceGroup, ...(Array.isArray(sourceGroup.articles) ? { articles: sourceGroup.articles.map(a => a.event_id ? { ...a, event_id: `${normalize(original)}:${a.event_id}` } : a) } : {}) };
       const name = canonicalName(original);
       if (!name) continue;
+      if (!defaultBasketAllowed(name)) {
+        group.fixed_stocks = [];
+        group.default_stocks = [];
+        group.default_symbols = [];
+      }
       const key = normalize(name);
       let item = result.get(key);
       if (!item) {
@@ -79,6 +103,7 @@
     return [...result.values()].map(({ group, count, names }) => {
       if (count > 1 && Array.isArray(group.articles)) {
         group.count = group.articles.length;
+        group.event_count = new Set(group.articles.map((a, i) => a.event_id || `article:${i}`)).size;
         group.cluster_score = group.stance_score = clusterScore(group.articles);
         group.stance = group.cluster_score > 0 ? 'constructive' : group.cluster_score < 0 ? 'cautious' : 'watch';
         group.mention_counts = {};
@@ -93,5 +118,5 @@
     });
   }
 
-  return { families, canonicalName, clusterScore, mergeGroups };
+  return { families, canonicalName, clusterScore, mergeGroups, defaultBasketAllowed };
 });

@@ -131,3 +131,71 @@
 .dash-error { color: var(--down); }
 @media (max-width: 900px) { .dash-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dash-grid { grid-template-columns: 1fr; } .dash-panel--wide { grid-column: auto; } .dash-trend-layout { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .dash-shell { padding: 16px 3px 40px; } .dash-header { align-items: stretch; flex-direction: column; gap: 16px; } .dash-market { width: max-content; } .dash-panel { padding: 16px; } .dash-shifts { grid-template-columns: 1fr; } .dash-day { grid-template-columns: 48px 1fr 72px; gap: 7px; } .dash-metric { padding: 13px; min-height: 105px; } .dash-metric strong { font-size: 26px; } }
+
+.dash-personal { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:16px; margin-bottom:18px; }
+.dash-personal > .dash-panel { min-width:0; }
+.dash-watch-scope { margin:0 0 14px; color:var(--text-meta); font-size:11px; line-height:1.6; }
+.dash-watch-list { display:grid; gap:12px; }
+.dash-watch-stock { min-width:0; padding-bottom:12px; border-bottom:1px solid var(--border); }
+.dash-watch-stock-head { display:flex; align-items:center; flex-wrap:wrap; gap:6px 12px; font-size:11px; }
+.dash-watch-stock-head .dash-score { display:inline; min-width:0; min-height:0; padding:0; border:0; font-size:11px; }
+.dash-watch-stock-head > strong { font-size:13px; }
+.dash-watch-stock-head > span:not(.dash-score) { color:var(--text-meta); }
+.dash-watch-stock-head > span.dash-watch-price--positive { color:var(--up); }
+.dash-watch-stock-head > span.dash-watch-price--negative { color:var(--down); }
+.dash-watch-stock p { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin:8px 0 5px; font-size:13px; line-height:1.5; overflow-wrap:anywhere; }
+.dash-watch-stock a { color:var(--text); text-decoration:none; }
+.dash-watch-stock a:hover { text-decoration:underline; }
+.dash-watch-stock small { color:var(--text-meta); font-size:10px; }
+.dash-network-panel { padding:0; overflow:hidden; }
+.dash-network-preview { display:block; height:100%; padding:20px; color:var(--text); text-decoration:none; border-radius:inherit; }
+.dash-network-preview:hover { background:color-mix(in srgb,var(--text) 3%,transparent); }
+.dash-network-preview:focus-visible { outline:2px solid var(--accent); outline-offset:-4px; }
+.dash-network-preview .dash-panel-head { margin-bottom:0; }
+.dash-network-svg { display:block; width:100%; max-height:244px; }
+.dash-network-svg line { stroke:var(--cx-edge); stroke-opacity:.45; stroke-width:1; }
+.dash-network-svg .dash-network-default { stroke-dasharray:4 4; }
+.dash-network-svg text { fill:var(--text-meta); font-size:11px; }
+.dash-network-cluster { fill:var(--cx-cluster); }
+.dash-network-story { fill:var(--cx-news); }
+.dash-network-center { fill:var(--cx-stock); stroke:var(--cx-stock); stroke-width:1.5; }
+.dash-network-svg .dash-network-symbol { fill:light-dark(#ffffff,#21152e); font-size:18px; font-weight:700; }
+.dash-network-preview p { margin:0 0 10px; font-size:12px; color:var(--text-meta); }
+.dash-network-open { display:block; font-size:12px; font-weight:600; }
+.dash-network-preview > small { display:block; margin-top:8px; color:var(--text-meta); font-size:10px; line-height:1.5; }
+.dash-watch-empty { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px; }
+.dash-watch-empty h2 { margin:0; font-size:19px; }
+@media(max-width:760px) {
+  .dash-personal { grid-template-columns:minmax(0,1fr); gap:12px; }
+  .dash-network-preview { padding:16px; }
+  .dash-network-svg { max-height:220px; }
+  .dash-watch-empty { flex-direction:column; align-items:flex-start; }
+}
+
+.dash-personal > .dash-panel:only-child { grid-column:1 / -1; }
+
+.dash-personal .dash-panel-head button { min-height:32px; }
+.dash-watch-setup { min-height:40px; padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--panel-2); color:var(--text); font:inherit; font-size:12px; cursor:pointer; }
+.dash-watch-setup:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+@media(max-width:760px) { .dash-network-svg text { font-size:14px; } }
+
+.dash-network-layout { display:grid; grid-template-columns:minmax(0,1fr) 120px; height:100%; }
+.dash-network-preview { min-width:0; }
+.dash-network-watchlist { min-width:0; padding:20px 10px; border-left:1px solid var(--border); }
+.dash-network-watchlist h3 { margin:0 0 5px; font-size:12px; }
+.dash-network-watchlist > small { display:block; margin-bottom:12px; color:var(--text-meta); font-size:10px; }
+.dash-network-stock-list { display:grid; gap:3px; max-height:320px; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+.dash-network-stock-list button { display:flex; align-items:center; justify-content:space-between; gap:6px; min-width:0; min-height:36px; padding:6px 8px; border:1px solid transparent; border-radius:7px; background:transparent; color:var(--text-meta); font:inherit; text-align:left; font-size:11px; cursor:pointer; }
+.dash-network-stock-list button strong { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.dash-network-stock-list button span { font-variant-numeric:tabular-nums; font-size:10px; }
+.dash-network-stock-list button[aria-pressed="true"] { background:color-mix(in srgb,var(--cx-stock) 12%,var(--panel)); border-color:color-mix(in srgb,var(--cx-stock) 35%,transparent); color:var(--text); }
+.dash-network-stock-list button:focus-visible { outline:2px solid var(--cx-stock); outline-offset:-2px; }
+.dash-network-stock-list button:disabled { opacity:.45; cursor:default; }
+@media(max-width:760px) {
+  .dash-network-layout { grid-template-columns:minmax(0,1fr); }
+  .dash-network-watchlist { padding:14px 16px; border-left:0; border-top:1px solid var(--border); }
+  .dash-network-stock-list { display:flex; max-height:none; overflow-x:auto; }
+  .dash-network-stock-list button { flex:0 0 auto; min-height:40px; gap:10px; }
+}
+
+.dash-selected-stock-metrics { margin-bottom:12px; }

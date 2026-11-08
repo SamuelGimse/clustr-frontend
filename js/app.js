@@ -62,7 +62,7 @@
   let publishChart = null;
 
   function eventClusterScore(group) {
-    const ratings = (group.articles || []).map(article => article.rating ?? article.score);
+    const ratings = (group.articles || []);
     const articleScore = window.ClustrUtil.articleImpactScore(ratings);
     const storedScore = Number(group.stance_score ?? group.cluster_score ?? group.impact_score);
     return articleScore ?? (Number.isFinite(storedScore) ? storedScore : 0);
@@ -140,7 +140,7 @@
     return window.ClustrWatchlist?.filterGroups(groups, market) || groups;
   }
 
-  function setNav(which) {
+  function setNav(which, context = null) {
     window.ClustrConnections?.hide();
     if (which === 'admin' && authState.role !== 'admin') which = 'account';
     closeEventSortMenu();
@@ -184,7 +184,11 @@
       if (which === 'watchlist' || which === 'atlas') history.replaceState(null, '', `#/${which}`);
     } else if (which === 'connections') {
       history.replaceState(null, '', '#/connections');
-      window.ClustrConnections?.mount(currentGroups, publishes[publishIndex]);
+      if (context?.publish) {
+        const index=publishes.findIndex(publish=>String(publish.id)===String(context.publish.id));
+        if(index>=0){publishIndex=index;currentGroups=context.reportGroups||currentGroups;setMeta();}
+      }
+      window.ClustrConnections?.mount(context?.reportGroups || currentGroups, context?.publish || publishes[publishIndex], context || false);
     } else if (which === 'dashboard') {
       history.replaceState(null, '', '#/dashboard');
       navDashboard?.classList.add('is-active');
@@ -315,7 +319,7 @@
   }
 
   function weeklyScore(group) {
-    const articleScore = window.ClustrUtil.articleImpactScore((group.articles || []).map(a => a.rating ?? a.score));
+    const articleScore = window.ClustrUtil.articleImpactScore(group.articles || []);
     if (articleScore != null) return articleScore;
     const value = Number(group.stance_score ?? group.cluster_score ?? group.impact_score);
     return Number.isFinite(value) && value >= -10 && value <= 10 && value !== 0 ? value : null;
@@ -516,7 +520,7 @@
           </div>
         </article>`;
       }).join('');
-    return `<details class="weekly-cluster" data-weekly-key="${window.ClustrUtil.escapeHtml(item.key)}"><summary class="weekly-cluster-head"><div class="weekly-cluster-score ${item.score>0?'up':item.score<0?'down':''}">${score}</div><div class="weekly-cluster-main"><h3>${window.ClustrUtil.escapeHtml(item.name)}</h3><p>${item.stories.size} unique articles · ${item.days.size} days · ${item.market}</p>${summary}<div class="weekly-tickers">${[...item.tickers].slice(0,10).map(t=>`<span>${window.ClustrUtil.escapeHtml(t)}</span>`).join('')}</div></div>${change}<span class="weekly-cluster-expand" aria-hidden="true">⌄</span></summary><section class="weekly-cluster-history"><div class="weekly-cluster-history-title">All ${item.items.length} cluster ${item.items.length === 1 ? 'entry' : 'entries'} in this seven-day window</div><section class="weekly-cluster-chart"><div><span>SENTIMENT × DEFAULT STOCKS</span><small>Score vs average default-basket change since each publish</small></div><canvas class="weekly-cluster-chart-canvas" aria-label="Sentiment score and default-stock basket change"></canvas><p class="weekly-cluster-chart-note">Open this cluster to load default-stock price changes.</p></section>${entries}</section></details>`;
+    return `<details class="weekly-cluster" data-weekly-key="${window.ClustrUtil.escapeHtml(item.key)}"><summary class="weekly-cluster-head"><div class="weekly-cluster-score ${item.score>0?'up':item.score<0?'down':''}">${score}</div><div class="weekly-cluster-main"><h3>${window.ClustrUtil.escapeHtml(item.name)}</h3><p>${item.stories.size} unique articles · ${item.days.size} days · ${item.market}</p>${summary}<div class="weekly-tickers">${[...item.tickers].slice(0,10).map(t=>`<span>${window.ClustrUtil.escapeHtml(t)}</span>`).join('')}</div></div>${change}<span class="weekly-cluster-expand" aria-hidden="true">⌄</span></summary><section class="weekly-cluster-history"><div class="weekly-cluster-history-title">All ${item.items.length} cluster ${item.items.length === 1 ? 'entry' : 'entries'} in this seven-day window</div><section class="weekly-cluster-chart"><div><span>SENTIMENT × COMPARISON BASKET</span><small>Score vs average comparison-basket change since each publish</small></div><canvas class="weekly-cluster-chart-canvas" aria-label="Sentiment score and comparison-basket basket change"></canvas><p class="weekly-cluster-chart-note">Open this cluster to load comparison-basket price changes.</p></section>${entries}</section></details>`;
   }
 
   function defaultStocksForWeeklyGroup(group) {
@@ -537,13 +541,13 @@
     const rows = [...item.items].sort((a, b) => new Date(a.publish.created_at) - new Date(b.publish.created_at));
     const defaultsByRow = rows.map(row => defaultStocksForWeeklyGroup(row.group));
     const symbols = [...new Set(defaultsByRow.flat().map(stock => stock.symbol))];
-    note.textContent = 'Loading default-stock price changes…';
+    note.textContent = 'Loading comparison-basket price changes…';
 
     let quotes = {};
     try {
       quotes = await window.ClustrQuotes.getQuotes(symbols);
     } catch (err) {
-      console.warn('weekly default-stock chart quotes', err.message);
+      console.warn('weekly comparison-basket chart quotes', err.message);
     }
 
     const priceMap = defaults => Object.fromEntries(defaults.map(stock => [stock.symbol, stock.price]));
@@ -561,8 +565,8 @@
     const usableRows = basketReturns.filter(Number.isFinite).length;
     const returnRange = symmetricReturnRange(basketReturns);
     note.textContent = usableRows
-      ? `Same method as the stance chart: each default basket runs to the next publish; the final point runs to the latest quote.`
-      : 'No usable default-stock publish prices or current quotes were available for this cluster.';
+      ? `Same method as the stance chart: each comparison basket runs to the next publish; the final point runs to the latest quote.`
+      : 'No usable comparison-basket publish prices or current quotes were available for this cluster.';
 
     const rootStyle = getComputedStyle(document.documentElement);
     const up = rootStyle.getPropertyValue('--up').trim() || '#4ade80';

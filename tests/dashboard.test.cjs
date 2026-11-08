@@ -134,3 +134,57 @@ test('Cumulative toggle expands the zero-centered axis and restores daily fits w
   assert.match(root.innerHTML,/class="dash-confidence"/);
   assert.match(root.innerHTML,/role="switch" aria-checked="false"/);
 });
+
+
+test('Watchlist recap ranks unique connections in the selected window and excludes other markets', () => {
+  const network=require('../connections/connections.js'),watch=require('../js/watchlist.js');
+  const publishes=[{id:1,market:'US',created_at:'2026-11-05T12:00:00Z'},{id:2,market:'US',created_at:'2026-11-06T10:00:00Z'},{id:3,market:'US',created_at:'2026-11-06T12:00:00Z'},{id:4,market:'NO',created_at:'2026-11-06T11:00:00Z'}];
+  const nvda={symbol:'NVDA',priceAtPublish:100},amd={symbol:'AMD',priceAtPublish:50};
+  const groups=new Map([['1',[{name:'Boundary only',fixed_stocks:[nvda]}]],['2',[{name:'Chips',close_stocks:[nvda],articles:[{title:'Chip demand',link:'https://example.com/chips?utm_source=a'}]}]],['3',[{name:'Chips',stance_score:4,close_stocks:[{...nvda,priceAtPublish:110}],articles:[{title:'Chip demand',link:'https://example.com/chips?utm_source=b'}]},{name:'Cloud',stance_score:2,fixed_stocks:[nvda,amd],articles:[{title:'Cloud investment',link:'https://example.com/cloud'}]},{name:'Not watched',stocks:[{symbol:'IBM'}]}]],['4',[{name:'Wrong market',stocks:[nvda]}]]]);
+  const items=[{symbol:'NVDA',market:'US'},{symbol:'AMD',market:'US'},{symbol:'NVDA',market:'NO'}];
+  const watchlist={getItems:()=>items,linkedGroups:(rows,market)=>watch.scopeGroups(rows,market,new Set(['US:NVDA','US:AMD']))};
+  const before=JSON.stringify([...groups]);
+  const summary=buildSummary(publishes,groups,'US',util,atlas,watchlist,network).watchlist;
+  assert.equal(summary.total,2);assert.equal(summary.stocks[0].node.label,'NVDA');assert.equal(summary.stocks[0].clusters.length,2);assert.equal(summary.stocks[0].stories.length,2);assert.equal(summary.stories,2);
+  assert.equal(summary.context.publish.id,3);assert.equal(summary.context.days,1);assert.equal(summary.context.focusId,'stock:US:NVDA');assert.equal(summary.context.reportCount,2);
+  assert(!summary.context.windowGroups.some(group=>/Boundary|Wrong market|Not watched/.test(group.name)));
+  assert.equal(JSON.stringify([...groups]),before);
+  const empty=buildSummary(publishes,groups,'US',util,atlas,{...watchlist,getItems:()=>[]},network).watchlist;assert.equal(empty.total,0);assert.equal(empty.context,null);
+});
+
+test('Overview network click preserves the active report, focus and window rather than opening the newest report', async () => {
+  const network=require('../connections/connections.js'),watch=require('../js/watchlist.js');
+  const publishes=[1,2,3,4].map(id=>({id,market:'US',created_at:`2026-11-0${id}T12:00:00Z`}));
+  const groups=new Map(publishes.map(publish=>[String(publish.id),[{name:publish.id===4?'Future only':'Chips',stance_score:publish.id,fixed_stocks:[{symbol:'NVDA',priceAtPublish:100+publish.id}],articles:[{title:publish.id===4?'Future headline':'<Saved headline>',link:'javascript:alert(1)'}]}]]));
+  publishes[3].created_at=publishes[2].created_at; // Same timestamp must still respect the selected report ID.
+  let fetched=0,scope=null,navigation=null,prevented=false;
+  window.ClustrUtil=util;window.ClustrAtlas=atlas;window.ClustrConnections=network;
+  window.ClustrWatchlist={filterGroupMap:groups=>groups,getItems:()=>[{symbol:'NVDA',market:'US'}],linkedGroups:(rows,market)=>watch.scopeGroups(rows,market,new Set(['US:NVDA'])),setScope:value=>{scope=value;}};
+  window.ClustrApp={getPublishes:()=>[publishes[3],publishes[2]],getPublishIndex:()=>1};
+  window.ClustrApi={fetchHistorySummaries:async()=>{fetched++;return publishes;},loadGroupsForPublish:async publish=>groups.get(String(publish.id))};
+  const root={innerHTML:'',querySelector:()=>({focus(){}})};
+  invalidate();await render(root,(view,context)=>{navigation={view,context};});
+  assert.match(root.innerHTML,/What happened to NVDA/);assert.match(root.innerHTML,/Most connected: NVDA/);assert.match(root.innerHTML,/&lt;Saved headline&gt;/);assert.doesNotMatch(root.innerHTML,/Future headline|Future only|href="javascript:/);
+  root.onclick({preventDefault(){prevented=true;},target:{closest:selector=>selector==='[data-dash-network]'?{}:null}});
+  assert(prevented);assert.equal(scope,'watchlist');assert.equal(navigation.view,'connections');assert.equal(navigation.context.publish.id,3);assert.equal(navigation.context.focusId,'stock:US:NVDA');assert.equal(navigation.context.days,1);assert.equal(fetched,1);
+  delete window.ClustrApp;delete window.ClustrWatchlist;delete window.ClustrConnections;invalidate();
+});
+
+
+test('Preview watchlist selection updates its graph and opens that stock with the same report context',async()=>{
+  const network=require('../connections/connections.js'),watch=require('../js/watchlist.js'),canvas=require('../connections/canvas.js');
+  const publishes=[1,2].map(id=>({id,market:'US',created_at:`2026-11-0${id}T12:00:00Z`}));
+  const groups=new Map(publishes.map(publish=>[String(publish.id),[{name:'Chips',stance_score:3,fixed_stocks:[{symbol:'NVDA'},{symbol:'AMD'}],articles:[{title:'Shared chip news',link:'https://example.com/chips'}]},{name:'AI',stance_score:4,fixed_stocks:[{symbol:'NVDA'}],articles:[{title:'NVIDIA-only AI news',link:'https://example.com/nvda'}]}]]));
+  let navigation,focused=0;
+  window.ClustrUtil=util;window.ClustrAtlas=atlas;window.ClustrConnections=network;window.ClustrGraphCanvas=canvas;
+  window.ClustrWatchlist={filterGroupMap:rows=>rows,getItems:()=>['NVDA','AMD','UNLINKED'].map(symbol=>({symbol,market:'US'})),linkedGroups:(rows,market)=>watch.scopeGroups(rows,market,new Set(['US:NVDA','US:AMD','US:UNLINKED'])),setScope(){}};
+  window.ClustrApi={fetchHistorySummaries:async()=>publishes,loadGroupsForPublish:async publish=>groups.get(String(publish.id))};
+  const root={innerHTML:'',querySelector:()=>({focus(){focused++;}})};
+  invalidate();await render(root,(view,context)=>{navigation={view,context};});
+  assert.match(root.innerHTML,/Most connected: NVDA/);assert.match(root.innerHTML,/aria-label="UNLINKED, 0 linked clusters"[^>]* disabled/);assert(root.innerHTML.includes(canvas.paletteStyle()));
+  root.onclick({target:{closest:selector=>selector==='[data-dash-network-stock]'?{dataset:{dashNetworkStock:'stock:US:AMD'},disabled:false}:null}});
+  assert.match(root.innerHTML,/What happened to AMD/);assert.match(root.innerHTML,/Shared chip news/);assert.doesNotMatch(root.innerHTML,/NVIDIA-only AI news/);assert.match(root.innerHTML,/<h2>AMD<\/h2>/);assert.match(root.innerHTML,/data-dash-network-stock="stock:US:AMD" aria-pressed="true"/);assert.equal(focused,1);
+  root.onclick({preventDefault(){},target:{closest:selector=>selector==='[data-dash-network]'?{}:null}});
+  assert.equal(navigation.view,'connections');assert.equal(navigation.context.focusId,'stock:US:AMD');assert.equal(navigation.context.publish.id,2);assert.equal(navigation.context.days,1);
+  delete window.ClustrWatchlist;delete window.ClustrConnections;delete window.ClustrGraphCanvas;invalidate();
+});

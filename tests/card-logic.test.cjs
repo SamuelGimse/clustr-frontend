@@ -8,8 +8,44 @@ vm.createContext(context);
 vm.runInContext(read('util.js'), context);
 const util = context.window.ClustrUtil;
 let renderSource = read('render.js');
-vm.runInContext(renderSource.replace('  window.ClustrRender = {', '  window.audit = {clusterScoreHtml, stanceHtml, historyRowScore, basketSincePublish, weeklyVelocity, attachDefaultReturns, mountStanceChart, renderRelatedClusters};\n  window.ClustrRender = {'), context);
+vm.runInContext(renderSource.replace('  window.ClustrRender = {', '  window.audit = {stockBuckets, sameEventHtml, clusterScoreHtml, stanceHtml, historyRowScore, basketSincePublish, weeklyVelocity, attachDefaultReturns, mountStanceChart, renderRelatedClusters};\n  window.ClustrRender = {'), context);
 const audit = context.window.audit;
+context.window.ClustrTaxonomy = require('../js/cluster-taxonomy.js');
+for (const name of ['Earnings shocks','Regulation & policy','Climate & disasters','Aviation accidents','Crypto hacks','Other','Fusion energy']) {
+  const input = {name,fixed_stocks:[{symbol:'AAPL'}],default_symbols:['AAPL'],mentioned_stocks:[{symbol:'LLY'}]};
+  const [clean] = context.window.ClustrTaxonomy.mergeGroups([input]);
+  assert.equal(clean.fixed_stocks.length,0);
+  assert.equal(clean.default_symbols.length,0);
+  assert.equal(clean.mentioned_stocks[0].symbol,'LLY');
+  assert(!audit.stockBuckets(input).groups.some(g=>g.id==='fixed'));
+}
+const legacyEarnings = {name:'Earnings shocks',fixed_stocks:[{symbol:'AAPL'}],default_symbols:['AAPL'],mentioned_stocks:[{symbol:'KDP'}],articles:[{rating:3}]};
+const [cleanEarnings] = require('../js/cluster-taxonomy.js').mergeGroups([legacyEarnings]);
+assert.equal(cleanEarnings.fixed_stocks.length,0);
+assert.equal(cleanEarnings.default_symbols.length,0);
+assert.equal(cleanEarnings.mentioned_stocks[0].symbol,'KDP');
+assert.equal(legacyEarnings.fixed_stocks.length,1);
+assert(!audit.stockBuckets(legacyEarnings).groups.some(g=>g.id==='fixed'));
+const comparison = audit.stockBuckets({...legacyEarnings,name:'Semiconductors'}).groups.find(g=>g.id==='fixed');
+assert.equal(comparison.label,'Theme comparison basket');
+assert.match(comparison.description,/does not establish exposure/);
+const duplicate = { rating: -4, event_id: 'recall', source: '<Source>', title: 'Recall' };
+const independent = { rating: 4, event_id: 'approval' };
+assert.equal(util.articleImpactScore([...Array(20).fill(duplicate), independent]), 0);
+assert.equal(util.articleImpactScore([{rating:0,event_id:'a'},{rating:2,event_id:'a'}]), 1);
+assert.equal(util.articleImpactScore([{rating:2},{rating:2}]), 2);
+assert.match(audit.clusterScoreHtml({articles:[duplicate,duplicate,independent]}), /Cluster rating 0/);
+assert.match(audit.sameEventHtml(duplicate,[duplicate,duplicate,independent]), /Same event ×2/);
+assert.match(audit.sameEventHtml(duplicate,[duplicate,duplicate]), /&lt;Source&gt;/);
+assert.equal(audit.sameEventHtml(independent,[duplicate,independent]), '');
+const taxonomy = require('../js/cluster-taxonomy.js');
+assert.equal(taxonomy.clusterScore([duplicate,duplicate,independent]), 0);
+const [mergedEvents] = taxonomy.mergeGroups([
+  {name:'AI', articles:[{link:'https://a.test/recall',rating:-4,event_id:'event:0'},{link:'https://b.test/recall',rating:-4,event_id:'event:0'}]},
+  {name:'Artificial Intelligence', articles:[{link:'https://a.test/approval',rating:4,event_id:'event:0'}]}
+]);
+assert.equal(mergedEvents.cluster_score,0);
+assert.equal(mergedEvents.event_count,2);
 const relatedPanel = { innerHTML: '', querySelectorAll: () => [] };
 audit.renderRelatedClusters('Related clusters', [
   { name: '<Positive>', articles: [{ rating: 5 }] },

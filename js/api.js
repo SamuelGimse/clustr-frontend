@@ -329,7 +329,7 @@
       if (Array.isArray(rows) && rows.length) {
         return rows.filter(r => Date.parse(r.created_at) <= historyContext(context).cutoff).map(r => {
           // ONLY cluster defaults — never close links / stocks bag
-          const defaults = Array.isArray(r.fixed_stocks) ? r.fixed_stocks : [];
+          const defaults = !window.ClustrTaxonomy.defaultBasketAllowed(name) ? [] : Array.isArray(r.fixed_stocks) ? r.fixed_stocks : [];
           const seen = new Set();
           const defs = [];
           for (const s of defaults) {
@@ -448,7 +448,7 @@
           priceAtPublish: prices[sym] ?? null
         });
       }
-      const stanceScore = window.ClustrUtil.articleImpactScore((match.articles || []).map(article => article.rating ?? article.score)) ?? window.ClustrUtil.numericStance(match.stance_score ?? match.cluster_score);
+      const stanceScore = window.ClustrUtil.articleImpactScore(match.articles || []) ?? window.ClustrUtil.numericStance(match.stance_score ?? match.cluster_score);
       rows.push({
         stance: window.ClustrUtil.stanceCategory(stanceScore) || String(match.stance || 'watch').toLowerCase(),
         stanceScore,

@@ -98,7 +98,7 @@
   }
 
   function groupRating(group) {
-    const ratings = (group && group.articles || []).map(article => article.rating ?? article.score);
+    const ratings = (group && group.articles || []);
     return U().articleImpactScore(ratings) ?? U().numericStance(group && (group.stance_score ?? group.cluster_score));
   }
 
@@ -110,7 +110,15 @@
     const value = `${score > 0 ? '+' : ''}${Number.isInteger(score) ? score : score.toFixed(1)}`;
     const intensity = score === 0 ? '0%' : `${(100 * Math.pow(3, Math.abs(score) - 10)).toFixed(2)}%`;
     const label = tone === 'positive' ? '▲ POS' : tone === 'negative' ? '▼ NEG' : '● NEU';
-    return `<div class="cluster-score cluster-score--${tone}" title="Exponential mean article rating; each point is 3× impact: ${value}" role="img" aria-label="Cluster rating ${value}, ${label}"><span class="cluster-score-value">${value}</span><span class="cluster-score-label">${label}</span><span class="cluster-score-meter" aria-hidden="true"><i style="--w:${score < 0 ? intensity : '0%'}"></i><i style="--w:${score > 0 ? intensity : '0%'}"></i></span></div>`;
+    return `<div class="cluster-score cluster-score--${tone}" title="Exponential mean impact; confirmed reports of the same event count once. Each point is 3× impact: ${value}" role="img" aria-label="Cluster rating ${value}, ${label}"><span class="cluster-score-value">${value}</span><span class="cluster-score-label">${label}</span><span class="cluster-score-meter" aria-hidden="true"><i style="--w:${score < 0 ? intensity : '0%'}"></i><i style="--w:${score > 0 ? intensity : '0%'}"></i></span></div>`;
+  }
+
+  function sameEventHtml(article, articles) {
+    if (!article.event_id) return '';
+    const reports = articles.filter(other => other.event_id === article.event_id);
+    if (reports.length < 2) return '';
+    const esc = U().escapeHtml;
+    return `<details class="same-event"><summary>Same event ×${reports.length}</summary><p>These ${reports.length} reports count once in the cluster score, using their median rating.</p><ul>${reports.map(a => `<li><strong>${esc(a.source || 'Source')}</strong> · ${esc(a.title || '')}</li>`).join('')}</ul></details>`;
   }
 
   function articleRatingStripHtml(articles) {
@@ -590,7 +598,7 @@
         <button type="button" role="switch" aria-checked="true" class="dash-mode-toggle" data-cumulative-price><span class="dash-switch-track" aria-hidden="true"></span><span>Cumulative price</span></button>
       </div>
       <div class="stance-history-chart-wrap">
-        <canvas class="stance-history-canvas" aria-label="Stance and default basket returns"></canvas>
+        <canvas class="stance-history-canvas" aria-label="Stance and theme comparison basket returns"></canvas>
       </div><p class="history-data-note" data-stance-chart-note aria-live="polite"></p>`;
   }
 
@@ -605,7 +613,7 @@
       const cumulativePrice = priceToggle?.getAttribute('aria-checked') === 'true';
       const series = mountStanceChart(canvas, enriched, { cumulativeStance, cumulativePrice });
       const stanceNote = cumulativeStance ? 'Stance sums the latest score per US calendar day; missing scores remain gaps. This is an index, not a percentage.' : 'Stance shows each publish’s score (−10 to +10).';
-      const priceNote = cumulativePrice ? 'Price compounds equal-weight returns for matched default stocks, rebalanced at each publish; basket membership and coverage can change. This is not a fixed-basket buy-and-hold return.' : 'Price shows each interval return to the next publish or latest available quote.';
+      const priceNote = 'The preset theme basket is a comparison, not confirmed event exposure. ' + (cumulativePrice ? 'Price compounds equal-weight returns for matched default stocks, rebalanced at each publish; basket membership and coverage can change. This is not a fixed-basket buy-and-hold return.' : 'Price shows each interval return to the next publish or latest available quote.');
       const gapNote = cumulativePrice && series?.priceIncomplete ? ' Unpriced intervals remain gaps and are excluded. Accumulation resumes from the last known value, never resets to 0%. This partial index is not a complete whole-period return.' : '';
       const historyNote = enriched.some(row => row.historicalN > 0) ? ' Missing snapshots are backfilled using completed historical hourly bars at or before each publish (up to 7 days old); these are approximate publish-time prices, not exact executions.' : '';
       const emptyNote = series?.pricedIntervals === 0 ? ' No comparable prices are available for this cluster yet.' : '';
@@ -666,7 +674,7 @@
           <span class="stance-history-stance">${util.escapeHtml(
             row.stance
           )}</span>
-          <span class="stance-history-ret" title="Cluster defaults → next publish (last point = live)">${ret}</span>
+          <span class="stance-history-ret" title="Theme comparison basket → next publish (last point = live)">${ret}</span>
           <span class="stance-history-date">${util.escapeHtml(d)}</span>
         </div>`;
       })
@@ -676,7 +684,7 @@
       enriched,
       html: `
       <div class="stance-history-panel">
-        <div class="stance-history-title">Stance × cluster defaults</div>
+        <div class="stance-history-title">Stance × theme comparison basket</div>
         ${enriched.some(row => historyRowScore(row) == null) ? '<p class="history-data-note">Missing numeric stance scores are left as gaps; categorical labels are available in the history list.</p>' : ''}
         ${chart}
         <div class="stance-stat-grid">
@@ -790,7 +798,7 @@
     const mentioned = group.mentioned_stocks || [];
     const close = group.close_stocks || group.direct_stocks || [];
     const original = group.original_stocks || group.related_stocks || [];
-    const fixed = group.fixed_stocks || group.default_stocks || [];
+    const fixed = (window.ClustrTaxonomy?.defaultBasketAllowed(group.name || group.group) ?? true) ? group.fixed_stocks || group.default_stocks || [] : [];
     const winners =
       group.connected_winners ||
       (group.movers || []).filter(
@@ -803,12 +811,12 @@
       );
 
     const groups = [
-      { id: 'mentioned', label: 'Mentioned in articles', list: mentioned },
-      { id: 'close', label: 'Close links', list: close },
-      { id: 'original', label: 'Original ideas', list: original },
-      { id: 'fixed', label: 'Cluster defaults', list: fixed },
-      { id: 'winners', label: 'Connected winners', list: winners },
-      { id: 'losers', label: 'Connected losers', list: losers }
+      { id: 'mentioned', label: 'Mentioned in articles', description: 'Named in this cluster’s source articles. A mention alone does not establish exposure to every event or to the summary headline.', list: mentioned },
+      { id: 'close', label: 'Suggested close links', description: 'Suggested connections to individual events in this cluster. Check the source articles for the specific company relationship.', list: close },
+      { id: 'original', label: 'Second-order candidates', description: 'Potential indirect connections to individual events. These are candidates, not confirmed exposure to every event in this cluster.', list: original },
+      { id: 'fixed', label: 'Theme comparison basket', description: 'Preset stocks for theme comparison. Inclusion does not establish exposure to the reported events; basket returns are not evidence of a reaction to this news.', list: fixed },
+      { id: 'winners', label: 'Associated gainers', description: 'Market movers associated with the cluster. Their price moves do not establish that this news caused the change.', list: winners },
+      { id: 'losers', label: 'Associated decliners', description: 'Market movers associated with the cluster. Their price moves do not establish that this news caused the change.', list: losers }
     ].filter(g => (g.list || []).length > 0);
 
     const chartPool = [];
@@ -1211,6 +1219,7 @@
             </select>
             <div class="group-since-publish" aria-live="polite"></div>
           </div>
+          <p class="stock-group-context" role="note">${util.escapeHtml(stockGroups[0]?.description || 'No stock associations are available for the selected scope.')}</p>
           <div class="bubbles-scroll stock-bubbles" role="group" aria-label="Stocks in selected group"></div>
         </div>
 
@@ -1253,6 +1262,7 @@
             a => `
           <article class="md-card md-card--outlined article-card" data-article-category="${articleCategory(a)}">
             <h3 class="article-title">${util.escapeHtml(a.title || '')}</h3>
+            ${sameEventHtml(a, articles)}
             <div class="article-meta">
               ${util.escapeHtml(a.source || '')}
               ${
@@ -1643,6 +1653,7 @@
 
     function renderBubbleGroup(groupId) {
       const g = stockGroups.find(x => x.id === groupId) || stockGroups[0];
+      el.querySelector('.stock-group-context').textContent = g?.description || 'No stock associations are available for the selected scope.';
       if (!g) {
         bubblesEl.innerHTML = '<span class="stock-empty">No stocks</span>';
         ++stockRequest;

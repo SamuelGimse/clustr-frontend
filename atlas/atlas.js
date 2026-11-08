@@ -18,7 +18,7 @@
   }
 
   function scoreOf(group, util) {
-    const ratings = (group.articles || []).map(article => article.rating ?? article.score);
+    const ratings = (group.articles || []);
     return util.articleImpactScore(ratings) ?? util.numericStance(group.stance_score ?? group.cluster_score);
   }
 

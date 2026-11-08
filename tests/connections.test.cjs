@@ -152,3 +152,27 @@ test('history errors reject rather than silently showing an incomplete window',a
   await assert.rejects(loadWindow(p,1,{fetchPublishesInRange:async()=>{throw Error('Offline');}}),/Offline/);
   await assert.rejects(loadWindow(p,1,{fetchPublishesInRange:async()=>[p],loadGroupsForPublish:async()=>{throw Error('Unavailable');}}),/Unavailable/);
 });
+
+
+test('Preview CSS variables derive from the same Network palette in both color modes',()=>{
+  const {palette,paletteStyle}=require('../connections/canvas');
+  const style=paletteStyle();
+  for(const type of ['cluster','stock','news','edge']) {
+    const rgb=light=>`rgb(${palette(light)[type].map(value=>Math.round(value*255)).join(' ')})`;
+    assert(style.includes(`--cx-${type}:light-dark(${rgb(true)},${rgb(false)})`));
+  }
+});
+
+
+test('Network details use the newest saved price, paired change and distinct linked cluster impacts',()=>{
+  const vm=require('node:vm'),fs=require('node:fs');const sandbox={window:{}};vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'../js/util.js'),'utf8'),sandbox);
+  const rows=[{publish:{market:'US',created_at:'2026-11-06T12:00:00Z'},groups:[{name:'Chips',stance_score:3,fixed_stocks:[{symbol:'NVDA',priceAtPublish:200,changePercentAtPublish:2.5}],stocks:[{symbol:'NVDA',price:999}]}]},{publish:{market:'US',created_at:'2026-11-05T12:00:00Z'},groups:[{name:'AI',stance_score:4,fixed_stocks:[{symbol:'NVDA',name:'NVIDIA',priceAtPublish:100,changePercentAtPublish:-1}]}]}];
+  const before=JSON.stringify(rows),merged=mergeReports(rows,'US').reverse();
+  const graph=buildGraph(merged,'US',sandbox.window.ClustrUtil),stock=graph.nodes.find(node=>node.type==='stock');
+  assert.equal(stock.price,200);assert.equal(stock.change,2.5);assert.equal(stock.quoteAt,'2026-11-06T12:00:00Z');assert.equal(stock.name,'NVIDIA');assert.equal(stock.score,sandbox.window.ClustrUtil.articleImpactScore([4,3]));assert.equal(graph.edges.filter(edge=>edge.to===stock.id).length,2);assert.equal(JSON.stringify(rows),before);
+});
+
+test('Unavailable and wrong-market prices remain unavailable; zero article impact remains zero',()=>{
+  const graph=buildGraph([{name:'Unknown',stocks:[{symbol:'UNKNOWN',priceAtPublish:true},{symbol:'ZERO',priceAtPublish:0},{symbol:'NEG',priceAtPublish:-1},{symbol:'WRONG',market:'NO',priceAtPublish:50}],articles:[{title:'Zero',rating:0},{title:'Invalid',rating:11}]}],'US');
+  assert(graph.nodes.filter(node=>node.type==='stock').every(node=>node.price===null));assert(!graph.nodes.some(node=>node.label==='WRONG'));assert.equal(graph.nodes.find(node=>node.label==='Zero').score,0);assert.equal(graph.nodes.find(node=>node.label==='Invalid').score,null);
+});
