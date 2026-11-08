@@ -166,9 +166,15 @@
 
   function paintControls() {
     if (!root.document) return;
+    root.document.documentElement?.toggleAttribute('data-watchlist-filtered', !!user && isFiltered());
+    const nav = root.document.getElementById('navWatchlist');
+    nav?.setAttribute?.('aria-label', isFiltered() ? 'My watchlist, filter active' : 'My watchlist');
+    if (nav?.setAttribute) nav.title = isFiltered() ? 'Watchlist filter active' : 'My watchlist';
     const bar = root.document.getElementById('watchlistScope');
     if (bar) {
       bar.hidden = !user || ['account', 'admin', 'watchlist', 'polymarket'].includes(view);
+      const indicator = bar.querySelector('[data-watch-indicator]');
+      if (indicator) indicator.hidden = !isFiltered();
       bar.querySelectorAll('[data-watch-scope]').forEach(control => {
         const selected = control.dataset.watchScope === scope;
         control.setAttribute('aria-pressed', String(selected));
