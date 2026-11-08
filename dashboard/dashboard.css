@@ -25,7 +25,12 @@
 .dash-impact-chart text { fill: var(--text-meta); font-size: 11px; }
 .dash-gridline { stroke: var(--border); stroke-width: 1; }
 .dash-observed-dot { fill: var(--accent); stroke: var(--panel); stroke-width: 2; }
-.dash-cumulative-line { fill:none; stroke:var(--accent); stroke-width:2.5; }
+.dash-trend-controls .dash-mode-toggle {display:flex;align-items:center;gap:10px;min-height:44px;padding:0;border:0;background:transparent;color:var(--text-meta);font:inherit;font-size:11px;text-align:left;cursor:pointer}
+.dash-switch-track {position:relative;display:block;flex-shrink:0;width:36px;height:20px;border:1px solid var(--border);border-radius:20px;background:var(--panel-2)}
+.dash-switch-track::before {content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--text-meta)}
+.dash-mode-toggle[aria-checked="true"] .dash-switch-track {background:var(--accent)}
+.dash-mode-toggle[aria-checked="true"] .dash-switch-track::before {transform:translateX(16px);background:var(--panel)}
+.dash-mode-toggle:focus-visible {outline:2px solid var(--accent);outline-offset:3px;border-radius:5px}
 .dash-fit { fill: none; stroke-width: 2; stroke-dasharray: 7 5; }
 .dash-fit--linear { stroke: color-mix(in srgb, var(--text) 30%, #8cbdad); }
 .dash-fit--logarithmic { stroke: color-mix(in srgb, var(--text) 30%, #d1b17c); }
