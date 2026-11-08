@@ -140,7 +140,7 @@
     return window.ClustrWatchlist?.filterGroups(groups, market) || groups;
   }
 
-  function setNav(which) {
+  function setNav(which, context = null) {
     window.ClustrConnections?.hide();
     if (which === 'admin' && authState.role !== 'admin') which = 'account';
     closeEventSortMenu();
@@ -184,7 +184,11 @@
       if (which === 'watchlist' || which === 'atlas') history.replaceState(null, '', `#/${which}`);
     } else if (which === 'connections') {
       history.replaceState(null, '', '#/connections');
-      window.ClustrConnections?.mount(currentGroups, publishes[publishIndex]);
+      if (context?.publish) {
+        const index=publishes.findIndex(publish=>String(publish.id)===String(context.publish.id));
+        if(index>=0){publishIndex=index;currentGroups=context.reportGroups||currentGroups;setMeta();}
+      }
+      window.ClustrConnections?.mount(context?.reportGroups || currentGroups, context?.publish || publishes[publishIndex], context || false);
     } else if (which === 'dashboard') {
       history.replaceState(null, '', '#/dashboard');
       navDashboard?.classList.add('is-active');

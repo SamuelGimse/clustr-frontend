@@ -1,6 +1,6 @@
 (function (root) {
   let currentScene = null;
-  let periodDays=1, revision=0;
+  let periodDays=1, revision=0, currentFocus=null;
   const stockFields=['mentioned_stocks','close_stocks','original_stocks','fixed_stocks','default_stocks','direct_stocks','related_stocks','stocks'];
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function safeUrl(value) { try { const url = new URL(value); return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password ? url.href : ''; } catch { return ''; } }
@@ -48,20 +48,23 @@
     const data=await Promise.all([...reports.values()].map(async p=>({publish:p,groups:await api.loadGroupsForPublish(p)})));
     return {groups:mergeReports(data,market),reports:reports.size,...range};
   }
-  async function mount(groups,publish,focus=false) {
+  async function mount(groups,publish,settings=false) {
+    const context=settings && typeof settings==='object'?settings:{};
+    const focus=settings===true || !!context.focusControls;
+    if([1,2,3].includes(context.days))periodDays=context.days;
     const request=++revision,days=periodDays;
-    const change=value=>{periodDays=Number(value);mount(groups,publish,true);};
-    const options={days,onDays:change,scope:'Loading saved reports…'};
-    render(groups,publish,options);
+    const change=value=>{periodDays=Number(value);mount(groups,publish,{focusControls:true,focusId:currentFocus});};
+    const options={days,onDays:change,focusId:context.focusId,scope:'Loading saved reports…'};
+    if(!Array.isArray(context.windowGroups))render(groups,publish,options);
     if(focus)document.getElementById('connectionsView')?.querySelector('[aria-label="Network time range"]')?.focus();
     try {
-      const result=await loadWindow(publish,days,root.ClustrApi);
+      const result=Array.isArray(context.windowGroups)?{groups:context.windowGroups,reports:context.reportCount,...windowRange(publish,days)}:await loadWindow(publish,days,root.ClustrApi);
       if(request!==revision)return;
       const date=new Date(result.end).toLocaleString('en-GB',{timeZone:'America/New_York',dateStyle:'medium',timeStyle:'short'});
       render(result.groups,publish,{...options,scope:`Last ${days} ${days===1?'day':'days'} (${days*24} hours) ending ${date} ET · ${result.reports} reports · Latest cluster scores; links and stories combined across the window.`});
     } catch(error) {
       if(request!==revision)return;
-      render(groups,publish,{...options,scope:`Could not load the ${days}-day window. Showing the selected report only. ${error.message}`,retry:()=>mount(groups,publish,true)});
+      render(groups,publish,{...options,scope:`Could not load the ${days}-day window. Showing the selected report only. ${error.message}`,retry:()=>mount(groups,publish,{focusControls:true,focusId:currentFocus})});
     }
     if(focus)document.getElementById('connectionsView')?.querySelector('[aria-label="Network time range"]')?.focus();
   }
@@ -120,7 +123,7 @@
     const nav = document.getElementById('navConnections');
     nav?.classList.add('is-active'); nav?.setAttribute('aria-current','page');
     const graph = buildGraph(groups,publish?.market), positions = layout(graph.nodes);
-    let selected = null, query = '', type='', zoom = 1;
+    let selected = null, query = '', type='', zoom = 1; currentFocus=null;
     const trail=[];
     host.innerHTML = `<header class="cx-hero"><div><p class="cx-eyebrow">CLUSTR MARKET / CONNECTIONS · ${escape(publish?.market || 'REPORT')}</p><h1>Everything is <em>connected.</em></h1><p>Explore the links between events, companies and source stories.</p></div><div class="cx-counts">${['cluster','stock','news'].map(type=>`<div><b>${graph.nodes.filter(n=>n.type===type).length}</b><span>${type==='news'?'stories':type+'s'}</span></div>`).join('')}</div></header>
       <div class="cx-tools"><label>Find a connection<input type="search" placeholder="Cluster, ticker, company or headline…" aria-label="Search connections"></label><div><button type="button" data-action="out" aria-label="Zoom out">−</button><button type="button" data-action="in" aria-label="Zoom in">+</button><button type="button" data-action="reset">All connections</button></div></div>
@@ -133,12 +136,12 @@
     const scope=document.createElement('p');scope.className='cx-scope';scope.setAttribute('role','status');scope.textContent=options.scope||'Selected report only';host.querySelector('.cx-workspace').before(scope);
     if(options.retry){const retry=document.createElement('button');retry.type='button';retry.textContent='Retry';retry.onclick=options.retry;scope.append(' ',retry);}
     const browse=document.createElement('select');browse.setAttribute('aria-label','Browse connection types');browse.innerHTML='<option value="">All nodes</option><option value="cluster">Clusters</option><option value="stock">Stocks</option><option value="news">News</option>';host.querySelector('.cx-tools').append(browse);
-    browse.onchange=()=>{type=browse.value;selected=null;trail.length=0;paint();};
+    browse.onchange=()=>{type=browse.value;selected=null;currentFocus=null;trail.length=0;paint();};
     const announce=document.createElement('p');announce.className='cx-announcement';announce.setAttribute('role','status');announce.setAttribute('aria-live','polite');host.querySelector('.cx-workspace').before(announce);
     function selectNode(id, record=true){
       if(!byId.has(id))return;
       if(record&&selected&&selected!==id)trail.push(selected);
-      selected=id;query='';type='';browse.value='';host.querySelector('input').value='';paint();
+      selected=id;currentFocus=id;query='';type='';browse.value='';host.querySelector('input').value='';paint();
       const heading=inspector.querySelector('h2');heading?.setAttribute('tabindex','-1');heading?.focus({preventScroll:true});
       if(window.matchMedia('(max-width:768px)').matches)heading?.scrollIntoView({block:'nearest'});
     }
@@ -172,11 +175,11 @@
     host.onclick=event=>{const target=event.target.closest('[data-node],[data-action]');if(!target||!host.contains(target))return;
       if(target.dataset.node)selectNode(target.dataset.node);
       else if(target.dataset.action==='back'){const previous=trail.pop();if(previous)selectNode(previous,false);}
-      else {if(target.dataset.action==='reset'){selected=null;trail.length=0;zoom=1;query='';type='';browse.value='';host.querySelector('input').value='';currentScene?.reset();paint();}else {const amount=target.dataset.action==='in'?.2:-.2;zoom=Math.max(.7,Math.min(2.5,zoom+amount));currentScene?.zoom(amount);}svg.style.width=`${zoom*100}%`;}
+      else {if(target.dataset.action==='reset'){selected=null;currentFocus=null;trail.length=0;zoom=1;query='';type='';browse.value='';host.querySelector('input').value='';currentScene?.reset();paint();}else {const amount=target.dataset.action==='in'?.2:-.2;zoom=Math.max(.7,Math.min(2.5,zoom+amount));currentScene?.zoom(amount);}svg.style.width=`${zoom*100}%`;}
     };
     host.onkeydown=event=>{if(event.key==='Escape'){event.preventDefault();host.querySelector('[data-action="reset"]').click();host.querySelector('input').focus();}else if(event.target.matches('g[data-node]')&&['Enter',' '].includes(event.key)){event.preventDefault();selectNode(event.target.dataset.node);}};
-    host.querySelector('input').oninput=event=>{query=event.target.value.trim().toLowerCase();selected=null;trail.length=0;paint();};
-    paint();
+    host.querySelector('input').oninput=event=>{query=event.target.value.trim().toLowerCase();selected=null;currentFocus=null;trail.length=0;paint();};
+    if(options.focusId&&byId.has(options.focusId))selectNode(options.focusId,false);else paint();
   }
   function hide() { revision++;currentScene?.destroy();currentScene=null;document.getElementById('connectionsView')?.classList.add('hidden');const nav=document.getElementById('navConnections');nav?.classList.remove('is-active');nav?.setAttribute('aria-current','false'); }
   const api={buildGraph,layout,safeUrl,matches:matchesNode,windowRange,mergeReports,loadWindow,mount,render,hide};

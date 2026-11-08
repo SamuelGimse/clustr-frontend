@@ -28,7 +28,57 @@
     return `<div class="dash-projection-readout"><p class="dash-kicker">+1 DAY · ${esc(date)}</p><strong>${number(forecast.point.value)}</strong><span>95% prediction interval<br><b>${number(forecast.point.lower)} to ${number(forecast.point.upper)}</b></span><small>News impact · one day after the latest report${Math.abs(forecast.point.value) > 10 ? ' · raw estimate outside the chart scale' : ''}</small></div>`;
   }
 
-  function buildSummary(publishes, groups, selectedMarket, util, atlas, watchlist) {
+  function buildWatchlistRecap(publishes, groups, util, atlas, watchlist, network) {
+    if (!watchlist?.getItems || !network?.buildGraph) return null;
+    const items = watchlist.getItems().filter(stock => String(stock.market || 'US').toUpperCase() === market);
+    const publish = [...publishes].filter(row => String(row.market || 'US').toUpperCase() === market && Number.isFinite(Date.parse(row.created_at)))
+      .sort((a,b) => Date.parse(b.created_at)-Date.parse(a.created_at) || Number(b.id)-Number(a.id))[0];
+    if (!publish) return null;
+    if (!items.length) return {publish,total:0,stocks:[],graph:{nodes:[],edges:[]},stories:0,context:null};
+    const { start, end } = network.windowRange(publish, 1);
+    const rows = publishes.filter(row => String(row.market || 'US').toUpperCase() === market && Date.parse(row.created_at)>start && Date.parse(row.created_at)<=end)
+      .map(row => ({publish:row,groups:groups.get(String(row.id)) || []}));
+    const merged = network.mergeReports(rows, market);
+    const scoped = watchlist.linkedGroups(merged, market);
+    const graph = network.buildGraph(scoped, market), byId = new Map(graph.nodes.map(node=>[node.id,node]));
+    const saved = new Set(items.map(stock => util.normalizeSymbol(stock.symbol)));
+    const priceModel = atlas.buildModel(publishes.filter(row=>String(row.market||'US').toUpperCase()===market),groups,'publishes',util);
+    const stocks = graph.nodes.filter(node=>node.type==='stock' && saved.has(node.label)).map(node=>{
+      const links=graph.edges.filter(edge=>edge.from===node.id||edge.to===node.id);
+      const clusters=links.map(edge=>byId.get(edge.from===node.id?edge.to:edge.from)).filter(node=>node.type==='cluster');
+      const clusterIds=new Set(clusters.map(node=>node.id));
+      const stories=[...new Set(graph.edges.filter(edge=>clusterIds.has(edge.from)&&byId.get(edge.to)?.type==='news').map(edge=>edge.to))].map(id=>byId.get(id));
+      const direct=stories.filter(story=>(story.article.mentioned_companies||[]).some(stock=>util.normalizeSymbol(stock.symbol||stock)===node.label));
+      const story=[...(direct.length?direct:stories)].sort((a,b)=>(Date.parse(b.article.published_at||b.article.date)||0)-(Date.parse(a.article.published_at||a.article.date)||0)||a.label.localeCompare(b.label))[0];
+      const history=priceModel.stocks.find(stock=>stock.market===market&&stock.symbol===node.label);
+      const quote=history?.entries.findLast(Boolean);
+      return {node,clusters,stories,story,direct:direct.length>0,score:util.articleImpactScore(clusters.map(cluster=>cluster.score)),price:quote?.price??null,priceChange:quote?.priceChange??null};
+    }).sort((a,b)=>b.clusters.length-a.clusters.length||b.stories.length-a.stories.length||a.node.label.localeCompare(b.node.label));
+    const mostConnected=stocks[0];
+    return {publish,total:items.length,stocks,graph,stories:graph.nodes.filter(node=>node.type==='news').length,
+      context:mostConnected?{publish,reportGroups:groups.get(String(publish.id))||[],windowGroups:scoped,reportCount:rows.length,days:1,focusId:mostConnected.node.id}:null};
+  }
+
+  function networkPreview(recap, esc) {
+    const focus=recap.stocks[0],graph=recap.graph;
+    const clusters=focus.clusters.slice(0,6),ids=new Set(clusters.map(node=>node.id));
+    const stories=graph.nodes.filter(node=>node.type==='news'&&graph.edges.some(edge=>ids.has(edge.from)&&edge.to===node.id)).slice(0,10);
+    const points=new Map([[focus.node.id,{x:210,y:122}]]);
+    clusters.forEach((node,index)=>{const angle=2*Math.PI*index/clusters.length-Math.PI/2;points.set(node.id,{x:210+Math.cos(angle)*112,y:122+Math.sin(angle)*76});});
+    stories.forEach((node,index)=>{const angle=2*Math.PI*index/stories.length-Math.PI/2;points.set(node.id,{x:210+Math.cos(angle)*184,y:122+Math.sin(angle)*108});});
+    const edges=graph.edges.filter(edge=>points.has(edge.from)&&points.has(edge.to));
+    return `<svg class="dash-network-svg" viewBox="0 0 420 244" aria-hidden="true">${edges.map(edge=>{const a=points.get(edge.from),b=points.get(edge.to);return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" class="${edge.kind==='Default exposure'?'dash-network-default':''}"/>`;}).join('')}${stories.map(node=>{const point=points.get(node.id);return `<circle cx="${point.x}" cy="${point.y}" r="3" class="dash-network-story"/>`;}).join('')}${clusters.map(node=>{const point=points.get(node.id);return `<g><circle cx="${point.x}" cy="${point.y}" r="6" class="dash-network-cluster"/><text x="${point.x}" y="${point.y+18}" text-anchor="middle">${esc(node.label.length>17?node.label.slice(0,16)+'…':node.label)}</text></g>`;}).join('')}<circle cx="210" cy="122" r="35" class="dash-network-center"/><text x="210" y="127" text-anchor="middle" class="dash-network-symbol" style="font-size:${focus.node.label.length>6?12:18}px">${esc(focus.node.label.length>9?focus.node.label.slice(0,8)+'…':focus.node.label)}</text></svg>`;
+  }
+
+  function watchlistPanels(recap, esc) {
+    if (!recap) return '';
+    if (!recap.total) return '<section class="dash-panel dash-watch-empty"><div><p class="dash-kicker">YOUR WATCHLIST</p><h2>Your market, in one place</h2><p class="dash-footnote">Save a few stocks to see their linked news and connections here.</p></div><button type="button" class="dash-watch-setup" data-dash-nav="watchlist">Create your watchlist →</button></section>';
+    const date=new Date(recap.publish.created_at).toLocaleString('en',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const stock=recap.stocks[0];
+    return `<div class="dash-personal"><section class="dash-panel"><div class="dash-panel-head"><div><p class="dash-kicker">YOUR WATCHLIST</p><h2>What happened to your stocks</h2></div><button type="button" data-dash-nav="watchlist" aria-label="Manage watchlist">Manage →</button></div><p class="dash-watch-scope">Last 24 hours ending ${esc(date)} ET · ${recap.stocks.length}/${recap.total} stocks connected · ${recap.stories} linked stories</p><div class="dash-watch-list">${recap.stocks.length?recap.stocks.slice(0,3).map(item=>`<article class="dash-watch-stock"><div class="dash-watch-stock-head"><strong>${esc(item.node.label)}</strong><span>${item.clusters.length} ${item.clusters.length===1?'cluster':'clusters'}</span><span class="dash-score dash-score--${tone(item.score)}">${scoreText(item.score)} impact</span>${item.priceChange==null?'':`<span class="dash-watch-price dash-watch-price--${tone(item.priceChange)}">${item.priceChange>=0?'+':''}${item.priceChange.toFixed(2)}% price</span>`}</div>${item.story?`<p>${item.story.url?`<a href="${esc(item.story.url)}" target="_blank" rel="noopener noreferrer">${esc(item.story.label)}</a>`:esc(item.story.label)}</p><small>${item.direct?'Article mention':'Linked cluster story'} · ${esc(item.story.article.source||'Source unavailable')}</small>`:'<p>No linked story in this window.</p>'}</article>`).join(''):'<p class="dash-footnote">No saved connections for your stocks in this 24-hour window.</p>'}</div><p class="dash-footnote">Impact comes from linked clusters. Price changes use the latest saved stock report versus its prior appearance; they are not live quotes.</p></section>${stock?`<section class="dash-panel dash-network-panel"><a href="#/connections" class="dash-network-preview" data-dash-network aria-label="Open ${esc(stock.node.label)} in Network with the same report and 24-hour window"><div class="dash-panel-head"><div><p class="dash-kicker">YOUR NETWORK</p><h2>Most connected: ${esc(stock.node.label)}</h2></div><span aria-hidden="true">↗</span></div>${networkPreview(recap,esc)}<p>${stock.clusters.length} linked clusters · ${stock.stories.length} linked stories</p><span class="dash-network-open">Open this view in Network →</span><small>Up to 6 clusters and 10 stories shown. Dashed lines show default exposure.</small></a></section>`:''}</div>`;
+  }
+
+  function buildSummary(publishes, groups, selectedMarket, util, atlas, watchlist, network) {
     const scoped = publishes.filter(publish => String(publish.market || 'US').toUpperCase() === selectedMarket);
     const model = atlas.buildModel(scoped, groups, 'days', util);
     const latest = model.columns.at(-1);
@@ -82,6 +132,7 @@
     })).sort((a, b) => Math.abs(b.score || 0) - Math.abs(a.score || 0) || b.clusters - a.clusters || a.symbol.localeCompare(b.symbol));
     return {
       latest, reports: model.publishCount, days, clusterTrends, themes: currentThemes,
+      watchlist:buildWatchlistRecap(scoped,groups,util,atlas,watchlist,network),
       distribution: [
         ['−10 to −6', currentThemes.filter(theme => theme.score <= -6).length],
         ['−5.9 to −1.1', currentThemes.filter(theme => theme.score < -1 && theme.score > -6).length],
@@ -190,7 +241,8 @@
     const latestDay = summary.days.at(-1);
     const metric = (label, value, note) => `<div class="dash-metric"><span>${label}</span><strong>${value}</strong><small>${note}</small></div>`;
     const clusterRow = theme => `<div class="dash-list-row"><span class="dash-score dash-score--${tone(theme.score)}">${scoreText(theme.score)}</span><div><strong>${esc(theme.name)}</strong><small>${theme.articles} stories · ${theme.sources} sources</small></div><span class="dash-delta">${theme.delta == null ? 'New' : `${theme.delta > 0 ? '+' : ''}${theme.delta} shift`}</span></div>`;
-    root.innerHTML = `<div class="dash-shell"><header class="dash-header"><div><p class="dash-kicker">CLUSTR MARKET / OVERVIEW</p><h1>Dashboard</h1><p>Latest approved ${esc(market)} report · ${esc(date)} · ${summary.reports} reports in history</p></div></header>
+    root.innerHTML = `<div class="dash-shell"><header class="dash-header"><div><p class="dash-kicker">CLUSTR MARKET / OVERVIEW</p><h1>Dashboard</h1><p>${esc(market)} report · ${esc(date)} · ${summary.reports} reports in history</p></div></header>
+      ${watchlistPanels(summary.watchlist,esc)}
       <div class="dash-metrics">${metric('Clusters in latest report', summary.themes.length, `${latestDay.positive} positive · ${latestDay.negative} negative`)}${metric('Distinct stories', summary.stories, `${summary.rated} rated on −10 to +10`)}${metric('Stocks connected', summary.stocks.length, 'Linked to latest clusters')}${metric('News sources', summary.sourceCount, 'In the latest report')}</div>
       <div class="dash-grid">${trendPanel(summary, esc)}<section class="dash-panel"><div class="dash-panel-head"><div><p class="dash-kicker">DIRECTION</p><h2>News balance</h2></div><span>Latest report per US market day · up to 14 days</span></div><div class="dash-balance">${summary.days.map(day => {
         const total = day.positive + day.negative;
@@ -207,8 +259,11 @@
   }
 
   function scopedSummary() {
-    const groups = window.ClustrWatchlist?.filterGroupMap(cached.groups, cached.publishes) || cached.groups;
-    return buildSummary(cached.publishes, groups, market, window.ClustrUtil, window.ClustrAtlas,window.ClustrWatchlist);
+    const selected = window.ClustrApp?.getPublishes?.()[window.ClustrApp?.getPublishIndex?.() || 0];
+    const cutoff = Date.parse(selected?.created_at);
+    const publishes = Number.isFinite(cutoff) ? cached.publishes.filter(publish=>Date.parse(publish.created_at)<cutoff || Date.parse(publish.created_at)===cutoff && (String(publish.id)===String(selected.id) || Number(publish.id)<Number(selected.id))) : cached.publishes;
+    const groups = window.ClustrWatchlist?.filterGroupMap(cached.groups, publishes) || cached.groups;
+    return buildSummary(publishes, groups, market, window.ClustrUtil, window.ClustrAtlas,window.ClustrWatchlist,window.ClustrConnections);
   }
 
   function watchChartWidth(root) {
@@ -269,6 +324,12 @@
         root.querySelector('[data-dash-cumulative]')?.focus({preventScroll:true});
         return;
       }
+      if (event.target.closest('[data-dash-network]')) {
+        event.preventDefault();
+        const context=scopedSummary()?.watchlist?.context;
+        if (context) { window.ClustrWatchlist?.setScope('watchlist'); onNavigate('connections',context); }
+        return;
+      }
       const navButton = event.target.closest('[data-dash-nav]');
       if (navButton) onNavigate(navButton.dataset.dashNav);
     };
@@ -276,5 +337,5 @@
 
   function invalidate() { cached = null; loading = null; revision++; }
 
-  return { buildSummary, impactDays, render, invalidate };
+  return { buildSummary, buildWatchlistRecap, impactDays, render, invalidate };
 });
