@@ -3,6 +3,7 @@
   const key = 'clustr-auth-session-v1';
   let session = null;
   let oauthClient = null;
+  let pendingRefresh = null;
   const headers = token => ({ apikey: cfg().SUPABASE_ANON_KEY, ...(token ? { Authorization: `Bearer ${token}` } : {}), 'Content-Type': 'application/json' });
   const endpoint = path => String(cfg().SUPABASE_URL || '').replace(/\/$/, '') + path;
   const read = () => { try { return JSON.parse(root.localStorage.getItem(key) || 'null'); } catch { return null; } };
@@ -10,7 +11,7 @@
   async function request(path, method = 'GET', body, token) {
     const res = await root.fetch(endpoint(path), { method, headers: headers(token), body: body ? JSON.stringify(body) : undefined });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.msg || data.message || data.error_description || data.error || `Request failed (${res.status})`);
+    if (!res.ok) throw Object.assign(new Error(data.msg || data.message || data.error_description || data.error || `Request failed (${res.status})`), { status: res.status });
     return data;
   }
   function getOAuthClient() {
@@ -40,7 +41,33 @@
   }
   async function refresh(value) {
     if (!value || !value.refresh_token) return null;
-    const next = await request('/auth/v1/token?grant_type=refresh_token','POST',{refresh_token:value.refresh_token}); save(next); return next;
+    if (pendingRefresh?.token === value.refresh_token) return pendingRefresh.promise;
+    const task = { token: value.refresh_token };
+    task.promise = (async () => {
+      const next = await request('/auth/v1/token?grant_type=refresh_token','POST',{refresh_token:value.refresh_token});
+      if ((session || read())?.access_token !== value.access_token) throw new Error('Account changed while refreshing your session.');
+      save(next);
+      return session;
+    })();
+    pendingRefresh = task;
+    try { return await task.promise; }
+    finally { if (pendingRefresh === task) pendingRefresh = null; }
+  }
+  async function getAccessToken(rejectedToken = '') {
+    let current = session || read();
+    if (!current?.access_token) return '';
+    if (Number(current.expires_at) < Math.floor(Date.now()/1000)+60 || rejectedToken === current.access_token) {
+      if (!current.refresh_token) throw new Error('Your session expired. Sign in again to continue.');
+      try { current = await refresh(current); }
+      catch (error) {
+        if (error.status === 400 || error.status === 401) {
+          if ((session || read())?.access_token === current.access_token) save(null);
+          throw new Error('Your session expired. Sign in again to continue.');
+        }
+        throw error;
+      }
+    }
+    return current.access_token;
   }
   async function restore() {
     const callbackUrl = new URL(root.location.href);
@@ -139,5 +166,5 @@
     if(job.status==='failed'||job.status==='interrupted') throw new Error(job.error||'Full publish failed.');
     return job.result||job;
   }
-  root.ClustrAuth={restore,signIn,signInWithGoogle,signInWithFacebook,signInWithEmailLink,signUp,resendConfirmation,resetPassword,updatePassword,signOut,checkout:()=>callBilling('create-checkout-session'),portal:()=>callBilling('create-portal-session'),runPublish,accessToken:()=>{const s=session||read();return s&&s.access_token||'';}};
+  root.ClustrAuth={restore,signIn,signInWithGoogle,signInWithFacebook,signInWithEmailLink,signUp,resendConfirmation,resetPassword,updatePassword,signOut,checkout:()=>callBilling('create-checkout-session'),portal:()=>callBilling('create-portal-session'),runPublish,getAccessToken,sessionKey:()=>{const s=session||read();return s?.user?.id||s?.access_token||'';},accessToken:()=>{const s=session||read();return s&&s.access_token||'';}};
 })(window);
