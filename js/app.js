@@ -680,7 +680,8 @@
     content.innerHTML = `<div class="account-profile"><span>${window.ClustrUtil.escapeHtml(account.user.email || '')}</span><span class="account-plan-badge">${account.role === 'admin' ? 'PRO · ADMIN' : permanent ? 'FOUNDING 20' : account.role === 'pro' ? 'PRO · ACTIVE' : 'FREE'}</span></div>` +
       (account.role === 'admin' ? `<section class="account-plan"><h2>Pro is active</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p><p class="account-plan-note">Your admin account includes permanent Pro access. No subscription is required.</p></section>` : account.role === 'pro' ? `<section class="account-plan"><h2>${permanent ? 'Founding 20' : 'Pro is active'}</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p>${permanent ? '<p class="account-plan-note">Your Founding 20 access has no expiry date and no recurring payments.</p>' : account.plan?.current_period_end ? `<p class="account-plan-note">Current period ends ${new Date(account.plan.current_period_end).toLocaleDateString()}.</p>` : ''}${account.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage subscription</button>' : ''}</section>` :
       claimOffer + `<section class="account-plan"><h2>Free plan</h2><p>Browse older reports. Today’s and yesterday’s reports, Watchlist and History are not included (US Eastern time).</p><h3>Pro · 99 kr/month</h3><p>Get the latest data, your personal Watchlist and interactive History.</p><button class="account-primary" type="button" data-account-action="checkout">Continue to secure checkout</button>${account.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage billing</button>' : ''}</section>`) +
-      '<button class="account-secondary" type="button" data-account-action="logout">Sign out</button>';
+      (window.ClustrPush?.panelHtml() || '') + '<button class="account-secondary" type="button" data-account-action="logout">Sign out</button>';
+    window.ClustrPush?.mount(document.getElementById('accountPush'), account.user.id);
   }
 
   function renderAdmin(message = '') {
@@ -989,6 +990,18 @@
       const [, loadedPublishes] = await Promise.all([bootP, dataP, warmGroupsCache()]);
       publishes = loadedPublishes;
       publishIndex = 0;
+      const requestedPublish = new URLSearchParams(location.search).get('publish');
+      if (/^\d+$/.test(requestedPublish || '')) {
+        const target = publishes.findIndex(publish => String(publish.id) === requestedPublish);
+        if (target < 0) {
+          setNav('account');
+          renderAccount('This report is not available on your current plan yet. Your notification settings are available on every plan.');
+          setBootStage(2, 'Your workspace is ready');
+          await endBoot();
+          return;
+        }
+        publishIndex = target;
+      }
       if (location.hash === '#/polymarket') setNav('polymarket');
       if (!publishes.length) {
         if (location.hash === '#/connections') setNav('connections');
