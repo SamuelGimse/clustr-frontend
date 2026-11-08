@@ -1,3 +1,18 @@
+@font-face {
+  font-family: "FiraCode Nerd Font";
+  src: url("fonts/FiraCodeNerdFont-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "FiraCode Nerd Font";
+  src: url("fonts/FiraCodeNerdFont-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
 /**
  * Clustr — Material Design–inspired tokens + layout.
  * Color roles follow M3 surface/primary/outline patterns; themes override tokens.
@@ -564,6 +579,8 @@ html[data-theme="vt220"] .cluster-name {
 
 /* Pure Black — OLED / true black */
 [data-theme="pure-black"] {
+  --font-sans: "FiraCode Nerd Font", "Fira Code", ui-monospace, monospace;
+  --font-mono: "FiraCode Nerd Font", "Fira Code", ui-monospace, monospace;
   --md-sys-color-surface: #000000;
   --md-sys-color-surface-container: #000000;
   --md-sys-color-surface-container-high: #0a0a0a;
@@ -4438,3 +4455,46 @@ html[data-theme="aurora-glass"] :is(.md-btn--tonal, .md-btn--icon, .day-item) { 
     -webkit-backdrop-filter: none;
   }
 }
+
+[data-theme="old-school-rpg"] {
+  color-scheme: light;
+  --md-sys-color-surface: #c5b891;
+  --md-sys-color-surface-container: #e0d4ac;
+  --md-sys-color-surface-container-high: #e9ddba;
+  --md-sys-color-surface-container-highest: #f1e5c5;
+  --md-sys-color-on-surface: #2c2417;
+  --md-sys-color-on-surface-variant: #625537;
+  --md-sys-color-primary: #715615;
+  --md-sys-color-on-primary: #fff2c9;
+  --md-sys-color-primary-container: #d9c37c;
+  --md-sys-color-outline: #695b3c;
+  --md-sys-color-outline-variant: #a38d57;
+  --md-sys-color-up: #326a2a;
+  --md-sys-color-down: #a1362b;
+  --font-sans: Georgia, "Times New Roman", serif;
+}
+html[data-theme="old-school-rpg"] body {
+  background: repeating-linear-gradient(110deg, #c5b891 0 4px, #c9bc96 4px 8px);
+}
+html[data-theme="old-school-rpg"] .app-halos { display: none; }
+html[data-theme="old-school-rpg"] :is(.md-card, .cluster-card, .dash-panel, .dash-metric, .stocks-cluster, .stocks-browser, .atlas-matrix, .atlas-detail, .weekly-summary > div, .weekly-cluster, .weekly-ai-digest, .weekly-trend-panel, .pm-browser, .pm-detail, .account-shell, .country-panel) {
+  background: linear-gradient(145deg, #eee2bc, #d9cba2);
+  border: 2px ridge #85704a;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 2px rgba(255, 247, 213, .55), 0 3px 8px rgba(53, 39, 20, .22);
+}
+html[data-theme="old-school-rpg"] :is(.nav-rail, .mobile-topbar, .top-app-bar, .theme-menu) {
+  background: linear-gradient(145deg, #504a38, #29291f);
+  border-color: #a78944;
+  color: #f2dd9b;
+}
+html[data-theme="old-school-rpg"] .nav-rail-btn { color: #e7d6a0; }
+html[data-theme="old-school-rpg"] .nav-rail-btn.is-active { color: #fff0bd; background: #53623a; border: 1px solid #b6a25c; border-radius: 4px; }
+html[data-theme="old-school-rpg"] :is(.md-btn--tonal, .md-btn--icon, .day-item) {
+  background: linear-gradient(#e9d796, #c6a75b);
+  border: 1px solid #7f652f;
+  border-radius: 4px;
+  color: #302615;
+}
+.theme-menu button[data-theme="old-school-rpg"] { background: linear-gradient(135deg, #444634 50%, #ddc989 50%); color: #fff0bd; --swatch-accent: #f5d36f; }
+html[data-theme="pure-black"] :is(button, input, select, textarea, pre, code) { font-family: "FiraCode Nerd Font", "Fira Code", ui-monospace, monospace; }

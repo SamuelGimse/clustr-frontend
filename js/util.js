@@ -93,7 +93,7 @@ function isLightTheme() {
       'sea-foam'
     ]);
   const t = document.documentElement.getAttribute('data-theme') || 'apple';
-  if (t === 'grassy-hill' || t === 'aqua-classic') return true;
+  if (t === 'grassy-hill' || t === 'aqua-classic' || t === 'old-school-rpg') return true;
   if ((t === 'apple' || t === 'material') && document.documentElement.getAttribute('data-color-mode') === 'light') return true;
   if (t === 'apple' || t === 'material') {
     return !window.matchMedia('(prefers-color-scheme: dark)').matches;

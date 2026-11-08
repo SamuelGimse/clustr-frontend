@@ -11,7 +11,8 @@ test('Theme picker shows only the requested choices and light variants stay ligh
     ['apple', 'Glass'], ['apple-light', 'Glass Light'], ['material', 'Material'],
     ['material-light', 'Material Light'], ['clustr', 'Clustr'], ['pure-black', 'Black'],
     ['crt', 'CRT Tube'], ['dos-amber', 'DOS Amber'], ['grassy-hill', 'Grassy Hill'],
-    ['aqua-classic', 'Aqua Classic'], ['aurora-glass', 'Aurora Glass']
+    ['aqua-classic', 'Aqua Classic'], ['aurora-glass', 'Aurora Glass'],
+    ['old-school-rpg', 'Old School RPG']
   ]);
   for (const name of ['grassy-hill', 'aqua-classic', 'aurora-glass']) {
     assert.ok(fs.existsSync(path.join(__dirname, '..', 'wallpapers', `${name}.png`)));
@@ -61,4 +62,6 @@ test('Theme picker shows only the requested choices and light variants stay ligh
   assert.equal(context.window.ClustrUtil.isLightTheme(), true);
   context.window.ClustrThemes.applyTheme('aurora-glass');
   assert.equal(context.window.ClustrUtil.isLightTheme(), false);
+  context.window.ClustrThemes.applyTheme('old-school-rpg');
+  assert.equal(context.window.ClustrUtil.isLightTheme(), true);
 });
