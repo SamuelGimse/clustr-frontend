@@ -230,6 +230,44 @@
     return out;
   }
 
+  const latestCache = new Map();
+  const latestInflight = new Map();
+  async function getLatestQuotes(symbols, market = 'US') {
+    const list = [...new Set((symbols || []).map(key).filter(symbol => /^[A-Z0-9^][A-Z0-9.^=-]{0,19}$/.test(symbol)))];
+    const { url, key: anon } = creds();
+    if (!url || !anon || !['US', 'NO'].includes(market)) return {};
+    const out = {}, needed = [];
+    for (const symbol of list) {
+      const k = market + ':' + symbol, hit = latestCache.get(k);
+      if (hit && hit.expires > Date.now()) out[symbol] = hit.quote;
+      else if (!latestInflight.has(k)) needed.push(symbol);
+    }
+    for (let i = 0; i < needed.length; i += 30) {
+      const chunk = needed.slice(i, i + 30);
+      const pending = (async () => {
+        let quotes = {};
+        try {
+          const params = new URLSearchParams({ symbols: chunk.join(','), market });
+          const res = await fetch(url + '/functions/v1/market-quotes?' + params, { headers: authHeaders(), signal: AbortSignal.timeout(20000) });
+          if (res.ok) quotes = (await res.json()).quotes || {};
+        } catch (_) { /* Never substitute a saved publish percentage for a current quote. */ }
+        for (const symbol of chunk) {
+          const q = quotes[symbol];
+          const quote = q && typeof q.price === 'number' && Number.isFinite(q.price) && q.price > 0 && Number.isFinite(Date.parse(q.asOf))
+            ? { ...q, changePercent: typeof q.changePercent === 'number' && Number.isFinite(q.changePercent) ? q.changePercent : null } : null;
+          const k = market + ':' + symbol;
+          if (latestCache.size >= 512) latestCache.delete(latestCache.keys().next().value);
+          latestCache.set(k, { quote, expires: Date.now() + (quote ? CACHE_TTL_MS : FAIL_TTL_MS) });
+          latestInflight.delete(k);
+        }
+      })();
+      for (const symbol of chunk) latestInflight.set(market + ':' + symbol, pending);
+    }
+    await Promise.all(list.map(symbol => latestInflight.get(market + ':' + symbol)));
+    for (const symbol of list) out[symbol] = latestCache.get(market + ':' + symbol)?.quote || null;
+    return out;
+  }
+
   const historyCache = new Map();
   async function getHistoricalPrices(symbols, dates, market = 'US') {
     const times = dates.map(Date.parse).filter(Number.isFinite);
@@ -276,6 +314,7 @@
   window.ClustrQuotes = {
     getQuote: getQuote,
     getQuotes: getQuotes,
+    getLatestQuotes: getLatestQuotes,
     getHistoricalPrices: getHistoricalPrices,
     isEnabled: function () {
       const c = creds();

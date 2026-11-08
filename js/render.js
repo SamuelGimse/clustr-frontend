@@ -5,6 +5,44 @@
 (function () {
   const U = () => window.ClustrUtil;
   let renderGeneration = 0;
+  let newsQuoteTimer = null;
+
+  function quoteSessionLabel(quote, market = 'US', now = Date.now()) {
+    if (!Number.isFinite(Date.parse(quote?.asOf))) return 'Quote time unavailable';
+    const day = value => new Date(value).toLocaleDateString('en-CA', { timeZone: market === 'NO' ? 'Europe/Oslo' : 'America/New_York' });
+    return day(quote.asOf) === day(now) ? 'Today' : 'Last session';
+  }
+
+  async function refreshNewsQuotes(root = document.getElementById('eventsList')) {
+    if (!root || document.hidden || root.closest?.('#eventsView')?.classList.contains('hidden') || !window.ClustrQuotes?.getLatestQuotes) return;
+    const buttons = [...root.querySelectorAll('[data-news-quote]:not(:disabled)')];
+    for (const market of ['US', 'NO']) {
+      const selected = buttons.filter(button => (button.dataset.quoteMarket || 'US') === market);
+      if (!selected.length) continue;
+      let quotes = {};
+      try { quotes = await window.ClustrQuotes.getLatestQuotes(selected.map(button => button.dataset.symbol), market); } catch (_) {}
+      for (const button of selected) {
+        if (button.isConnected === false) continue;
+        const q = quotes[U().normalizeSymbol(button.dataset.symbol)];
+        const meta = button.querySelector('.chip-meta');
+        const valid = q && Number.isFinite(q.price) && q.price > 0 && Number.isFinite(Date.parse(q.asOf));
+        const pct = valid && Number.isFinite(q.changePercent) ? q.changePercent : null;
+        for (const tone of ['tone-up', 'tone-down']) button.classList.remove(tone);
+        const tone = U().toneClass(pct);
+        if (tone) button.classList.add(tone);
+        if (meta) meta.textContent = valid ? `${market === 'NO' ? 'NOK' : 'USD'} ${U().formatMoney(q.price)} · ${pct == null ? '—' : U().formatPct(pct)} ${quoteSessionLabel(q, market)}` : 'Quote unavailable';
+        button.dataset.quoteAsOf = valid ? q.asOf : '';
+        button.title = valid ? `${button.dataset.quoteName} · regular-session change vs previous close · quote ${new Date(q.asOf).toLocaleString()} · may be delayed` : `${button.dataset.quoteName} · latest quote unavailable; no publish percentage substituted`;
+      }
+    }
+    const cards = root.matches?.('.cluster-card') ? [root] : [...root.querySelectorAll('.cluster-card')];
+    for (const card of cards) {
+      const times = [...card.querySelectorAll('[data-news-quote]')].map(button => Date.parse(button.dataset.quoteAsOf)).filter(Number.isFinite);
+      const note = card.querySelector('[data-news-quote-note]');
+      if (note) note.textContent = 'Latest regular-session prices · change vs previous close · refreshes every minute · may be delayed' + (times.length ? ` · oldest displayed quote: ${new Date(Math.min(...times)).toLocaleString()}` : ' · quotes unavailable');
+      card.refreshNewsQuote?.();
+    }
+  }
 
   function articleRatingHtml(article) {
     const rating = U().numericStance(article && (article.rating ?? article.score));
@@ -148,7 +186,7 @@
     const stocks = [...new Map((list || []).map((stock, i) => [U().normalizeSymbol(stock.symbol) || `unresolved-${i}`, stock])).values()];
     const result = { average: null, priced: 0, total: stocks.length };
     if (!stocks.length || !window.ClustrQuotes) return result;
-    const quotes = await window.ClustrQuotes.getQuotes(stocks.map(stock => stock.symbol).filter(U().isQuoteSymbol));
+    const quotes = await (window.ClustrQuotes.getLatestQuotes || window.ClustrQuotes.getQuotes)(stocks.map(stock => stock.symbol).filter(U().isQuoteSymbol));
     const deltas = [];
     for (const s of stocks) {
       const pub = s.priceAtPublish ?? s.price;
@@ -839,19 +877,16 @@
    */
   function bubbleBtn(s) {
     const util = U();
-    const pctVal = s.changePercent ?? s.changePercentAtPublish;
-    const pct = util.formatPct(pctVal);
-    const tone = util.toneClass(pctVal);
     const debt =
       s.debtToEv != null
         ? ` · Debt/EV ${(Number(s.debtToEv) * 100).toFixed(0)}%`
         : '';
     return `
-      <button type="button" ${util.isQuoteSymbol(s.symbol) ? '' : 'disabled aria-label="Ticker unavailable"'} class="md-chip md-chip--filter ${tone}" data-symbol="${util.escapeHtml(
+      <button type="button" ${util.isQuoteSymbol(s.symbol) ? '' : 'disabled aria-label="Ticker unavailable"'} class="md-chip md-chip--filter neutral" data-news-quote data-quote-market="${util.escapeHtml(s.__market || s.market || 'US')}" data-quote-name="${util.escapeHtml(s.name || s.symbol || '')}" data-symbol="${util.escapeHtml(
         s.symbol || ''
       )}" title="${util.escapeHtml((s.name || s.symbol || '') + debt)}">
         <span class="chip-label">${util.escapeHtml(s.symbol || s.name || '?')}</span>
-        ${pct ? `<span class="chip-meta">${util.escapeHtml(pct)}</span>` : ''}
+        <span class="chip-meta">${util.isQuoteSymbol(s.symbol) ? 'Loading quote…' : 'No quote'}</span>
       </button>`;
   }
 
@@ -887,7 +922,7 @@
           <div class="price-cell">
             <div class="price-label">At publish</div>
             <div class="price-value">${util.formatMoney(publishPrice)}</div>
-            <div class="price-sub">${util.formatPct(publishPct) || '—'}</div>
+            <div class="price-sub">${util.formatPct(publishPct) || '—'} · session change at publish</div>
           </div>
           <div class="price-cell">
             <div class="price-label">Latest quote</div>
@@ -895,7 +930,7 @@
               livePrice != null ? util.formatMoney(livePrice) : '—'
             }</div>
             <div class="price-sub">${
-              util.formatPct(livePct) || (hasProxy ? '…' : 'quotes off')
+              live ? `${util.formatPct(livePct) || '—'} · ${quoteSessionLabel(live, stock?.__market)}` : (hasProxy ? '…' : 'quotes off')
             }</div>
           </div>
           <div class="price-cell">
@@ -914,7 +949,7 @@
           <div><span>Volume vs prior 20d avg</span><strong>${Number.isFinite(Number(signals?.relativeVolume20d)) && signals?.relativeVolume20d != null ? Number(signals.relativeVolume20d).toFixed(2) + '×' : '—'}</strong></div>
         </div>
         <div class="technical-metrics-note">${signals?.status === 'ok' ? `Completed daily bars through ${util.escapeHtml(signals.asOf || '')}. Traded value is a liquidity proxy, not a spread quote.` : 'Historical price signals unavailable for this stock.'}</div>
-        <div class="quote-asof">${predatesPublish ? 'Quote predates this publication; return unavailable. ' : ''}${live ? live.asOf && Number.isFinite(Date.parse(live.asOf)) ? `Quote as of ${util.escapeHtml(new Date(live.asOf).toLocaleString())}` : 'Quote timestamp unavailable' : 'Quote unavailable or loading'}</div>
+        <div class="quote-asof">${predatesPublish ? 'Quote predates this publication; return unavailable. ' : ''}${live ? live.asOf && Number.isFinite(Date.parse(live.asOf)) ? `Regular-session quote as of ${util.escapeHtml(new Date(live.asOf).toLocaleString())} · may be delayed` : 'Quote timestamp unavailable' : 'Quote unavailable or loading'}</div>
       </div>`;
   }
 
@@ -1220,6 +1255,7 @@
             <div class="group-since-publish" aria-live="polite"></div>
           </div>
           <p class="stock-group-context" role="note">${util.escapeHtml(stockGroups[0]?.description || 'No stock associations are available for the selected scope.')}</p>
+          <p class="stock-group-context" data-news-quote-note>Latest regular-session prices · change vs previous close · refreshes every minute · may be delayed</p>
           <div class="bubbles-scroll stock-bubbles" role="group" aria-label="Stocks in selected group"></div>
         </div>
 
@@ -1567,7 +1603,7 @@
 
       if (window.ClustrQuotes) {
         let live = null;
-        try { live = await window.ClustrQuotes.getQuote(symbol); } catch (_) {}
+        try { live = window.ClustrQuotes.getLatestQuotes ? (await window.ClustrQuotes.getLatestQuotes([symbol], stock.__market || 'US'))[util.normalizeSymbol(symbol)] : await window.ClustrQuotes.getQuote(symbol); } catch (_) {}
         if (request !== stockRequest) return;
         if (live) {
           priceMount.innerHTML = priceBarHtml(
@@ -1661,8 +1697,9 @@
         priceMount.innerHTML = '<p class="empty-state">No priced stocks in this group.</p>';
         return;
       }
-      bubblesEl.innerHTML = g.list.map(bubbleBtn).join('');
+      bubblesEl.innerHTML = g.list.map(stock => bubbleBtn({ ...stock, __market: group.__historyScope.market || group.market || 'US' })).join('');
       bindBubbles();
+      refreshNewsQuotes(el);
       if (!details.hidden) updateGroupSincePublish(g.id);
     }
 
@@ -1680,6 +1717,16 @@
     }
 
     const first = chartPool[0];
+    el.refreshNewsQuote = async () => {
+      if (details.hidden || !activeSymbol || !window.ClustrQuotes?.getLatestQuotes) return;
+      const symbol = activeSymbol, request = stockRequest;
+      const stock = { ...findStock(symbol), __publishAsOf: group.__historyScope.asOf, __market: group.__historyScope.market || group.market || 'US' };
+      let live = null;
+      try { live = (await window.ClustrQuotes.getLatestQuotes([symbol], stock.__market))[util.normalizeSymbol(symbol)]; } catch (_) {}
+      if (request !== stockRequest || symbol !== activeSymbol) return;
+      priceMount.innerHTML = priceBarHtml(symbol, activeName, stock.priceAtPublish ?? stock.price ?? null,
+        stock.changePercentAtPublish ?? stock.changePercent ?? null, live, stock);
+    };
     async function ensureExpandedContent() {
       if (chartMode === 'stance') fillStanceChart();
       if (expandedInitialized) return;
@@ -1716,6 +1763,11 @@
       target.appendChild(el);
       requestAnimationFrame(() => el.classList.add('is-visible'));
       await U().sleep(36);
+    }
+    refreshNewsQuotes(target);
+    if (!newsQuoteTimer && typeof setInterval === 'function') {
+      newsQuoteTimer = setInterval(() => refreshNewsQuotes(), 60000);
+      document.addEventListener?.('visibilitychange', () => { if (!document.hidden) refreshNewsQuotes(); });
     }
   }
 
