@@ -7,7 +7,7 @@ const source = process.argv.includes('--staged')
   : fs.readFileSync(path.join(__dirname, '../js/app.js'), 'utf8');
 const elements = Object.fromEntries(['accountTitle', 'accountMessage', 'accountContent'].map(id => [id, {}]));
 const badges = [{}, {}];
-const context = { authState: {}, accountPreview: '', accountMode: 'signin', document: { getElementById: id => elements[id], querySelectorAll: () => badges }, window: { ClustrUtil: { escapeHtml: value => value } } };
+const context = { authState: {}, accountPreview: '', accountMode: 'signin', foundingStatus: null, document: { getElementById: id => elements[id], querySelectorAll: () => badges }, window: { ClustrUtil: { escapeHtml: value => value } } };
 vm.createContext(context);
 vm.runInContext(source.slice(source.indexOf('  function isPermanentPro()'), source.indexOf('  function renderAdmin(')), context);
 function render(role, plan, user = { email: 'test@example.com' }) {
@@ -37,6 +37,13 @@ assert.match(elements.accountContent.innerHTML, /data-account-action="email-link
 assert.match(elements.accountContent.innerHTML, /data-account-action="facebook"/);
 assert(!elements.accountContent.innerHTML.includes('data-account-action="apple"'));
 assert(badges.every(b => b.hidden));
+context.foundingStatus = { remaining: 15 };
+assert.match(render('free', null, null), /Get Founding 20/);
+assert(!elements.accountContent.innerHTML.includes('data-account-action="claim-founding20"'));
+assert.match(render('free', null), /data-account-action="claim-founding20"/);
+context.foundingStatus = { remaining: 0 };
+assert(!render('free', null).includes('data-account-action="claim-founding20"'));
+context.foundingStatus = null;
 const admin = render('admin', null);
 assert.match(admin, /Pro is active/);
 assert.match(admin, /PRO · ADMIN/);

@@ -108,6 +108,12 @@
     catch (error) { save(null); return { session:null,user:null,role:'free',plan:null,authError:error.message || 'Could not restore your sign-in session.' }; }
   }
   async function signIn(email,password) { save(await request('/auth/v1/token?grant_type=password','POST',{email,password})); return restore(); }
+  async function foundingStatus() { return request('/rest/v1/rpc/clustr_founding20_status','POST',{},await getAccessToken()); }
+  async function claimFounding20() {
+    const token = await getAccessToken();
+    if (!token) throw new Error('Sign in before claiming Founding 20.');
+    return request('/rest/v1/rpc/clustr_claim_founding20','POST',{},token);
+  }
   async function signInWithProvider(provider) { const redirect=cfg().AUTH_REDIRECT_URL || root.location.origin+root.location.pathname; const { error } = await getOAuthClient().auth.signInWithOAuth({ provider, options: { redirectTo: redirect } }); if (error) throw error; }
   async function signInWithGoogle() { return signInWithProvider('google'); }
   async function signInWithFacebook() { return signInWithProvider('facebook'); }
@@ -166,5 +172,5 @@
     if(job.status==='failed'||job.status==='interrupted') throw new Error(job.error||'Full publish failed.');
     return job.result||job;
   }
-  root.ClustrAuth={restore,signIn,signInWithGoogle,signInWithFacebook,signInWithEmailLink,signUp,resendConfirmation,resetPassword,updatePassword,signOut,checkout:()=>callBilling('create-checkout-session'),portal:()=>callBilling('create-portal-session'),runPublish,getAccessToken,sessionKey:()=>{const s=session||read();return s?.user?.id||s?.access_token||'';},accessToken:()=>{const s=session||read();return s&&s.access_token||'';}};
+  root.ClustrAuth={restore,signIn,foundingStatus,claimFounding20,signInWithGoogle,signInWithFacebook,signInWithEmailLink,signUp,resendConfirmation,resetPassword,updatePassword,signOut,checkout:()=>callBilling('create-checkout-session'),portal:()=>callBilling('create-portal-session'),runPublish,getAccessToken,sessionKey:()=>{const s=session||read();return s?.user?.id||s?.access_token||'';},accessToken:()=>{const s=session||read();return s&&s.access_token||'';}};
 })(window);

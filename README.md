@@ -8,6 +8,8 @@ Free can read reports before yesterday's midnight in US Eastern time: Friday is 
 
 Admin's Account preview selector shows Free, subscribed Pro or Founding 20 without losing actual Admin access. Preview filters report dates and disables real billing, sign-out and Watchlist edits. Exit preview to return to the actual account.
 
+Founding 20 is a limited complimentary lifetime Pro grant. The Account page shows remaining places while the offer is open. Signing up does not reserve a place: after confirming an email and signing in, a Free user must press Accept & claim Founding 20. The claim is enforced by the Supabase RPC in `clustr-backend`.
+
 Administrators can start a full publish from Account while the private `clustr-backend` service is running locally on port 3001. The backend checks the Supabase admin role before it runs the pipeline.
 
 ## iPhone Home Screen app

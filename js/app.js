@@ -56,6 +56,7 @@
   const navAccount = document.getElementById('navAccount');
   const navAdmin = document.getElementById('navAdmin');
   let authState = { session: null, user: null, role: 'free', plan: null };
+  let foundingStatus = null;
   let accountMode = 'signin';
   let accountPreview = '';
   let publishChart = null;
@@ -658,8 +659,10 @@
     if (!title || !content) return;
     note.textContent = message;
     if (!account.user) {
-      title.textContent = accountMode === 'signup' ? 'Create your free account' : 'Sign in to Clustr Market';
-      content.innerHTML = `<button class="account-secondary" type="button" data-account-action="google">Continue with Google</button><button class="account-secondary" type="button" data-account-action="facebook">Continue with Facebook</button><form id="accountForm" class="account-form"><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" minlength="8" autocomplete="${accountMode === 'signup' ? 'new-password' : 'current-password'}" required></label><button class="account-primary" type="submit">${accountMode === 'signup' ? 'Create free account' : 'Sign in'}</button></form><div class="account-actions"><button type="button" data-account-action="email-link">${accountMode === 'signup' ? 'Create account with email link' : 'Email me a sign-in link'}</button><button type="button" data-account-action="switch">${accountMode === 'signup' ? 'Already have an account? Sign in' : 'Create a free account'}</button>${accountMode === 'signin' ? '<button type="button" data-account-action="resend">Resend confirmation email</button><button type="button" data-account-action="reset">Reset password</button>' : ''}</div><p class="account-plan-note">Free includes older reports, excluding today and yesterday (US Eastern time). Pro unlocks the latest data, Watchlist and History.</p>`;
+      const places = foundingStatus?.remaining;
+      title.textContent = accountMode === 'signup' ? (places > 0 ? 'Get Founding 20' : 'Create your free account') : 'Sign in to Clustr Market';
+      const offer = places > 0 ? `<section class="account-plan"><h2>Founding 20 · ${places} places left</h2><p>Free lifetime Pro access for the first 20 people who claim it. Create an account, confirm your email, then press Accept & claim Founding 20 here. Signing up alone does not reserve a place.</p></section>` : '';
+      content.innerHTML = offer + `<button class="account-secondary" type="button" data-account-action="google">Continue with Google</button><button class="account-secondary" type="button" data-account-action="facebook">Continue with Facebook</button><form id="accountForm" class="account-form"><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" minlength="8" autocomplete="${accountMode === 'signup' ? 'new-password' : 'current-password'}" required></label><button class="account-primary" type="submit">${accountMode === 'signup' ? 'Create free account' : 'Sign in'}</button></form><div class="account-actions"><button type="button" data-account-action="email-link">${accountMode === 'signup' ? 'Create account with email link' : 'Email me a sign-in link'}</button><button type="button" data-account-action="switch">${accountMode === 'signup' ? 'Already have an account? Sign in' : (places > 0 ? 'Get Founding 20' : 'Create a free account')}</button>${accountMode === 'signin' ? '<button type="button" data-account-action="resend">Resend confirmation email</button><button type="button" data-account-action="reset">Reset password</button>' : ''}</div><p class="account-plan-note">Free includes older reports, excluding today and yesterday (US Eastern time). Pro unlocks the latest data, Watchlist and History.</p>`;
       return;
     }
     if (account.recovery) {
@@ -669,9 +672,10 @@
     }
     title.textContent = 'Your Clustr Market account';
     const permanent = isPermanentPro();
+    const claimOffer = foundingStatus?.remaining > 0 && !foundingStatus.claimed && authState.role !== 'admin' ? `<section class="account-plan"><h2>Founding 20 · ${foundingStatus.remaining} places left</h2><p>Free lifetime Pro access. Press the button to claim a place; signing in alone does not claim one.</p><button class="account-primary" type="button" data-account-action="claim-founding20">Accept &amp; claim Founding 20</button></section>` : '';
     content.innerHTML = `<div class="account-profile"><span>${window.ClustrUtil.escapeHtml(account.user.email || '')}</span><span class="account-plan-badge">${account.role === 'admin' ? 'PRO · ADMIN' : permanent ? 'FOUNDING 20' : account.role === 'pro' ? 'PRO · ACTIVE' : 'FREE'}</span></div>` +
       (account.role === 'admin' ? `<section class="account-plan"><h2>Pro is active</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p><p class="account-plan-note">Your admin account includes permanent Pro access. No subscription is required.</p></section>` : account.role === 'pro' ? `<section class="account-plan"><h2>${permanent ? 'Founding 20' : 'Pro is active'}</h2><p>Live clusters, weekly trends, and full publish history are unlocked.</p>${permanent ? '<p class="account-plan-note">Your Founding 20 access has no expiry date and no recurring payments.</p>' : account.plan?.current_period_end ? `<p class="account-plan-note">Current period ends ${new Date(account.plan.current_period_end).toLocaleDateString()}.</p>` : ''}${account.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage subscription</button>' : ''}</section>` :
-      `<section class="account-plan"><h2>Free plan</h2><p>Browse older reports. Today’s and yesterday’s reports, Watchlist and History are not included (US Eastern time).</p><h3>Pro · 99 kr/month</h3><p>Get the latest data, your personal Watchlist and interactive History.</p><button class="account-primary" type="button" data-account-action="checkout">Continue to secure checkout</button>${account.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage billing</button>' : ''}</section>`) +
+      claimOffer + `<section class="account-plan"><h2>Free plan</h2><p>Browse older reports. Today’s and yesterday’s reports, Watchlist and History are not included (US Eastern time).</p><h3>Pro · 99 kr/month</h3><p>Get the latest data, your personal Watchlist and interactive History.</p><button class="account-primary" type="button" data-account-action="checkout">Continue to secure checkout</button>${account.plan?.stripe_customer_id ? '<button class="account-secondary" type="button" data-account-action="portal">Manage billing</button>' : ''}</section>`) +
       '<button class="account-secondary" type="button" data-account-action="logout">Sign out</button>';
   }
 
@@ -961,6 +965,7 @@
     try {
       const bootP = runBoot();
       authState = await window.ClustrAuth.restore();
+      foundingStatus = await window.ClustrAuth.foundingStatus().catch(() => null);
       await window.ClustrWatchlist?.init(hasProAccess() ? authState.user : null);
       window.ClustrThemes.setAccess(authState.role);
       renderProBadges();
@@ -1075,6 +1080,11 @@
     try {
       if (authState.role === 'admin' && accountPreview && ['checkout', 'portal', 'logout'].includes(action)) throw new Error('This is an account preview. Exit preview to use real billing or sign out.');
       if (action === 'switch') { accountMode = accountMode === 'signup' ? 'signin' : 'signup'; renderAccount(); }
+      if (action === 'claim-founding20') {
+        button.disabled = true;
+        try { await window.ClustrAuth.claimFounding20(); window.location.reload(); }
+        finally { button.disabled = false; }
+      }
       if (action === 'account') setNav('account');
       if (action === 'google') await window.ClustrAuth.signInWithGoogle();
       if (action === 'facebook') await window.ClustrAuth.signInWithFacebook();
@@ -1119,6 +1129,7 @@
       if (action === 'publish') renderAdmin(err.message || 'Could not complete the publish.');
       else {
         if (action === 'checkout' || action === 'portal') setNav('account');
+        if (action === 'claim-founding20') foundingStatus = await window.ClustrAuth.foundingStatus().catch(() => null);
         renderAccount(err.message || 'Could not complete that action.');
       }
     }
