@@ -1008,13 +1008,19 @@
           clusters.length
             ? clusters
                 .map(
-                  g => `
+                  g => {
+                    const score = groupRating(g);
+                    const valid = Number.isFinite(score) && score >= -10 && score <= 10;
+                    const tone = valid ? util.stanceCategory(score) : 'watch';
+                    const value = valid ? `${score > 0 ? '+' : ''}${Number.isInteger(score) ? score : score.toFixed(1)}` : '—';
+                    return `
                 <button type="button" class="related-item" data-cluster="${util.escapeHtml(
                   g.name
                 )}">
-                  <div class="related-item-t">${util.escapeHtml(g.name)}</div>
+                  <div class="related-item-t"><span>${util.escapeHtml(g.name)}</span><span class="related-impact related-impact--${tone}" aria-label="Cluster impact ${valid ? value : 'unavailable'}">${value}</span></div>
                   <div class="related-item-s">${(g.articles || []).length} articles</div>
-                </button>`
+                </button>`;
+                  }
                 )
                 .join('')
             : '<div class="related-empty">No other clusters for this ticker</div>'
@@ -1096,7 +1102,6 @@
                 )
                 .join('')}
             </select>
-            <button type="button" class="btn-open-map" data-open-map title="Open stock tankekart">Cluster map</button>
             <div class="group-since-publish" aria-live="polite"></div>
           </div>
           <div class="bubbles-scroll stock-bubbles" role="group" aria-label="Stocks in selected group"></div>
@@ -1570,26 +1575,6 @@
       else priceMount.innerHTML = '<p class="empty-state">No usable ticker in this group.</p>';
       updateGroupSincePublish(select.value);
       applyChartMode();
-    }
-
-    const openMapBtn = el.querySelector('[data-open-map]');
-    if (openMapBtn) {
-      openMapBtn.addEventListener('click', () => {
-        const selected =
-          bubblesEl.querySelector('[data-symbol].is-selected') ||
-          bubblesEl.querySelector('[data-symbol]');
-        const sym =
-          (selected && selected.getAttribute('data-symbol')) ||
-          (first && first.symbol) ||
-          '';
-        if (!sym) return;
-        if (window.ClustrApp && typeof window.ClustrApp.openStockMap === 'function') {
-          window.ClustrApp.openStockMap(sym);
-        } else if (window.ClustrApp?.showView && window.ClustrMindmap?.openSymbol) {
-          window.ClustrApp.showView('mind');
-          window.ClustrMindmap.openSymbol(sym);
-        }
-      });
     }
 
     return el;

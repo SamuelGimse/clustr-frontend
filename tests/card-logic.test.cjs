@@ -8,8 +8,20 @@ vm.createContext(context);
 vm.runInContext(read('util.js'), context);
 const util = context.window.ClustrUtil;
 let renderSource = read('render.js');
-vm.runInContext(renderSource.replace('  window.ClustrRender = {', '  window.audit = {clusterScoreHtml, stanceHtml, historyRowScore, basketSincePublish, weeklyVelocity, attachDefaultReturns, mountStanceChart};\n  window.ClustrRender = {'), context);
+vm.runInContext(renderSource.replace('  window.ClustrRender = {', '  window.audit = {clusterScoreHtml, stanceHtml, historyRowScore, basketSincePublish, weeklyVelocity, attachDefaultReturns, mountStanceChart, renderRelatedClusters};\n  window.ClustrRender = {'), context);
 const audit = context.window.audit;
+const relatedPanel = { innerHTML: '', querySelectorAll: () => [] };
+audit.renderRelatedClusters('Related clusters', [
+  { name: '<Positive>', articles: [{ rating: 5 }] },
+  { name: 'Negative', articles: [{ rating: -4 }] },
+  { name: 'Neutral', articles: [{ rating: 0 }] },
+  { name: 'Missing', articles: [] }
+], { classList: { contains: () => false }, querySelector: () => relatedPanel });
+assert.match(relatedPanel.innerHTML, /&lt;Positive&gt;/);
+assert.match(relatedPanel.innerHTML, /related-impact--constructive[^>]*>\+5<\/span>/);
+assert.match(relatedPanel.innerHTML, /related-impact--cautious[^>]*>-4<\/span>/);
+assert.match(relatedPanel.innerHTML, /related-impact--watch[^>]*>0<\/span>/);
+assert.match(relatedPanel.innerHTML, /Cluster impact unavailable[^>]*>—<\/span>/);
 assert.equal(util.exponentialMeanRating([0, 0]), 0);
 assert.equal(util.exponentialMeanRating([null, '', undefined]), null);
 assert(util.exponentialMeanRating([1, 0, 0, 0]) >= 0);
