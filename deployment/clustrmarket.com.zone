@@ -1,0 +1,4 @@
+$ORIGIN clustrmarket.com.
+$TTL 300
+@ IN CNAME samuelgimse.github.io.
+www IN CNAME samuelgimse.github.io.
