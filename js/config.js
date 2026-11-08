@@ -124,7 +124,8 @@ const THEMES = [
   'slate',
   'graphite',
   'pure-black',
-  'minimal'
+  'minimal',
+  'minimal-dark'
 ];
 
 /**

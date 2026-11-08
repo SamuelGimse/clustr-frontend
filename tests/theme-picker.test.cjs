@@ -12,7 +12,7 @@ test('Theme picker shows only the requested choices and light variants stay ligh
   assert.doesNotMatch(html, /id="themeBtn"/);
   assert.deepEqual([...menu.matchAll(/data-theme="([^"]+)"[^>]*>([^<]+)</g)].map(match => [match[1], match[2]]), [
     ['apple', 'Glass'], ['apple-light', 'Glass Light'], ['material', 'Material'],
-    ['material-light', 'Material Light'], ['clustr', 'Clustr'], ['minimal', 'Minimal'], ['pure-black', 'Black'],
+    ['material-light', 'Material Light'], ['clustr', 'Clustr'], ['minimal', 'Minimal'], ['minimal-dark', 'Minimal Dark'], ['pure-black', 'Black'],
     ['crt', 'CRT Tube'], ['dos-amber', 'DOS Amber'], ['grassy-hill', 'Grassy Hill'],
     ['aqua-classic', 'Aqua Classic'], ['aurora-glass', 'Aurora Glass'],
     ['old-school-rpg', 'Old School RPG']
@@ -69,4 +69,6 @@ test('Theme picker shows only the requested choices and light variants stay ligh
   assert.equal(context.window.ClustrUtil.isLightTheme(), true);
   context.window.ClustrThemes.applyTheme('minimal');
   assert.equal(context.window.ClustrUtil.isLightTheme(), true);
+  context.window.ClustrThemes.applyTheme('minimal-dark');
+  assert.equal(context.window.ClustrUtil.isLightTheme(), false);
 });
