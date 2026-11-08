@@ -631,12 +631,6 @@
     const free = !!authState.user && !hasProAccess();
     const banner = document.getElementById('freePlanBanner');
     if (banner) banner.hidden = !free;
-    const previewBanner = document.getElementById('accountPreviewBanner');
-    if (previewBanner) {
-      previewBanner.hidden = authState.role !== 'admin' || !accountPreview;
-      const label = previewBanner.querySelector('[data-preview-label]');
-      if (label) label.textContent = `Previewing ${accountPreview === 'permanent' ? 'Founding 20' : accountPreview === 'pro' ? 'Pro' : 'Free'} · Your real account is still Admin`;
-    }
     for (const id of ['navWatchlist', 'navAtlas', 'navStocks', 'navWeekly']) {
       const button = document.getElementById(id);
       if (!button) continue;
@@ -1079,7 +1073,6 @@
     if (!button) return;
     const action = button.getAttribute('data-account-action');
     try {
-      if (action === 'exit-preview') { await setAccountPreview(''); const choice = document.getElementById('accountPreviewChoice'); if (choice) choice.value = ''; return; }
       if (authState.role === 'admin' && accountPreview && ['checkout', 'portal', 'logout'].includes(action)) throw new Error('This is an account preview. Exit preview to use real billing or sign out.');
       if (action === 'switch') { accountMode = accountMode === 'signup' ? 'signin' : 'signup'; renderAccount(); }
       if (action === 'account') setNav('account');
