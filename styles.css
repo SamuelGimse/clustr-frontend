@@ -900,6 +900,7 @@ body {
 .hidden {
   display: none !important;
 }
+body { isolation: isolate; }
 
 .tone-up,
 .mover-up {
@@ -1324,6 +1325,9 @@ html.boot-lock body {
   box-shadow: 0 0 20px color-mix(in srgb, var(--text) 20%, transparent);
 }
 .boot-orbit--inner { width: min(580px, 85vw); animation-direction: reverse; animation-duration: 24s; }
+.app-halos { position: fixed; inset: 0; z-index: -1; display: flex; align-items: center; justify-content: center; overflow: hidden; pointer-events: none; }
+.app-halos .boot-orbit { width: min(1200px, 110vw); opacity: .65; animation-duration: 240s; }
+.app-halos .boot-orbit--inner { width: min(860px, 85vw); animation-duration: 360s; }
 .boot-panel {
   position: relative;
   width: min(400px, calc(100vw - 40px));
@@ -1377,6 +1381,7 @@ html.boot-lock body {
 }
 @media (prefers-reduced-motion: reduce) {
   .boot-screen, .boot-screen--glass { transition: none; }
+  .app-halos .boot-orbit { animation: none; }
   .boot-dot { animation: none; }
   .boot-screen:not(.boot-screen--glass)::after,
   .boot-screen--glass * { animation: none !important; }
