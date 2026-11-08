@@ -31,7 +31,7 @@ function session() {
     }
   };
   const context = { window }; vm.createContext(context); vm.runInContext(source, context);
-  return { api: window.ClustrWatchlist, cloud, calls, events, setToken: value => { token = value; }, setHook: value => { hook = value; } };
+  return { api: window.ClustrWatchlist, cloud, calls, events, storage, setToken: value => { token = value; }, setHook: value => { hook = value; } };
 }
 
 test('Watchlists persist per account with authenticated add/remove and no supplied owner', async () => {
@@ -148,4 +148,74 @@ test('Filtered reports keep original publish selection indices and surface archi
   assert.deepEqual(selectedRows.map(row => row.id), [3]); onSelect(0); assert.equal(context.publishIndex, 2);
   context.groupsCache = {}; context.window.ClustrApi.loadGroupsForPublish = async () => { throw Error('Offline'); };
   await vm.runInContext('renderReportDays()', context); assert.match(context.daysView.innerHTML, /Could not load reports/);
+});
+
+test('Link filters cannot be bypassed by aggregate stocks or legacy aliases',async()=>{
+  const s=session();await s.api.init({id:'Alice'});await s.api.setSaved({symbol:'INTC'},'US',true);s.api.setScope('watchlist');
+  const stock={symbol:'INTC'},group={name:'Chips',stance_score:4,mentioned_stocks:[stock],direct_stocks:[stock],related_stocks:[stock],stocks:[stock],articles:[{rating:4,mentioned_companies:[stock]}]};
+  const original=JSON.stringify(group);
+  assert.equal(s.api.filterGroups([group]).length,1);
+  s.api.setLinkType('mentioned',false);
+  assert.equal(s.api.filterGroups([group]).length,0,'aliases must not pretend this is close/related evidence');
+  group.fixed_stocks=[stock];
+  const result=s.api.filterGroups([group])[0];
+  assert.equal(result.fixed_stocks.length,1);assert.equal(result.mentioned_stocks.length,0);
+  assert.equal(result.stocks.length,0);assert.equal(result.direct_stocks.length,0);
+  assert.equal(result.articles[0].mentioned_companies.length,0);assert.equal(result.articles[0].rating,4);
+  assert.equal(JSON.stringify({...group,fixed_stocks:undefined}),original);
+  s.api.setLinkType('defaults',false);assert.equal(s.api.filterGroups([group]).length,0);
+  s.api.setScope('all');assert.equal(s.api.filterGroups([group])[0],group);
+});
+
+test('Every link type works independently, including article-only mentions and no selected types',async()=>{
+  const s=session();await s.api.init({id:'Alice'});await s.api.setSaved({symbol:'INTC'},'US',true);s.api.setScope('watchlist');
+  const stock={symbol:'INTC'},groups=[{name:'Mentioned',articles:[{mentioned_companies:[stock]}]},
+    {name:'Close',direct_stocks:[stock]},{name:'Related',original_stocks:[stock]},
+    {name:'Defaults',default_symbols:['INTC']},{name:'Movers',connected_winners:[stock]}];
+  const types=['mentioned','close','related','defaults','movers'];
+  for(const type of types)s.api.setLinkType(type,false);
+  assert.equal(s.api.filterGroups(groups).length,0);
+  for(const [i,type]of types.entries()){
+    s.api.setLinkType(type,true);assert.deepEqual(Array.from(s.api.filterGroups(groups),g=>g.name),[groups[i].name]);s.api.setLinkType(type,false);
+  }
+  assert(s.events.at(-1).detail.scopeChanged);
+});
+
+test('Link choices persist per account, handle all-off and recover from corrupt preferences',async()=>{
+  const s=session();await s.api.init({id:'Alice'});
+  for(const type of s.api.getLinkTypes())s.api.setLinkType(type,false);
+  await s.api.init({id:'Alice'});assert.equal(s.api.getLinkTypes().length,0);
+  s.setToken('Bob');await s.api.init({id:'Bob'});assert.equal(s.api.getLinkTypes().length,5);
+  s.api.setLinkType('not-a-layer',true);assert.equal(s.api.getLinkTypes().length,5);
+  s.setToken('Alice');await s.api.init({id:'Alice'});assert.equal(s.api.getLinkTypes().length,0);
+  s.storage.set('clustr-watchlist-links:Alice','broken');await s.api.init({id:'Alice'});assert.equal(s.api.getLinkTypes().length,5);
+});
+
+test('Overview prioritizes watched clusters and refreshes its dropdown immediately on scope and link changes',async()=>{
+  const s=session();await s.api.init({id:'Alice'});await s.api.setSaved({symbol:'INTC'},'US',true);
+  const atlas=require('../atlas/atlas.js'),dashboard=require('../dashboard/dashboard.js');
+  const utilContext={window:{}};vm.createContext(utilContext);vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/util.js'),'utf8'),utilContext);
+  const util=utilContext.window.ClustrUtil,stock={symbol:'INTC'};
+  const groups=[{name:'A unrelated',stance_score:8,fixed_stocks:[{symbol:'XOM'}]},
+    {name:'Z mentioned',stance_score:3,mentioned_stocks:[stock]},
+    {name:'M default',stance_score:-2,fixed_stocks:[stock]},
+    {name:'B close',stance_score:1,close_stocks:[stock]}];
+  const publishes=[1,2,3].map(id=>({id,market:'US',created_at:`2026-11-0${id}T12:00:00Z`}));
+  const map=new Map(publishes.map(p=>[String(p.id),groups]));
+  const summary=dashboard.buildSummary(publishes,map,'US',util,atlas,s.api);
+  assert.deepEqual(summary.clusterTrends.map(series=>series.name),['B close','M default','Z mentioned','A unrelated']);
+  let refresh,loads=0;const root={innerHTML:'',querySelector:()=>({focus(){}})};
+  global.window={ClustrUtil:util,ClustrAtlas:atlas,ClustrWatchlist:s.api,ClustrApi:{fetchAllPublishes:async()=>{loads++;return publishes;},loadGroupsForPublish:async()=>groups},addEventListener:(_name,callback)=>{refresh=callback;},removeEventListener(){}};
+  dashboard.invalidate();await dashboard.render(root,()=>{});
+  root.onchange({target:{closest:selector=>selector==='[data-dash-cluster]'?{value:'A unrelated'}:null}});
+  s.api.setScope('watchlist');refresh();
+  assert.doesNotMatch(root.innerHTML,/<option value="A unrelated"/);
+  s.api.setLinkType('close',false);s.api.setLinkType('defaults',false);refresh();
+  assert.doesNotMatch(root.innerHTML,/<option value="B close"|<option value="M default"/);
+  assert.match(root.innerHTML,/<option value="Z mentioned" selected>Z mentioned · Watchlist/);
+  assert.match(root.innerHTML,/Z mentioned: scatter plot/);
+  s.api.setLinkType('mentioned',false);refresh();assert.match(root.innerHTML,/No clusters match your watchlist and selected link types/);
+  s.api.setScope('all');refresh();assert.match(root.innerHTML,/<option value="A unrelated"/);
+  assert.equal(loads,1);assert.equal(groups[1].mentioned_stocks.length,1);
+  delete global.window;
 });

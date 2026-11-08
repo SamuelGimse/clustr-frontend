@@ -11,6 +11,7 @@
   let showAllFits = false;
   let cumulativeImpact = false;
   let resizeObserver = null;
+  let watchlistListener = null;
 
   function scoreText(score) {
     return score == null ? '—' : `${score > 0 ? '+' : ''}${Number.isInteger(score) ? score : score.toFixed(1)}`;
@@ -27,7 +28,7 @@
     return `<div class="dash-projection-readout"><p class="dash-kicker">+1 DAY · ${esc(date)}</p><strong>${number(forecast.point.value)}</strong><span>95% prediction interval<br><b>${number(forecast.point.lower)} to ${number(forecast.point.upper)}</b></span><small>News impact · one day after the latest report${Math.abs(forecast.point.value) > 10 ? ' · raw estimate outside the chart scale' : ''}</small></div>`;
   }
 
-  function buildSummary(publishes, groups, selectedMarket, util, atlas) {
+  function buildSummary(publishes, groups, selectedMarket, util, atlas, watchlist) {
     const scoped = publishes.filter(publish => String(publish.market || 'US').toUpperCase() === selectedMarket);
     const model = atlas.buildModel(scoped, groups, 'days', util);
     const latest = model.columns.at(-1);
@@ -41,6 +42,7 @@
         delta: prior?.score != null && entry.score != null ? Number((entry.score - prior.score).toFixed(1)) : null };
     });
     const reportDays = model.columns.slice(-14);
+    const watchedNames=new Set(reportDays.flatMap(publish=>watchlist?.linkedGroups?.(groups.get(String(publish.id))||[],publish.market)||[]).map(group=>String(group.name||group.group||'').trim()));
     const days = reportDays.map(publish => {
       const dayIndex = model.columns.indexOf(publish);
       const scored = model.themes.map(theme => theme.entries[dayIndex]?.score).filter(score => score != null);
@@ -55,11 +57,12 @@
     });
     const clusterTrends = model.themes.map(theme => ({
       name: theme.name,
+      watchlisted:watchedNames.has(theme.name),
       days: reportDays.map(publish => {
         const entry = theme.entries[model.columns.indexOf(publish)];
         return { date: publish.created_at, score: entry?.score ?? null, present: !!entry };
       })
-    })).filter(series => series.days.some(day => day.present));
+    })).filter(series => series.days.some(day => day.present)).sort((a,b)=>Number(b.watchlisted)-Number(a.watchlisted)||a.name.localeCompare(b.name));
     const stories = new Map();
     for (const group of latestGroups) for (const article of group.articles || []) {
       const key = String(article.link || article.url || [article.source, article.title, article.date || article.published_at].join('|'));
@@ -146,15 +149,16 @@
 
   function trendPanel(summary, esc) {
     const series = summary.clusterTrends.find(item => item.name === trendCluster)
+      || summary.clusterTrends.find(item=>item.watchlisted)
       || summary.clusterTrends.find(item => item.name === summary.rankedThemes[0]?.name)
       || summary.clusterTrends[0];
-    if (!series) return '<section class="dash-panel dash-panel--wide"><p class="dash-kicker">CLUSTER TREND</p><p>No cluster history is available.</p></section>';
+    if (!series) return `<section class="dash-panel dash-panel--wide"><p class="dash-kicker">CLUSTER TREND</p><p>${window.ClustrWatchlist?.isFiltered?.()?'No clusters match your watchlist and selected link types.':'No cluster history is available.'}</p></section>`;
     trendCluster = series.name;
     const fits = regression.fitRegressions(impactDays(series.days,cumulativeImpact)), best = fits.best;
     const forecast = regression.projectOneDay(best, series.days.at(-1).date);
     const projectionKeys = forecast ? '<span><i class="dash-key-projection"></i>+1 day projection</span><span><i class="dash-key-prediction"></i>95% prediction interval</span>' : '';
     const shown = fits.models.filter(model => model.fit && (showAllFits || model.fit === best));
-    const options = summary.clusterTrends.map(item => `<option value="${esc(item.name)}"${item === series ? ' selected' : ''}>${esc(item.name)}</option>`).join('');
+    const options = summary.clusterTrends.map(item => `<option value="${esc(item.name)}"${item === series ? ' selected' : ''}>${esc(item.name)}${item.watchlisted?' · Watchlist':''}</option>`).join('');
     const controls = `<div class="dash-trend-controls"><label for="dashTrendCluster">Cluster</label><select id="dashTrendCluster" data-dash-cluster>${options}</select><button type="button" role="switch" aria-checked="${cumulativeImpact}" class="dash-mode-toggle" data-dash-cumulative><span class="dash-switch-track" aria-hidden="true"></span><span>Cumulative impact</span></button><label class="dash-show-fits"><input type="checkbox" data-dash-show-fits${showAllFits ? ' checked' : ''}>Show all regression fits</label></div>`;
     if(cumulativeImpact){
       const total=impactDays(series.days,true).filter(day=>day.score!=null).at(-1)?.score??null;
@@ -204,7 +208,7 @@
 
   function scopedSummary() {
     const groups = window.ClustrWatchlist?.filterGroupMap(cached.groups, cached.publishes) || cached.groups;
-    return buildSummary(cached.publishes, groups, market, window.ClustrUtil, window.ClustrAtlas);
+    return buildSummary(cached.publishes, groups, market, window.ClustrUtil, window.ClustrAtlas,window.ClustrWatchlist);
   }
 
   function watchChartWidth(root) {
@@ -246,6 +250,9 @@
     const summary = scopedSummary();
     paint(root, summary);
     watchChartWidth(root);
+    if(watchlistListener)window.removeEventListener?.('clustr:watchlist-change',watchlistListener);
+    watchlistListener=()=>{if(cached&&root.isConnected!==false&&!root.classList?.contains('hidden'))paint(root,scopedSummary());};
+    window.addEventListener?.('clustr:watchlist-change',watchlistListener);
     root.onchange = event => {
       const selector = event.target.closest('[data-dash-cluster]');
       const showFits = event.target.closest('[data-dash-show-fits]');

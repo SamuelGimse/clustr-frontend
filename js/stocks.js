@@ -13,6 +13,7 @@
   const LABELS = { mentioned: 'Article mention', close: 'Close link', related: 'Related stock', defaults: 'Cluster default', winner: 'Connected winner', loser: 'Connected loser', mover: 'Session mover', linked: 'Cluster link' };
   let root, items = [], selected = '', mode = 'clusters', query = '';
   let generation = 0, active = false, listScroll = 0;
+  let reportData=[];
 
   function usableStock(raw) {
     const stock = typeof raw === 'string' ? { symbol: raw } : raw;
@@ -64,6 +65,10 @@
       }
     }
     return [...index.values()].sort((a, b) => b.links.size - a.links.size || b.articles.size - a.articles.size || a.symbol.localeCompare(b.symbol) || a.market.localeCompare(b.market));
+  }
+
+  function buildScopedIndex(data,watchlist){
+    return buildStockIndex(data.map(row=>({...row,groups:watchlist?.filterGroups(row.groups,row.publish.market)||row.groups})));
   }
 
   function linksFor(stock, filter) {
@@ -211,7 +216,8 @@
     try {
       const result = await loadWeek(window.ClustrApi, start.toISOString(), end.toISOString());
       if (request !== generation || !active) return;
-      items = buildStockIndex(result.data);
+      reportData=result.data;
+      items = buildScopedIndex(reportData,window.ClustrWatchlist);
       if (!filteredItems().some(item => item.key === selected)) { selected = filteredItems()[0]?.key || ''; root.dataset.detailOpen = 'false'; }
       root.querySelector('#stocksRange').textContent = `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} · rolling 7 days · ${result.data.length}/${result.total} publishes`;
       status.textContent = result.failures.length ? result.data.length ? `Some data could not load (${result.failures.length} publishes). Showing available links. Refresh to retry.` : 'No publish details could load. Refresh to retry.' : items.length ? '' : 'No stocks are available in publishes from the last seven days.';
@@ -232,7 +238,7 @@
     if (!root) return;
     root.dataset.detailOpen = 'false';
     if (!['pro', 'admin'].includes(role)) {
-      ++generation; items = []; selected = '';
+      ++generation; items = []; reportData=[]; selected = '';
       root.setAttribute('aria-busy', 'false');
       root.innerHTML = '<div class="stocks-heading"><div><h1>Stocks</h1><p>The last seven days of stock connections are part of Pro.</p></div></div><button type="button" class="stocks-refresh" data-stock-account>Open account</button>';
       root.querySelector('[data-stock-account]').addEventListener('click', () => window.ClustrApp?.showView('account'));
@@ -255,6 +261,7 @@
   }
   function refreshScope() {
     if (!active || !root?.querySelector('#stocksGrid')) return;
+    items=buildScopedIndex(reportData,window.ClustrWatchlist);
     if (!filteredItems().some(item => item.key === selected)) { selected = filteredItems()[0]?.key || ''; root.dataset.detailOpen = 'false'; }
     renderGrid(); renderDetail();
   }

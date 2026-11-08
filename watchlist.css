@@ -1,5 +1,10 @@
 .watchlist-scope { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 14px; }
 .watchlist-scope[hidden] { display: none; }
+.watch-link-groups {display:flex;flex:1 1 100%;flex-wrap:wrap;align-items:center;gap:6px}
+.watch-link-groups[hidden] {display:none}
+.watch-link-groups > span {font-size:11px;color:var(--text-meta);margin-right:6px}
+.watch-link-groups button {min-height:44px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--design-button-radius,9px);background:transparent;color:var(--text-meta);font:inherit;font-size:12px;cursor:pointer}
+.watch-link-groups button[aria-pressed="true"] {background:var(--panel-2);color:var(--text);border-color:var(--accent)}
 .watch-scope-controls { display: inline-flex; gap: 3px; padding: 3px; border: 1px solid var(--border); border-radius: var(--design-control-radius, 12px); background: transparent; }
 .watch-scope-controls button, .watchlist-action, .watch-manage, .watch-retry { min-height: 40px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--design-button-radius, 9px); background: var(--panel); color: var(--text); font: inherit; font-size: 12px; cursor: pointer; }
 .watch-scope-controls button { border-color: transparent; background: transparent; color: var(--text-meta); }

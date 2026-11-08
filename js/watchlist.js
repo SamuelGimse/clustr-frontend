@@ -4,6 +4,9 @@
   else root.ClustrWatchlist = watchlist;
 })(typeof window !== 'undefined' ? window : globalThis, function (root) {
   const FIELDS = ['mentioned_stocks', 'close_stocks', 'direct_stocks', 'original_stocks', 'related_stocks', 'fixed_stocks', 'default_stocks', 'default_symbols', 'stocks', 'connected_winners', 'connected_losers', 'movers'];
+  const LINK_TYPES={mentioned:['mentioned_stocks'],close:['close_stocks','direct_stocks'],related:['original_stocks','related_stocks','stocks'],defaults:['fixed_stocks','default_stocks','default_symbols'],movers:['connected_winners','connected_losers','movers']};
+  const FIELD_TYPE=Object.fromEntries(Object.entries(LINK_TYPES).flatMap(([type,fields])=>fields.map(field=>[field,type])));
+  let linkTypes=new Set(Object.keys(LINK_TYPES));
   let user = null, entries = new Map(), scope = 'all', ready = false, loading = false, message = '', version = 0, epoch = 0, reads = 0, view = 'events';
   let pending = new Set(), manager = null, search = '', limit = 12;
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -16,32 +19,47 @@
     return { market: exchange, symbol, name: String(stock?.name || stock?.company || symbol).slice(0, 200), key: `${exchange}:${symbol}` };
   }
 
-  function groupStocks(group, market = 'US') {
+  function groupLinks(group, market = 'US') {
     const all = new Map(), fallback = group.market || market;
-    for (const field of FIELDS) for (const raw of Array.isArray(group[field]) ? group[field] : []) {
+    function add(raw,type,alias=''){
       const stock = stockRecord(raw, fallback);
-      if (stock && !all.has(stock.key)) all.set(stock.key, stock);
+      if(!stock)return;
+      const previous=all.get(stock.key);
+      // Aggregate/legacy aliases must not reclassify a disabled evidence layer.
+      if(alias&&previous&&(alias==='stocks'||[...previous.types].some(kind=>['mentioned','close','related'].includes(kind))))return;
+      if(!previous)all.set(stock.key,{stock,types:new Set([type])});
+      else previous.types.add(type);
     }
+    const aliases=['direct_stocks','related_stocks','stocks'];
+    for (const field of FIELDS.filter(field=>!aliases.includes(field))) for (const raw of Array.isArray(group[field]) ? group[field] : []) add(raw,FIELD_TYPE[field]);
     for (const article of group.articles || []) for (const raw of article.mentioned_companies || []) {
-      const stock = stockRecord(raw, fallback);
-      if (stock && !all.has(stock.key)) all.set(stock.key, stock);
+      add(raw,'mentioned');
     }
-    return [...all.values()];
+    for(const field of aliases)for(const raw of Array.isArray(group[field])?group[field]:[])add(raw,FIELD_TYPE[field],field);
+    return all;
+  }
+  function groupStocks(group,market='US'){
+    return [...groupLinks(group,market).values()].map(link=>link.stock);
   }
 
-  function scopeGroups(groups, market, keys) {
-    return (groups || []).filter(group => groupStocks(group, market).some(stock => keys.has(stock.key))).map(group => {
-      const result = { ...group }, fallback = group.market || market;
-      const keep = raw => { const stock = stockRecord(raw, fallback); return stock && keys.has(stock.key); };
-      for (const field of FIELDS) if (Array.isArray(group[field])) result[field] = group[field].filter(keep);
-      // Preserve every article/rating for cluster context and unchanged impact scores.
-      if (Array.isArray(group.articles)) result.articles = group.articles.map(article => Array.isArray(article.mentioned_companies) ? { ...article, mentioned_companies: article.mentioned_companies.filter(keep) } : article);
-      return result;
-    });
+  function scopeGroups(groups, market, keys, types=new Set(Object.keys(LINK_TYPES))) {
+    const result=[];
+    for(const group of groups||[]){
+      const links=groupLinks(group,market),fallback=group.market||market;
+      const keep=(raw,type)=>{const stock=stockRecord(raw,fallback),link=stock&&links.get(stock.key);return stock&&keys.has(stock.key)&&link&&[...link.types].some(kind=>types.has(kind)&&(!type||type===kind));};
+      if(![...links.values()].some(link=>keys.has(link.stock.key)&&[...link.types].some(type=>types.has(type))))continue;
+      const item={...group};
+      for(const field of FIELDS)if(Array.isArray(group[field]))item[field]=group[field].filter(raw=>keep(raw,FIELD_TYPE[field]));
+      // Keep all ratings and story context; only hide disabled stock relationships.
+      if(Array.isArray(group.articles))item.articles=group.articles.map(article=>Array.isArray(article.mentioned_companies)?{...article,mentioned_companies:article.mentioned_companies.filter(raw=>keep(raw,'mentioned'))}:article);
+      result.push(item);
+    }
+    return result;
   }
 
   const isFiltered = () => scope === 'watchlist';
-  const filterGroups = (groups, market = 'US') => isFiltered() ? scopeGroups(groups, market, new Set(entries.keys())) : groups;
+  const linkedGroups=(groups,market='US')=>scopeGroups(groups,market,new Set(entries.keys()),linkTypes);
+  const filterGroups = (groups, market = 'US') => isFiltered() ? linkedGroups(groups,market) : groups;
   function filterGroupMap(groups, publishes) {
     if (!isFiltered()) return groups;
     const markets = new Map(publishes.map(publish => [String(publish.id), publish.market || 'US']));
@@ -97,6 +115,8 @@
   async function init(account) {
     epoch++; reads++; user = account || null; entries = new Map(); pending = new Set(); ready = false; loading = false; message = ''; scope = 'all'; manager = null; version++;
     if (user) { try { if (root.localStorage.getItem(`clustr-watchlist-scope:${user.id}`) === 'watchlist') scope = 'watchlist'; } catch {} }
+    linkTypes=new Set(Object.keys(LINK_TYPES));
+    if(user)try{const saved=JSON.parse(root.localStorage.getItem(`clustr-watchlist-links:${user.id}`));if(Array.isArray(saved))linkTypes=new Set(saved.filter(type=>Object.hasOwn(LINK_TYPES,type)));}catch{}
     paintControls();
     if (user) await refresh();
   }
@@ -106,6 +126,13 @@
     if (value === 'watchlist' && !ready) return;
     scope = value; version++;
     try { root.localStorage.setItem(`clustr-watchlist-scope:${user.id}`, scope); } catch {}
+    notify(true);
+  }
+  function setLinkType(type,enabled){
+    if(!user||!Object.hasOwn(LINK_TYPES,type)||linkTypes.has(type)===enabled)return;
+    if(enabled)linkTypes.add(type);else linkTypes.delete(type);
+    version++;
+    try{root.localStorage.setItem(`clustr-watchlist-links:${user.id}`,JSON.stringify([...linkTypes]));}catch{}
     notify(true);
   }
 
@@ -147,7 +174,9 @@
         if (control.dataset.watchScope === 'watchlist') { control.disabled = !ready; control.querySelector('span').textContent = String(entries.size); }
       });
       const note = bar.querySelector('[data-watch-note]');
-      note.textContent = message || (loading ? 'Loading watchlist…' : isFiltered() ? entries.size ? 'Showing your saved stocks and linked clusters.' : 'Your watchlist is empty. Add stocks to see matching content.' : '');
+      note.textContent = message || (loading ? 'Loading watchlist…' : isFiltered() ? !linkTypes.size?'No link types selected. Turn on a link type to show matching clusters.':entries.size ? 'Showing your saved stocks and linked clusters.' : 'Your watchlist is empty. Add stocks to see matching content.' : '');
+      const links=bar.querySelector('[data-watch-links]');
+      if(links){links.hidden=!isFiltered();links.querySelectorAll('[data-watch-link]').forEach(control=>{control.setAttribute('aria-pressed',String(linkTypes.has(control.dataset.watchLink)));control.disabled=!ready;});}
       bar.querySelector('[data-watch-refresh]').hidden = !message;
     }
     root.document.querySelectorAll('[data-watch-toggle]').forEach(control => {
@@ -201,6 +230,7 @@
       const toggle = event.target.closest('[data-watch-toggle]'), scopeButton = event.target.closest('[data-watch-scope]');
       if (toggle) { event.preventDefault(); event.stopPropagation(); const stock = { symbol: toggle.dataset.watchSymbol, name: toggle.dataset.watchName }; setSaved(stock, toggle.dataset.watchMarket, !includes(stock, toggle.dataset.watchMarket)).catch(() => {}); }
       if (scopeButton) setScope(scopeButton.dataset.watchScope);
+      const link=event.target.closest('[data-watch-link]');if(link)setLinkType(link.dataset.watchLink,!linkTypes.has(link.dataset.watchLink));
       if (event.target.closest('[data-watch-manage]')) root.ClustrApp?.showView('watchlist');
       if (event.target.closest('[data-watch-refresh]')) refresh();
       if (event.target.closest('[data-watch-more]')) { limit += 24; paintManager(); }
@@ -218,6 +248,6 @@
     });
   }
 
-  return { init, refresh, mount, button, includes, allows, isFiltered, filterGroups, filterGroupMap, setScope, setSaved,
+  return { init, refresh, mount, button, includes, allows, isFiltered, filterGroups, filterGroupMap, setScope, setSaved, linkedGroups,setLinkType,getLinkTypes:()=>[...linkTypes],
     stockRecord, groupStocks, scopeGroups, scopeKey: () => `${scope}:${version}`, setView: value => { view = value; paintControls(); }, getItems: () => [...entries.values()] };
 });
