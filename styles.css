@@ -4325,7 +4325,7 @@ html[data-theme="material"][data-color-mode="light"] :is(.nav-rail-btn.is-active
   html[data-theme] .nav-rail-logo { width: 56px; height: 56px; flex: 0 0 56px; }
   html[data-theme] .nav-rail-wordmark { font-size: 22px; }
   html[data-theme] .nav-rail-list { gap: 2px; }
-  html[data-theme] .nav-rail-btn { width: calc(100% - 16px); min-height: 44px; padding: 0 12px; flex-direction: row; justify-content: flex-start; gap: 24px; border-radius: 12px; }
+  html[data-theme] .nav-rail-btn { width: calc(100% - 16px); min-height: 44px; padding: 0 12px; flex-direction: row; justify-content: flex-start; gap: 12px; border-radius: 12px; }
   html[data-theme] .nav-rail-btn svg { flex: 0 0 24px; }
   html[data-theme] .nav-rail-label { font-size: 12px; }
   html[data-theme] .page-brand-bar .brand { display: none; }
