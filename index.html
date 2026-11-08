@@ -93,44 +93,34 @@
 
       <nav class="nav-rail-list" aria-label="Views">
         <button type="button" id="navDashboard" class="nav-rail-btn" title="Overview dashboard" aria-label="Overview dashboard">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 19a10 10 0 1 1 16 0H4Z"/><path d="M12 4v2M5 8l1.5 1M19 8l-1.5 1M12 14l4-4"/><circle cx="12" cy="14" r="2"/></svg>
+          <svg class="nav-signal-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><ellipse cx="12" cy="12" rx="9" ry="7" transform="rotate(-35 12 12)" opacity=".65"/><path d="m5 16 7-5 7-5M12 11l5 8"/><g fill="currentColor" stroke="none"><circle cx="5" cy="16" r="2.2"/><circle cx="12" cy="11" r="2.8"/><circle cx="19" cy="6" r="2"/><circle cx="17" cy="19" r="1.7"/></g></svg>
           <span class="nav-rail-label">Overview</span>
         </button>
         <button type="button" id="navEvents" class="nav-rail-btn is-active" title="News clusters" aria-label="News clusters" aria-current="page">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-            <rect x="3" y="4" width="7" height="7" rx="1.5"/>
-            <rect x="14" y="4" width="7" height="7" rx="1.5"/>
-            <rect x="3" y="13" width="7" height="7" rx="1.5"/>
-            <rect x="14" y="13" width="7" height="7" rx="1.5"/>
-          </svg>
+          <svg class="nav-signal-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12h5l5-7h6M9 12h11M9 12l5 7h6"/><g fill="currentColor" stroke="none"><circle cx="4" cy="12" r="2.5"/><circle cx="20" cy="5" r="1.7"/><circle cx="20" cy="12" r="1.7"/><circle cx="20" cy="19" r="1.7"/></g></svg>
           <span class="nav-rail-label">News</span>
         </button>
         <button type="button" id="navPolymarket" class="nav-rail-btn hidden" hidden title="Polymarket odds" aria-label="Polymarket odds"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 20V4M4 20h17M7 15l4-5 4 3 5-7"/><circle cx="11" cy="10" r="1.5"/></svg><span class="nav-rail-label">Odds</span></button>
         <button type="button" id="navStocks" class="nav-rail-btn" title="Stocks and their cluster connections" aria-label="Stocks">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="10" width="4" height="10" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="17" y="7" width="4" height="13" rx="1"/></svg>
+          <svg class="nav-signal-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 14 8 5 10-7M3 18l8 5 10-7" opacity=".65"/><path d="m3 9 10-6 8 5-10 7zM11 15v4"/><g fill="currentColor" stroke="none"><circle cx="13" cy="3" r="1.8"/><circle cx="11" cy="15" r="2"/></g></svg>
           <span class="nav-rail-label">Stocks</span>
         </button>
-        <button type="button" id="navConnections" class="nav-rail-btn" title="Explore cluster and stock network" aria-label="Network"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m5 5 14 2-7 12L5 5l14 2M5 5l7 14"/><circle cx="5" cy="5" r="3"/><circle cx="19" cy="7" r="3"/><circle cx="12" cy="19" r="3"/></svg><span class="nav-rail-label">Network</span></button>
+        <button type="button" id="navConnections" class="nav-rail-btn" title="Explore cluster and stock network" aria-label="Network"><svg class="nav-signal-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m4 5 8 6 8-7M12 11l8 9M12 11l-9 8"/><path d="m4 5-1 14 17 1V4" opacity=".65"/><g fill="currentColor" stroke="none"><circle cx="4" cy="5" r="2.1"/><circle cx="20" cy="4" r="1.8"/><circle cx="3" cy="19" r="1.8"/><circle cx="20" cy="20" r="2.1"/><circle cx="12" cy="11" r="2.6"/></g></svg><span class="nav-rail-label">Network</span></button>
         <button type="button" id="navWeekly" class="nav-rail-btn" title="Weekly cluster trends" aria-label="Weekly cluster trends">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-            <path d="M4 19V5M4 19h17M7 15l4-5 3 3 6-8"/><circle cx="7" cy="15" r="1"/><circle cx="11" cy="10" r="1"/><circle cx="14" cy="13" r="1"/><circle cx="20" cy="5" r="1"/>
-          </svg>
+          <svg class="nav-signal-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 21c8 0 7-11 13-11h7M2 14c8 0 8-11 15-11h5" opacity=".65"/><path d="M2 18c7 0 7-11 14-11h6"/><g fill="currentColor" stroke="none"><circle cx="7" cy="15.6" r="1.8"/><circle cx="15" cy="7.1" r="2.2"/></g></svg>
           <span class="nav-rail-label">Trends</span>
         </button>
         <button type="button" id="navAtlas" class="nav-rail-btn" title="Cluster and stock history" aria-label="Cluster and stock history">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 5h18M3 12h18M3 19h18M7 3v18M14 3v18"/><circle cx="14" cy="12" r="2.2" fill="currentColor" stroke="none"/></svg>
+          <svg class="nav-signal-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 8a9 9 0 1 1 0 8M4 3v5h5"/><path d="M12 4v2M20 12h-2M12 20v-2" opacity=".65"/><g fill="currentColor" stroke="none"><circle cx="12" cy="12" r="2.1"/><circle cx="4" cy="16" r="1.8"/></g></svg>
           <span class="nav-rail-label">History</span>
         </button>
         <button type="button" id="navDays" class="nav-rail-btn" title="Daily reports" aria-label="Daily reports">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-            <rect x="3" y="5" width="18" height="16" rx="2"/>
-            <path d="M3 10h18M8 3v4M16 3v4"/>
-          </svg>
+          <svg class="nav-signal-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 3h13v16M4 6h13v16" opacity=".65"/><path d="M2 2h12v17H2zM5 8h6M5 13h6"/><g fill="currentColor" stroke="none"><circle cx="5" cy="8" r="1.5"/><circle cx="11" cy="13" r="1.5"/></g></svg>
           <span class="nav-rail-label">Reports</span>
         </button>
-        <button type="button" id="navWatchlist" class="nav-rail-btn" title="My watchlist" aria-label="My watchlist"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.3.9-4.6 4.5 1.1 6.3-5.6-3-5.6 3 1.1-6.3L3 9.6l6.2-.9Z"/></svg><span class="nav-rail-label">Watchlist</span></button>
+        <button type="button" id="navWatchlist" class="nav-rail-btn" title="My watchlist" aria-label="My watchlist"><svg class="nav-signal-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 3 2.8 5.7 6.3.9-4.6 4.5 1.1 6.3-5.6-3-5.6 3 1.1-6.3L3 9.6l6.2-.9Z" opacity=".65"/><g fill="currentColor" stroke="none"><circle cx="12" cy="3" r="1.7"/><circle cx="21.1" cy="9.6" r="1.6"/><circle cx="17.6" cy="20.4" r="1.6"/><circle cx="6.4" cy="20.4" r="1.6"/><circle cx="3" cy="9.6" r="1.6"/></g></svg><span class="nav-rail-label">Watchlist</span></button>
         <button type="button" id="navAdmin" class="nav-rail-btn hidden" title="Admin tools" aria-label="Admin tools">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 4 6v5c0 5 3.4 8.2 8 10 4.6-1.8 8-5 8-10V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+          <svg class="nav-signal-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v5m0 8v5M3 12h5m8 0h5" opacity=".65"/><path d="m12 7 5 5-5 5-5-5z"/><g fill="currentColor" stroke="none"><circle cx="12" cy="3" r="1.8"/><circle cx="21" cy="12" r="1.8"/><circle cx="12" cy="21" r="1.8"/><circle cx="3" cy="12" r="1.8"/></g></svg>
           <span class="nav-rail-label">Admin</span>
         </button>
         <button style="display: none" type="button" id="navSignal" class="nav-rail-btn" title="Signal track" aria-label="Signal track">
@@ -141,7 +131,7 @@
           <span style="display: none" class="nav-rail-label">Signal</span>
         </button>
         <button type="button" id="navAccount" class="nav-rail-btn" title="Account and subscription" aria-label="Account and subscription">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+          <svg class="nav-signal-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="7" r="3.3"/><path d="M5 21c0-5 2.5-8 7-8s7 3 7 8"/><path d="M3 7 5 19m16-12-2 12" opacity=".65"/><g fill="currentColor" stroke="none"><circle cx="3" cy="7" r="1.5"/><circle cx="21" cy="7" r="1.5"/><circle cx="5" cy="21" r="1.8"/><circle cx="19" cy="21" r="1.8"/></g></svg>
           <span class="nav-rail-label">Account</span>
         </button>
       </nav>

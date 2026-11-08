@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Navigation icon theme check</title><link rel="stylesheet" href="../styles.css"><style>
+  .icon-check { margin: 24px 24px 24px 130px; max-width: 700px; } .icon-check select { color: var(--text); background: var(--panel); padding: 10px; border: 1px solid var(--border); } .icon-check p { margin: 16px 0; } .icon-check-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(100px,1fr)); gap: 12px; } .icon-check-grid .nav-rail-btn { width: 100%; min-height: 72px; }
+  @media(max-width:768px){ .icon-check{margin:20px;} }
+</style></head><body><main class="icon-check"><h1>Signal icons</h1><p><label>Theme <select id="theme"><option value="dark">Dark</option><option value="minimal">Minimal light</option><option value="coral-navy">Coral / navy</option><option value="berry-mint">Berry / mint</option><option value="material">Material light</option><option value="old-school-rpg">RPG</option></select></label></p><div class="icon-check-grid" aria-label="Navigation icon preview"></div><p id="check" role="status"></p></main><script>
+  (async()=>{
+    const html=await (await fetch('../index.html')).text(), source=new DOMParser().parseFromString(html,'text/html');
+    const grid=document.querySelector('.icon-check-grid');
+    for(const icon of source.querySelectorAll('.nav-rail-list .nav-signal-icon')){
+      const button=icon.closest('button').cloneNode(true);button.classList.remove('hidden');button.hidden=false;
+      button.addEventListener('click',()=>{for(const peer of grid.children){peer.classList.remove('is-active');peer.removeAttribute('aria-current');}button.classList.add('is-active');button.setAttribute('aria-current','page');check();});grid.append(button);
+    }
+    function check(){const results=[...grid.querySelectorAll('svg')].map(svg=>getComputedStyle(svg).stroke===getComputedStyle(svg.closest('button')).color && getComputedStyle(svg.querySelector('g')).fill===getComputedStyle(svg.closest('button')).color);document.querySelector('#check').textContent=results.every(Boolean)?`${results.length} icons inherit theme colors`:'Theme mismatch';}
+    document.querySelector('#theme').addEventListener('change',event=>{document.documentElement.dataset.theme=event.target.value;document.documentElement.dataset.colorMode=event.target.value==='material'?'light':'';setTimeout(check,200);});setTimeout(check,200);
+  })();
+</script></body></html>

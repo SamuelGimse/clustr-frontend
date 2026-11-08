@@ -12,9 +12,9 @@ test('sidebar follows overview, investigation, history and account workflow',()=
   assert.match(buttons.find(b=>b[1]==='navEvents')[0],/aria-current="page"/);
   assert.equal(buttons.at(-1)[1], 'navAccount');
 });
-test('Overview uses a distinct gauge instead of the News grid',()=>{
+test('Overview uses a distinct orbital scan instead of the News branches',()=>{
   const overview=buttons.find(b=>b[1]==='navDashboard')[0];
-  assert.match(overview,/<circle cx="12" cy="14" r="2"/);
+  assert.match(overview,/<ellipse cx="12" cy="12" rx="9" ry="7"/);
   assert.doesNotMatch(overview,/<rect/);
   assert.match(overview,/aria-hidden="true"/);
   assert.match(overview,/aria-label="Overview dashboard"/);
