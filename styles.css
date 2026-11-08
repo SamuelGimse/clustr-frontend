@@ -3951,20 +3951,25 @@ html[data-theme="material"] .pm-ranges button { min-height: 40px; border-radius:
 html[data-theme="apple"] {
   --design-control-radius: 999px;
   --glass-fill: rgba(255, 255, 255, .64);
-  --glass-card: rgba(255, 255, 255, .56);
+  --glass-card: rgba(255, 255, 255, .72);
+  --glass-inset: rgba(255, 255, 255, .42);
   --glass-edge: rgba(255, 255, 255, .9);
   --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, .85), inset 0 -1px 0 rgba(255, 255, 255, .3), 0 6px 24px rgba(30, 50, 80, .09);
+  --md-sys-color-surface-container-high: rgba(255, 255, 255, .78);
 }
 html[data-theme="apple"] body {
   background-image: radial-gradient(ellipse at 10% 0%, rgba(180, 178, 174, .24), transparent 55%), radial-gradient(ellipse at 95% 35%, rgba(150, 150, 154, .16), transparent 50%);
   background-attachment: fixed;
 }
-html[data-theme="apple"] :is(.cluster-card, .account-shell, .pm-browser, .pm-detail, .movers-strip, .weekly-ai-digest) {
+html[data-theme="apple"] :is(.md-card, .cluster-card, .account-shell, .pm-browser, .pm-detail, .movers-strip, .weekly-summary > div, .weekly-cluster, .weekly-ai-digest, .weekly-trend-panel, .country-panel, .mindmap, .chart-folder, .dash-metric, .dash-panel, .atlas-stats span, .atlas-matrix, .atlas-detail, .stocks-cluster, .stocks-browser) {
   background: var(--glass-card);
   border: 1px solid var(--glass-edge);
   box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(24px) saturate(110%);
-  -webkit-backdrop-filter: blur(24px) saturate(110%);
+  backdrop-filter: blur(18px) saturate(110%);
+  -webkit-backdrop-filter: blur(18px) saturate(110%);
+}
+html[data-theme="apple"] :is(.md-chart, .stance, .stance-history-panel, .price-bar, .article-grid > *, .account-plan, .country-card, .tank-art-card, .tank-side, .dash-trend-readout, .atlas-detail-panel, .atlas-detail-score, .stocks-tile, .stocks-search-tools) {
+  background: var(--glass-inset);
 }
 html[data-theme="apple"] .cluster-card:hover { background: var(--glass-card); }
 html[data-theme="apple"] :is(.nav-rail, .top-app-bar, .mobile-topbar, .theme-menu, .events-sort-segmented, .publish-nav) {
@@ -4027,17 +4032,19 @@ html[data-theme="apple"] .nav-rail-btn.is-active {
 @media (prefers-color-scheme: dark) {
   html[data-theme="apple"] {
     --glass-fill: rgba(60, 60, 63, .58);
-    --glass-card: rgba(52, 52, 55, .5);
+    --glass-card: rgba(32, 32, 35, .72);
+    --glass-inset: rgba(44, 44, 46, .42);
     --glass-edge: rgba(255, 255, 255, .16);
     --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), inset 0 -1px 0 rgba(255, 255, 255, .04), 0 8px 24px rgba(0, 0, 0, .24);
+    --md-sys-color-surface-container-high: rgba(44, 44, 46, .78);
   }
 }
 @media (max-width: 768px) {
   html[data-theme="apple"] .top-app-bar { top: 64px; padding: 12px; }
 }
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
-  html[data-theme="apple"] { --glass-fill: var(--panel-2); --glass-card: var(--panel-2); --glass-edge: var(--text-meta); }
-  html[data-theme="apple"] :is(.nav-rail, .top-app-bar, .mobile-topbar, .theme-menu, .events-sort-segmented, .publish-nav, .md-btn--icon, .stance-history-icon-btn, .cluster-expand, .account-secondary, .pm-secondary) {
+  html[data-theme="apple"] { --glass-fill: var(--md-sys-color-surface-container-highest); --glass-card: var(--md-sys-color-surface-container-highest); --glass-inset: var(--md-sys-color-surface-container-highest); --glass-edge: var(--text-meta); }
+  html[data-theme="apple"] :is(.md-card, .cluster-card, .account-shell, .pm-browser, .pm-detail, .movers-strip, .weekly-summary > div, .weekly-cluster, .weekly-ai-digest, .weekly-trend-panel, .country-panel, .mindmap, .chart-folder, .dash-metric, .dash-panel, .atlas-stats span, .atlas-matrix, .atlas-detail, .stocks-cluster, .stocks-browser, .md-chart, .stance, .stance-history-panel, .price-bar, .article-grid > *, .account-plan, .country-card, .tank-art-card, .tank-side, .dash-trend-readout, .atlas-detail-panel, .atlas-detail-score, .stocks-tile, .stocks-search-tools, .nav-rail, .top-app-bar, .mobile-topbar, .theme-menu, .events-sort-segmented, .publish-nav, .md-btn--icon, .stance-history-icon-btn, .cluster-expand, .account-secondary, .pm-secondary) {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     box-shadow: none;
