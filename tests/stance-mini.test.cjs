@@ -11,7 +11,7 @@ vm.runInContext(source,context);
 context.window.ClustrApp={getPublishes:()=>[{created_at:'2026-11-07T18:00:00Z'}],getPublishIndex:()=>0};
 context.window.ClustrApi={localStanceHistory:()=>[]};
 assert.match(context.window.renderVelocity({name:'Test'}),/Needs 3 scored days/);
-context.window.ClustrApi.localStanceHistory=()=>[-5,-3,-1].map((stanceScore,i)=>({date:`2026-11-0${i+1}`,stanceScore}));
+context.window.ClustrApi.localStanceHistory=()=>[-5,-3,-1].map((stanceScore,i)=>({date:`2026-11-0${i+3}T18:00:00Z`,stanceScore}));
 const html=context.window.renderVelocity({name:'Test'});
 assert.match(html,/7-day velocity/);
 assert.match(html,/\+2.00 pts\/day/);

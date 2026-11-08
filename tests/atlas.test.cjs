@@ -11,7 +11,7 @@ test('Zero-rated articles do not dilute a cluster impact score', () => {
   assert.equal(util.articleImpactScore([0, 0]), 0);
 });
 
-test('Atlas keeps all snapshots and uses the latest report on each Oslo day', () => {
+test('Atlas keeps all snapshots and uses the latest report on each US market day', () => {
   const publishes = [
     { id: 1, created_at: '2026-11-06T08:00:00Z' },
     { id: 2, created_at: '2026-11-06T14:00:00Z' },

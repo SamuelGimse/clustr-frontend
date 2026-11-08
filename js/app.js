@@ -329,12 +329,10 @@
     return String(group.group || group.name || group.title || 'Cluster').trim();
   }
 
-  function weeklyMarket(market) {
-    return String(market || 'US').toUpperCase() === 'NO' ? 'NO' : 'US';
-  }
+  function weeklyMarket() { return 'US'; }
 
   function weeklyDayKey(value) {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Oslo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value));
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value));
   }
 
   async function renderWeekly() {
@@ -400,8 +398,8 @@
       const publishedMarkets = [...new Set(inWeek.map(pub => weeklyMarket(pub.market)))];
       const digests = publishedMarkets.flatMap(market => {
         const rows = (dailyByMarket.get(market) || []).sort((a, b) => b.summary_date.localeCompare(a.summary_date));
-        if (rows.length) return rows.map(row => `<section class="weekly-ai-digest"><div class="weekly-ai-digest-head"><span>DAILY MARKET BRIEF</span><time>${window.ClustrUtil.escapeHtml(row.summary_date)}</time></div><h2>${market === 'NO' ? 'Norway' : 'United States'}</h2><p>${window.ClustrUtil.escapeHtml(row.summary)}</p><small>Generated with ${window.ClustrUtil.escapeHtml(row.model || 'local Ollama')}</small></section>`);
-        return [`<section class="weekly-ai-digest weekly-ai-digest-empty"><div class="weekly-ai-digest-head"><span>DAILY MARKET BRIEF</span><span>${market}</span></div><h2>${market === 'NO' ? 'Norway' : 'United States'}</h2><p>${summaryError ? `Could not load the saved summary: ${window.ClustrUtil.escapeHtml(summaryError)}` : 'No daily digest is saved in this seven-day window yet. It is created after a publish with same-day stories and a successful Ollama summary run.'}</p></section>`];
+        if (rows.length) return rows.map(row => `<section class="weekly-ai-digest"><div class="weekly-ai-digest-head"><span>DAILY MARKET BRIEF</span><time>${window.ClustrUtil.escapeHtml(row.summary_date)}</time></div><h2>United States</h2><p>${window.ClustrUtil.escapeHtml(row.summary)}</p><small>Generated with ${window.ClustrUtil.escapeHtml(row.model || 'local Ollama')}</small></section>`);
+        return [`<section class="weekly-ai-digest weekly-ai-digest-empty"><div class="weekly-ai-digest-head"><span>DAILY MARKET BRIEF</span><span>${market}</span></div><h2>United States</h2><p>${summaryError ? `Could not load the saved summary: ${window.ClustrUtil.escapeHtml(summaryError)}` : 'No daily digest is saved in this seven-day window yet. It is created after a publish with same-day stories and a successful Ollama summary run.'}</p></section>`];
       });
       aiSummary.innerHTML = window.ClustrWatchlist?.isFiltered() ? '<p class="weekly-ai-cluster-note">Watchlist scope: summaries for linked clusters are shown below.</p>' : `<div class="weekly-ai-heading"><div><span>AI SUMMARIES</span><h2>Daily market briefs</h2></div><p>Saved daily briefs from the rolling seven-day window</p></div><div class="weekly-ai-digest-grid">${digests.join('')}</div>`;
     }
@@ -1041,7 +1039,7 @@
       if (action === 'portal') await window.ClustrAuth.portal();
       if (action === 'publish') {
         if (authState.role !== 'admin') throw new Error('Administrator access is required.');
-        const market = document.getElementById('publishMarket')?.value || 'US';
+        const market = 'US';
         button.disabled = true;
         button.textContent = 'Starting full publish…';
         appendPublishConsole([], true);

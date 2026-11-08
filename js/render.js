@@ -196,7 +196,7 @@
     const cutoff = Date.parse(asOf) || Math.max(...valid.map(row => Date.parse(row.date)));
     if (!Number.isFinite(cutoff)) return null;
     const dayOf = timestamp => {
-      const parts = Object.fromEntries(new Intl.DateTimeFormat('en', { timeZone: 'Europe/Oslo', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(timestamp).map(part => [part.type, part.value]));
+      const parts = Object.fromEntries(new Intl.DateTimeFormat('en', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(timestamp).map(part => [part.type, part.value]));
       return Date.UTC(+parts.year, +parts.month - 1, +parts.day) / 86400000;
     };
     const end = dayOf(cutoff), daily = new Map();
@@ -218,7 +218,7 @@
     const history = stanceHistoryForCluster(group.name, group.__historyScope);
     const velocity = weeklyVelocity(history, publish?.created_at);
     const direction = !velocity || Math.abs(velocity.slope) < 0.05 ? 'flat' : velocity.slope > 0 ? 'up' : 'down';
-    const velocityHtml = `<div class="weekly-velocity weekly-velocity--${direction}" title="Linear slope of the latest numeric score per Oslo calendar day over the last 7 days. Requires 3 observed days. Descriptive, not a forecast."><span>7-day velocity</span>${velocity ? `<strong>${direction === 'up' ? '↗' : direction === 'down' ? '↘' : '→'} ${velocity.slope >= 0 ? '+' : ''}${velocity.slope.toFixed(2)} pts/day</strong><span>Δ ${velocity.delta >= 0 ? '+' : ''}${velocity.delta.toFixed(1)} pts · ${velocity.count}/7 days</span>` : '<span>Needs 3 scored days</span>'}</div>`;
+    const velocityHtml = `<div class="weekly-velocity weekly-velocity--${direction}" title="Linear slope of the latest numeric score per US market calendar day over the last 7 days. Requires 3 observed days. Descriptive, not a forecast."><span>7-day velocity</span>${velocity ? `<strong>${direction === 'up' ? '↗' : direction === 'down' ? '↘' : '→'} ${velocity.slope >= 0 ? '+' : ''}${velocity.slope.toFixed(2)} pts/day</strong><span>Δ ${velocity.delta >= 0 ? '+' : ''}${velocity.delta.toFixed(1)} pts · ${velocity.count}/7 days</span>` : '<span>Needs 3 scored days</span>'}</div>`;
     return velocityHtml;
   }
 

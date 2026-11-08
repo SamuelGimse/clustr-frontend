@@ -57,8 +57,8 @@
     try {
       const result=await loadWindow(publish,days,root.ClustrApi);
       if(request!==revision)return;
-      const date=new Date(result.end).toLocaleString('en-GB',{timeZone:'Europe/Oslo',dateStyle:'medium',timeStyle:'short'});
-      render(result.groups,publish,{...options,scope:`Last ${days} ${days===1?'day':'days'} (${days*24} hours) ending ${date} Oslo · ${result.reports} reports · Latest cluster scores; links and stories combined across the window.`});
+      const date=new Date(result.end).toLocaleString('en-GB',{timeZone:'America/New_York',dateStyle:'medium',timeStyle:'short'});
+      render(result.groups,publish,{...options,scope:`Last ${days} ${days===1?'day':'days'} (${days*24} hours) ending ${date} ET · ${result.reports} reports · Latest cluster scores; links and stories combined across the window.`});
     } catch(error) {
       if(request!==revision)return;
       render(groups,publish,{...options,scope:`Could not load the ${days}-day window. Showing the selected report only. ${error.message}`,retry:()=>mount(groups,publish,true)});

@@ -75,8 +75,8 @@ test('Dashboard selection, scatter points and all-model comparison remain cluste
   root.onchange({ target: { closest: selector => selector === '[data-dash-show-fits]' ? { checked: true } : null } });
   assert.equal((root.innerHTML.match(/class="dash-fit /g) || []).length, 6);
   assert.match(root.innerHTML, /Original-scale R²/);
-  root.onclick({ target: { closest: selector => selector === '[data-dash-market]' ? { dataset: { dashMarket: 'NO' } } : null } });
-  assert.match(root.innerHTML, /No approved NO publishes/);
+  assert(!root.innerHTML.includes('data-dash-market'));
+  assert(!root.innerHTML.includes('Norway'));
 });
 
 test('Cumulative impact sums signed daily scores without inventing missing days or changing saved data',()=>{

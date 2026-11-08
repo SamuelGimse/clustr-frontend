@@ -45,7 +45,7 @@
    */
   async function fetchPublishes(limit = 30) {
     return rest(
-      `clustr_publishes?select=id,title,notes,market,created_at,groups_json&notes=like.PULSE%20pipeline*&order=id.desc&limit=${encodeURIComponent(String(Math.min(limit, 100)))}`
+      `clustr_publishes?select=id,title,notes,market,created_at,groups_json&market=eq.US&notes=like.PULSE%20pipeline*&order=id.desc&limit=${encodeURIComponent(String(Math.min(limit, 100)))}`
     );
   }
 
@@ -55,7 +55,7 @@
     if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start > end) throw new Error('Invalid publish range');
     const all = new Map();
     for (let offset = 0; ; offset += 100) {
-      const params = new URLSearchParams({ select: 'id,title,notes,market,created_at,groups_json', notes: 'like.PULSE pipeline*', order: 'created_at.desc,id.desc', limit: '100', offset: String(offset) });
+      const params = new URLSearchParams({ select: 'id,title,notes,market,created_at,groups_json', market: 'eq.US', notes: 'like.PULSE pipeline*', order: 'created_at.desc,id.desc', limit: '100', offset: String(offset) });
       params.append('created_at', `gte.${start.toISOString()}`);
       params.append('created_at', `lte.${end.toISOString()}`);
       const page = await rest(`clustr_publishes?${params}`);
@@ -76,7 +76,7 @@
       const all = [];
       for (let offset = 0; ; offset += pageSize) {
         const page = await rest(
-          `clustr_publishes?select=id,title,notes,market,created_at,groups_json&notes=like.PULSE%20pipeline*&order=id.desc&limit=${pageSize}&offset=${offset}`
+          `clustr_publishes?select=id,title,notes,market,created_at,groups_json&market=eq.US&notes=like.PULSE%20pipeline*&order=id.desc&limit=${pageSize}&offset=${offset}`
         );
         all.push(...page);
         if (page.length < pageSize) return all;
@@ -90,11 +90,9 @@
     }
   }
 
-  async function fetchAiSummaries(fromDate, markets = []) {
-    const allowed = [...new Set(markets.map(m => String(m).toUpperCase()).filter(m => m === 'US' || m === 'NO'))];
-    if (!allowed.length) return [];
+  async function fetchAiSummaries(fromDate) {
     const params = new URLSearchParams({ select: 'kind,market,summary_date,cluster_name,summary,model', summary_date: `gte.${fromDate}`, order: 'summary_date.desc', limit: '300' });
-    params.set('market', allowed.length === 1 ? `eq.${allowed[0]}` : `in.(${allowed.join(',')})`);
+    params.set('market', 'eq.US');
     return rest(`clustr_ai_summaries?${params.toString()}`);
   }
 

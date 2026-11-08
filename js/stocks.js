@@ -11,7 +11,7 @@
     linked: ['stocks']
   };
   const LABELS = { mentioned: 'Article mention', close: 'Close link', related: 'Related stock', defaults: 'Cluster default', winner: 'Connected winner', loser: 'Connected loser', mover: 'Session mover', linked: 'Cluster link' };
-  let root, items = [], selected = '', mode = 'clusters', query = '', market = 'all';
+  let root, items = [], selected = '', mode = 'clusters', query = '';
   let generation = 0, active = false, listScroll = 0;
 
   function usableStock(raw) {
@@ -120,7 +120,7 @@
 
   function filteredItems() {
     const term = query.trim().toLocaleLowerCase();
-    return items.filter(item => (window.ClustrWatchlist?.allows(item, item.market) ?? true) && (market === 'all' || item.market === market) && `${item.symbol} ${item.name}`.toLocaleLowerCase().includes(term));
+    return items.filter(item => (window.ClustrWatchlist?.allows(item, item.market) ?? true) && item.market === 'US' && `${item.symbol} ${item.name}`.toLocaleLowerCase().includes(term));
   }
 
   function renderGrid() {
@@ -173,8 +173,7 @@
     const esc = U().escapeHtml;
     root.innerHTML = `<div class="stocks-heading"><div><span class="stocks-eyebrow">YOUR WEEK IN STOCKS</span><h1>Stocks</h1><p id="stocksRange">Loading the last seven days…</p></div><button type="button" class="stocks-refresh" data-stock-refresh>Refresh</button></div>
       <p id="stocksLoadStatus" class="stocks-load-status" role="status"></p>
-      <div class="stocks-workspace"><section id="stocksDetail" class="stocks-detail" aria-label="Linked clusters"></section><section class="stocks-browser" aria-label="Find a stock"><div class="stocks-search-tools"><label for="stocksSearch">Find a stock</label><div class="stocks-search-row"><input id="stocksSearch" type="search" placeholder="Ticker or name" autocomplete="off" value="${esc(query)}"><label class="stocks-market-label"><span class="sr-only">Market</span><select id="stocksMarket" aria-label="Market"><option value="all">All</option><option value="US">US</option><option value="NO">Norway</option></select></label></div><p id="stocksResultCount" role="status"></p></div><div id="stocksGrid" class="stocks-grid" aria-label="Stocks from the last seven days"></div></section></div>`;
-    root.querySelector('#stocksMarket').value = market;
+      <div class="stocks-workspace"><section id="stocksDetail" class="stocks-detail" aria-label="Linked clusters"></section><section class="stocks-browser" aria-label="Find a stock"><div class="stocks-search-tools"><label for="stocksSearch">Find a stock</label><div class="stocks-search-row"><input id="stocksSearch" type="search" placeholder="Ticker or name" autocomplete="off" value="${esc(query)}"></div><p id="stocksResultCount" role="status"></p></div><div id="stocksGrid" class="stocks-grid" aria-label="Stocks from the last seven days"></div></section></div>`;
     root.addEventListener('input', handleInput);
     root.addEventListener('change', handleChange);
     root.addEventListener('click', handleClick);
@@ -185,7 +184,6 @@
     if (event.target.id === 'stocksSearch') { query = event.target.value; renderGrid(); root.querySelector('.stocks-browser').scrollTop = 0; }
   }
   function handleChange(event) {
-    if (event.target.id === 'stocksMarket') { market = event.target.value; renderGrid(); root.querySelector('.stocks-browser').scrollTop = 0; }
     if (event.target.name === 'stock-links') {
       mode = event.target.value;
       renderDetail();

@@ -12,7 +12,7 @@
     const stock = typeof raw === 'string' ? { symbol: raw } : raw;
     const symbol = String(stock?.symbol || '').trim().toUpperCase();
     const exchange = String(stock?.market || market || 'US').toUpperCase();
-    if (stock?.resolved === false || !['US', 'NO'].includes(exchange) || !/^[A-Z0-9^][A-Z0-9.^:=/\-]{0,31}$/.test(symbol)) return null;
+    if (stock?.resolved === false || exchange !== 'US' || !/^[A-Z0-9^][A-Z0-9.^:=/\-]{0,31}$/.test(symbol)) return null;
     return { market: exchange, symbol, name: String(stock?.name || stock?.company || symbol).slice(0, 200), key: `${exchange}:${symbol}` };
   }
 
@@ -191,7 +191,7 @@
   function mount(host) {
     manager = host;
     if (!host) return;
-    host.innerHTML = `<div class="watchlist-heading"><div><h1>My watchlist</h1><p data-watch-count></p></div><button type="button" class="watchlist-action" data-watch-refresh>Refresh</button></div><p class="watchlist-status" data-watch-manager-status role="status"></p><div class="watchlist-grid" data-watch-saved></div><section class="watchlist-panel"><h2>Add a stock</h2><form id="watchlistAddForm" class="watchlist-add-form"><label>Ticker<input name="symbol" placeholder="NVDA or EQNR.OL" maxlength="32" autocomplete="off" required></label><label>Market<select name="market"><option value="US">US</option><option value="NO">Norway</option></select></label><button type="submit" class="watchlist-action" data-watch-add>Add stock</button></form></section><section class="watchlist-panel"><h2>From the selected report</h2><label class="watchlist-search">Search stocks<input type="search" data-watch-search placeholder="Ticker or company name" autocomplete="off"></label><p class="watchlist-status" data-watch-results role="status"></p><div class="watchlist-grid" data-watch-recent></div><button type="button" class="watchlist-action" data-watch-more>Show more stocks</button></section>`;
+    host.innerHTML = `<div class="watchlist-heading"><div><h1>My watchlist</h1><p data-watch-count></p></div><button type="button" class="watchlist-action" data-watch-refresh>Refresh</button></div><p class="watchlist-status" data-watch-manager-status role="status"></p><div class="watchlist-grid" data-watch-saved></div><section class="watchlist-panel"><h2>Add a stock</h2><form id="watchlistAddForm" class="watchlist-add-form"><label>Ticker<input name="symbol" placeholder="NVDA or AAPL" maxlength="32" autocomplete="off" required></label><button type="submit" class="watchlist-action" data-watch-add>Add stock</button></form></section><section class="watchlist-panel"><h2>From the selected report</h2><label class="watchlist-search">Search stocks<input type="search" data-watch-search placeholder="Ticker or company name" autocomplete="off"></label><p class="watchlist-status" data-watch-results role="status"></p><div class="watchlist-grid" data-watch-recent></div><button type="button" class="watchlist-action" data-watch-more>Show more stocks</button></section>`;
     host.querySelector('[data-watch-search]').value = search;
     paintManager();
   }
@@ -209,9 +209,9 @@
     root.document.addEventListener('submit', async event => {
       if (event.target.id !== 'watchlistAddForm') return;
       event.preventDefault();
-      const form = event.target, fields = new FormData(form), market = String(fields.get('market'));
+      const form = event.target, fields = new FormData(form), market = 'US';
       const stock = stockRecord({ symbol: fields.get('symbol') }, market);
-      if (!stock) { message = 'Enter a valid ticker and market.'; paintManager(); return; }
+      if (!stock) { message = 'Enter a valid US ticker.'; paintManager(); return; }
       const known = recentStocks().find(item => item.key === stock.key) || stock;
       try { await setSaved(known, market, true); form.elements.symbol.value = ''; form.elements.symbol.focus(); }
       catch (error) { message = error.message; paintManager(); }
