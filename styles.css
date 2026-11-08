@@ -973,6 +973,8 @@ body { isolation: isolate; }
   flex: 1;
 }
 
+.nav-rail-list > #navAccount { margin-top: auto; }
+
 .nav-rail-footer {
   margin-top: auto;
   width: 100%;

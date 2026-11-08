@@ -10,7 +10,7 @@ test('sidebar follows overview, investigation, history and account workflow',()=
   assert.deepEqual(visible.map(b=>b[1]),['navDashboard','navEvents','navStocks','navConnections','navWeekly','navAtlas','navDays','navWatchlist','navAccount']);
   assert.equal(new Set(buttons.map(b=>b[1])).size,buttons.length);
   assert.match(buttons.find(b=>b[1]==='navEvents')[0],/aria-current="page"/);
-  assert.ok(buttons.findIndex(b=>b[1]==='navAdmin')>buttons.findIndex(b=>b[1]==='navAccount'));
+  assert.equal(buttons.at(-1)[1], 'navAccount');
 });
 test('Overview uses a distinct gauge instead of the News grid',()=>{
   const overview=buttons.find(b=>b[1]==='navDashboard')[0];
