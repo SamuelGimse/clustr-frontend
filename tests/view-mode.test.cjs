@@ -26,6 +26,16 @@ test('Simple and Advanced follow data pages, preserve mode, and leave account pa
     context.view=view;vm.runInContext("viewMode = 'advanced'; updateViewMode()",context);assert.equal(bar.hidden,true);
   }
   assert.deepEqual(rendered,['connections','map','weekly','days','watchlist']);
+  vm.runInContext("view = 'events'; newsView = 'desk'; updateViewMode()",context);
+  assert.deepEqual(buttons.map(button=>button.textContent),['Connection desk','Full feed']);
+  assert.equal(document.documentElement.dataset.viewMode,'simple');
+  assert.equal(vm.runInContext('viewMode',context),'advanced');
+  vm.runInContext("newsView = 'feed'; updateViewMode()",context);
+  assert.equal(document.documentElement.dataset.viewMode,'advanced');
+  assert.equal(buttons[1]['aria-pressed'],'true');
+  vm.runInContext("view = 'stocks'; updateViewMode()",context);
+  assert.deepEqual(buttons.map(button=>button.textContent),['Simple','Advanced']);
+  assert.equal(document.documentElement.dataset.viewMode,'advanced');
   vm.runInContext("view = 'account'; updateViewMode()", context);
   assert.equal(bar.hidden, true);
 });

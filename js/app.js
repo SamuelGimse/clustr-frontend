@@ -28,6 +28,8 @@
   const dataViews = new Set(['dashboard', 'events', 'stocks', 'connections', 'map', 'weekly', 'atlas', 'days', 'watchlist']);
   let viewMode = 'simple';
   try { if (localStorage.getItem('clustr-view-mode') === 'advanced') viewMode = 'advanced'; } catch {}
+  let newsView = 'desk';
+  try { if (localStorage.getItem('clustr-news-view') === 'feed') newsView = 'feed'; } catch {}
   document.documentElement.dataset.viewMode = viewMode;
   const viewModeBar = document.getElementById('viewModeBar');
   const viewModeHint = document.getElementById('viewModeHint');
@@ -43,16 +45,21 @@
     watchlist: 'Your companies, latest price and linked news.'
   };
   function updateViewMode() {
-    document.documentElement.dataset.viewMode = viewMode;
+    const mode = view === 'events' ? newsView === 'desk' ? 'simple' : 'advanced' : viewMode;
+    document.documentElement.dataset.viewMode = mode;
     document.documentElement.dataset.activeView = view;
     const singleLayout = ['connections', 'map', 'weekly', 'days', 'watchlist'].includes(view);
     if (viewModeBar) viewModeBar.hidden = !dataViews.has(view) || !authState.user || singleLayout;
-    if (viewModeHint) viewModeHint.textContent = viewMode === 'simple' ? modeHints[view] || '' : 'Full report detail and controls.';
-    document.querySelectorAll('[data-view-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.viewMode === viewMode)));
+    if (viewModeHint) viewModeHint.textContent = mode === 'simple' ? modeHints[view] || '' : 'Full report detail and controls.';
+    viewModeBar?.querySelector?.('.view-mode-switch')?.setAttribute('aria-label', view === 'events' ? 'News view' : 'Page detail level');
+    document.querySelectorAll('button[data-view-mode]').forEach(button => {
+      button.textContent = view === 'events' ? button.dataset.viewMode === 'simple' ? 'Connection desk' : 'Full feed' : button.dataset.viewMode === 'simple' ? 'Simple' : 'Advanced';
+      button.setAttribute('aria-pressed', String(button.dataset.viewMode === mode));
+    });
     const more = dashboardView?.querySelector('.dash-more');
     if (more) more.open = true;
     const allowed = authState.user && dataViews.has(view) && (!['stocks', 'weekly', 'atlas', 'watchlist'].includes(view) || hasProAccess());
-    if ((viewMode === 'simple' || singleLayout) && allowed) window.ClustrSimple?.render(view);
+    if ((mode === 'simple' || singleLayout) && allowed) window.ClustrSimple?.render(view, view === 'events');
     else window.ClustrSimple?.hide();
   }
 
@@ -1097,9 +1104,14 @@
   }
 
   if (navPolymarket) navPolymarket.addEventListener('click', () => setNav('polymarket'));
-  document.querySelectorAll('[data-view-mode]').forEach(button => button.addEventListener('click', () => {
-    viewMode = button.dataset.viewMode;
-    try { localStorage.setItem('clustr-view-mode', viewMode); } catch {}
+  document.querySelectorAll('button[data-view-mode]').forEach(button => button.addEventListener('click', () => {
+    if (view === 'events') {
+      newsView = button.dataset.viewMode === 'simple' ? 'desk' : 'feed';
+      try { localStorage.setItem('clustr-news-view', newsView); } catch {}
+    } else {
+      viewMode = button.dataset.viewMode;
+      try { localStorage.setItem('clustr-view-mode', viewMode); } catch {}
+    }
     updateViewMode();
     if (view === 'dashboard') window.ClustrDashboard?.render(dashboardView,setNav);
     if (view === 'weekly') renderWeekly();
@@ -1307,7 +1319,7 @@
   }
 
   window.addEventListener('clustr:watchlist-change', event => {
-    if (viewMode === 'simple') updateViewMode();
+    if (viewMode === 'simple' || view === 'events') updateViewMode();
     if (!publishes.length || (!event.detail.scopeChanged && !window.ClustrWatchlist?.isFiltered())) return;
     if (view === 'stocks') { window.ClustrStocks?.refreshScope(); return; }
     const target = view;

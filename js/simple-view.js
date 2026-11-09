@@ -130,7 +130,7 @@
     start.forEach((price,symbol)=>{if(end.has(symbol))changes.push((end.get(symbol)/price-1)*100);});
     return changes.length?{value:changes.reduce((a,b)=>a+b,0)/changes.length,count:changes.length,total:start.size,from:previous.publish.created_at,to:latest.publish.created_at}:null;
   }
-  function render(view) {
+  function render(view, deskOnly=false) {
     const doc=win.document,host=doc.getElementById('simpleView');
     if(!host||(doc.documentElement.dataset.viewMode!=='simple'&&!['connections','map','weekly','days','watchlist'].includes(view)))return;
     if(nativeViews.has(view)){host.hidden=true;if(active!==view){revision++;active=view;identity='';}if(view==='map')prepareWorld();return;}
@@ -157,7 +157,13 @@
         if(button.hasAttribute('data-simple-network'))app.showView('connections',{focusLabel:selected});
       };
     }
-    if(view==='events'){if(changed||dataChanged)drawNews(host);}else drawCalendar(host);
+    if(view==='events'){
+      const layoutChanged=deskOnly&&layout!=='desk';
+      if(deskOnly)layout='desk';
+      const layoutSwitch=host.querySelector('.simple-layout-switch');
+      if(layoutSwitch)layoutSwitch.hidden=deskOnly;
+      if(changed||dataChanged||layoutChanged)drawNews(host);
+    }else drawCalendar(host);
   }
   function hide(){revision++;active='';identity='';const host=win.document.getElementById('simpleView');if(host)host.hidden=true;restoreWorld();}
   function setReports(rows){reportError='';reportRows=rows;reportSource=win.ClustrApp?.getPublishes();reportScope=win.ClustrWatchlist?.scopeKey?.()||'';if(active==='days'){const host=win.document.getElementById('simpleView');if(host&&!host.hidden)drawCalendar(host);}}
