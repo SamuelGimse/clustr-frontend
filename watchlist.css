@@ -51,6 +51,8 @@ html[data-theme] .view-toolbar .events-sort-segmented { display:none; }
 .watch-star.is-saved { color: var(--text); }
 .watch-star:disabled { opacity: .5; cursor: wait; }
 .watch-star svg { flex: 0 0 18px; }
+.cluster-title { display:flex; align-items:center; gap:10px; min-width:0; }
+.cluster-title .cluster-name { flex:1; min-width:0; margin:0; }
 .watchlist-scope button:focus-visible, .watchlist-page :is(button,input,select):focus-visible, .watch-star:focus-visible { outline: 2px solid var(--text-meta); outline-offset: 3px; }
 .stocks-tile-wrap { position: relative; min-width: 0; }
 .stocks-tile-wrap .stocks-tile { width: 100%; height: 100%; padding-bottom: 44px; }
@@ -61,10 +63,15 @@ html[data-theme] .view-toolbar .events-sort-segmented { display:none; }
 .watchlist-heading p, .watchlist-status { color: var(--text-meta); font-size: 12px; line-height: 1.6; }
 .watchlist-status { min-height: 20px; }
 .watchlist-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 8px; }
-.watchlist-stock { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; padding: 12px; border: 1px solid var(--border); border-radius: var(--design-card-radius, 12px); background: var(--panel); }
+.watchlist-stock { display: grid; grid-template-columns:minmax(0,1fr) auto; align-items: start; gap: 12px; min-width: 0; padding: 12px; border: 1px solid var(--border); border-radius: var(--design-card-radius, 12px); background: var(--panel); }
 .watchlist-stock > div { min-width: 0; }
 .watchlist-stock strong { display: block; font-size: 14px; overflow-wrap: anywhere; }
 .watchlist-stock small { display: block; margin-top: 5px; color: var(--text-meta); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.watchlist-company-open { border:0; background:transparent; padding:0; color:var(--text); font:inherit; font-size:14px; font-weight:600; text-align:left; overflow-wrap:anywhere; cursor:pointer; }
+.watchlist-company-open:hover { text-decoration:underline; text-underline-offset:3px; }
+.watchlist-card-price,.watchlist-card-themes { grid-column:1/-1; display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 10px; font-size:12px; }
+.watchlist-card-price small { flex-basis:100%; }
+.watchlist-card-themes { color:var(--text-meta); font-size:11px; }
 .watchlist-panel { margin-top: 20px; padding: 18px; border: 1px solid var(--border); border-radius: var(--design-card-radius, 16px); background: var(--panel); }
 .watchlist-panel h2 { margin: 0 0 16px; font-size: 17px; }
 .watchlist-add-form { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; }

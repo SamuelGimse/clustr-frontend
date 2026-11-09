@@ -4194,6 +4194,12 @@ html[data-theme] button.md-btn.toggle-articles:is(:hover, :focus-visible, :activ
 .history-data-note { color: var(--text-meta); font-size: 11px; margin: 4px 0 10px; }
 .technical-metrics strong { overflow-wrap: anywhere; }
 .price-bar-mount:empty { display: none; }
+/* Reuse the Trends sparkline in collapsed desktop News cards. */
+.cluster-trend { max-width:440px;margin-inline:auto;color:var(--text-meta); }
+.cluster-trend-head,.cluster-trend-dates { display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11px; }
+.cluster-trend-head strong { font-size:11px;font-weight:500;font-variant-numeric:tabular-nums; }
+.cluster-trend .simple-line { width:100%;height:auto;min-height:0;max-height:none;margin:4px 0; }
+.cluster-trend-dates,.cluster-trend-empty { font-size:10px;color:var(--text-meta); }
 .weekly-velocity { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 11px; color: var(--text-meta); }
 .weekly-velocity strong { color: var(--text); font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .weekly-velocity--up strong { color: var(--up); }

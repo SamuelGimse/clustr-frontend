@@ -36,19 +36,19 @@
   function buildWatchlistRecap(publishes, groups, util, atlas, watchlist, network) {
     if (!watchlist?.getItems || !network?.buildGraph) return null;
     const items = watchlist.getItems().filter(stock => String(stock.market || 'US').toUpperCase() === market);
+    const savedClusters = (watchlist.getClusters?.() || []).filter(cluster => String(cluster.market || 'US').toUpperCase() === market);
     const publish = [...publishes].filter(row => String(row.market || 'US').toUpperCase() === market && Number.isFinite(Date.parse(row.created_at)))
       .sort((a,b) => Date.parse(b.created_at)-Date.parse(a.created_at) || Number(b.id)-Number(a.id))[0];
     if (!publish) return null;
-    if (!items.length) return {publish,total:0,items,stocks:[],graph:{nodes:[],edges:[]},stories:0,context:null};
+    if (!items.length && !savedClusters.length) return {publish,total:0,items,stocks:[],graph:{nodes:[],edges:[]},stories:0,context:null};
     const { start, end } = network.windowRange(publish, 1);
     const rows = publishes.filter(row => String(row.market || 'US').toUpperCase() === market && Date.parse(row.created_at)>start && Date.parse(row.created_at)<=end)
       .map(row => ({publish:row,groups:groups.get(String(row.id)) || []}));
     const merged = network.mergeReports(rows, market);
     const scoped = watchlist.linkedGroups(merged, market);
     const graph = network.buildGraph(scoped, market), byId = new Map(graph.nodes.map(node=>[node.id,node]));
-    const saved = new Set(items.map(stock => util.normalizeSymbol(stock.symbol)));
     const priceModel = atlas.buildModel(publishes.filter(row=>String(row.market||'US').toUpperCase()===market),groups,'publishes',util);
-    const stocks = graph.nodes.filter(node=>node.type==='stock' && saved.has(node.label)).map(node=>{
+    const stocks = graph.nodes.filter(node=>node.type==='stock').map(node=>{
       const links=graph.edges.filter(edge=>edge.from===node.id||edge.to===node.id);
       const clusters=links.map(edge=>byId.get(edge.from===node.id?edge.to:edge.from)).filter(node=>node.type==='cluster');
       const clusterIds=new Set(clusters.map(node=>node.id));
@@ -60,7 +60,7 @@
       return {node,clusters,stories,story,direct:direct.length>0,score:util.articleImpactScore(clusters.map(cluster=>cluster.score)),price:quote?.price??null,priceChange:quote?.priceChange??null,priceAt:quote?.publish.created_at??null,priceFrom:quote?.priceFrom??null,priceHistory:priceModel.columns.map((p,i)=>({date:p.created_at,price:history?.entries[i]?.price??null})).slice(-14)};
     }).sort((a,b)=>b.clusters.length-a.clusters.length||b.stories.length-a.stories.length||a.node.label.localeCompare(b.node.label));
     const mostConnected=stocks[0];
-    return {publish,total:items.length,items,stocks,graph,stories:graph.nodes.filter(node=>node.type==='news').length,
+    return {publish,total:items.length+savedClusters.length,items,stocks,graph,stories:graph.nodes.filter(node=>node.type==='news').length,
       context:mostConnected?{publish,reportGroups:groups.get(String(publish.id))||[],windowGroups:scoped,reportCount:rows.length,days:1,focusId:mostConnected.node.id}:null};
   }
 
@@ -94,7 +94,7 @@
     return `<svg class="dash-stock-spark" viewBox="0 0 300 74" role="img" aria-label="${esc(stock.node.label)} saved USD prices over up to 14 reports, range ${low.toFixed(2)} to ${high.toFixed(2)}"><path d="${path}"/></svg><small class="dash-stock-range">Saved USD range ${low.toFixed(2)}–${high.toFixed(2)} · up to 14 reports</small>`;
   }
   function selectedStockNews(stock, esc) {
-    if (!stock) return '<p class="dash-footnote">No saved connections for your stocks in this 24-hour window.</p>';
+    if (!stock) return '<p class="dash-footnote">No saved connections for your watchlist in this 24-hour window.</p>';
     const stories=[...stock.stories].sort((a,b)=>Number(storyMentionsStock(b,stock.node.label))-Number(storyMentionsStock(a,stock.node.label)) || (Date.parse(b.article.published_at||b.article.date)||0)-(Date.parse(a.article.published_at||a.article.date)||0) || a.label.localeCompare(b.label));
     const date=Number.isFinite(Date.parse(stock.priceAt))?new Date(stock.priceAt).toLocaleString('en',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+' ET':'Unavailable';
     const from=Number.isFinite(Date.parse(stock.priceFrom))?new Date(stock.priceFrom).toLocaleDateString('en',{timeZone:'America/New_York',month:'short',day:'numeric'}):null;
@@ -106,7 +106,7 @@
     if (!recap.total) return '<section class="dash-panel dash-watch-empty"><div><p class="dash-kicker">YOUR WATCHLIST</p><h2>Your market, in one place</h2><p class="dash-footnote">Save a few stocks to see their linked news and connections here.</p></div><button type="button" class="dash-watch-setup" data-dash-nav="watchlist">Create your watchlist →</button></section>';
     const date=new Date(recap.publish.created_at).toLocaleString('en',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
     const stock=selectedNetworkStock(recap);
-    return `<div class="dash-personal"><section class="dash-panel"><div class="dash-panel-head"><div><p class="dash-kicker">YOUR WATCHLIST</p><h2>What happened to ${stock?esc(stock.node.label):'your stocks'}</h2></div><button type="button" data-dash-nav="watchlist" aria-label="Manage watchlist">Manage →</button></div><p class="dash-watch-scope">Last 24 hours ending ${esc(date)} ET · ${stock?`${stock.clusters.length} linked clusters · ${stock.stories.length} linked stories`:`${recap.total} saved stocks`}</p>${selectedStockNews(stock,esc)}<p class="dash-footnote">Impact comes from linked clusters. Price changes use the latest saved stock report versus its prior appearance; they are not live quotes.</p></section>${stock?`<section class="dash-panel dash-network-panel"><div class="dash-network-layout" style="${window.ClustrGraphCanvas?.paletteStyle?.()||''}"><a href="#/connections" class="dash-network-preview" data-dash-network aria-label="Open ${esc(stock.node.label)} in Network with the same report and 24-hour window"><div class="dash-panel-head"><div><p class="dash-kicker">YOUR NETWORK</p><h2>${stock===recap.stocks[0]?'Most connected: ':''}${esc(stock.node.label)}</h2></div><span aria-hidden="true">↗</span></div>${networkPreview(recap,stock,esc)}<p>${stock.clusters.length} linked clusters · ${stock.stories.length} linked stories</p><span class="dash-network-open">Open this view in Network →</span><small>Up to 6 clusters and 10 stories shown. Dashed lines show default exposure.</small></a>${networkWatchlist(recap,stock,esc)}</div></section>`:''}</div>`;
+    return `<div class="dash-personal"><section class="dash-panel"><div class="dash-panel-head"><div><p class="dash-kicker">YOUR WATCHLIST</p><h2>What happened to ${stock?esc(stock.node.label):'your stocks'}</h2></div><button type="button" data-dash-nav="watchlist" aria-label="Manage watchlist">Manage →</button></div><p class="dash-watch-scope">Last 24 hours ending ${esc(date)} ET · ${stock?`${stock.clusters.length} linked clusters · ${stock.stories.length} linked stories`:`${recap.total} saved items`}</p>${selectedStockNews(stock,esc)}<p class="dash-footnote">Impact comes from linked clusters. Price changes use the latest saved stock report versus its prior appearance; they are not live quotes.</p></section>${stock?`<section class="dash-panel dash-network-panel"><div class="dash-network-layout" style="${window.ClustrGraphCanvas?.paletteStyle?.()||''}"><a href="#/connections" class="dash-network-preview" data-dash-network aria-label="Open ${esc(stock.node.label)} in Network with the same report and 24-hour window"><div class="dash-panel-head"><div><p class="dash-kicker">YOUR NETWORK</p><h2>${stock===recap.stocks[0]?'Most connected: ':''}${esc(stock.node.label)}</h2></div><span aria-hidden="true">↗</span></div>${networkPreview(recap,stock,esc)}<p>${stock.clusters.length} linked clusters · ${stock.stories.length} linked stories</p><span class="dash-network-open">Open this view in Network →</span><small>Up to 6 clusters and 10 stories shown. Dashed lines show default exposure.</small></a>${networkWatchlist(recap,stock,esc)}</div></section>`:''}</div>`;
   }
 
   function buildSummary(publishes, groups, selectedMarket, util, atlas, watchlist, network) {

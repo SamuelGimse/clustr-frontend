@@ -1105,6 +1105,7 @@
     if (view === 'weekly') renderWeekly();
     if (view === 'watchlist' && hasProAccess()) window.ClustrWatchlist?.mount(watchlistView);
     if (view === 'stocks') window.ClustrStocks?.refreshDetail();
+    if (view === 'atlas' && hasProAccess()) window.ClustrAtlas?.render(atlasView);
   }));
   if (navEvents) navEvents.addEventListener('click', () => setNav('events'));
   navWatchlist?.addEventListener('click', () => setNav('watchlist'));

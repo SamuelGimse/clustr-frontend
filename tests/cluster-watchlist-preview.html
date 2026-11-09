@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en" data-theme="apple" data-color-mode="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cluster watchlist · local demo</title><link rel="stylesheet" href="../styles.css"><link rel="stylesheet" href="../watchlist.css"><style>body{display:block;padding:24px}.preview-wrap{max-width:1050px;margin:auto}.preview-note{color:var(--text-meta);font-size:12px}.sample-cluster{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);border-radius:14px;padding:16px;margin:20px 0}.sample-cluster h2{margin:0;font-size:20px}</style></head>
+<body><main class="preview-wrap"><p class="preview-note">Local component demo · fictional data · no real account or network writes</p><p id="previewNotice" role="status"></p><section class="sample-cluster" id="sampleCluster" aria-label="Example news cluster"><h2>Artificial Intelligence</h2><div id="sampleClusterButton"></div></section><div id="watchlistPreview" class="watchlist-page"></div></main>
+<script src="../js/util.js"></script><script src="../js/cluster-taxonomy.js"></script>
+<script>
+  const groups=[{name:'AI',market:'US',articles:[{rating:3},{rating:-1}],stocks:[{symbol:'NVDA',name:'Example stock'}]},{name:'Cybersecurity',market:'US',articles:[{rating:2}],stocks:[{symbol:'TEST',name:'Fictional company'}]}];
+  const saved={stock:new Map([['US:NVDA',{market:'US',symbol:'NVDA',name:'Example stock'}]]),cluster:new Map()};
+  window.ClustrConfig={SUPABASE_URL:'https://fixture.invalid',SUPABASE_ANON_KEY:'fixture'};
+  window.ClustrAuth={accessToken:()=> 'fixture-token'};
+  window.ClustrQuotes={getLatestQuotes:async()=>({NVDA:{price:100,changePercent:1.5,asOf:'2026-11-09T12:00:00Z'}})};
+  window.ClustrApp={getAllGroups:()=>groups,getGroups:()=>groups,getPublishes:()=>[{id:1,market:'US'}],getPublishIndex:()=>0,jumpToCluster:name=>{document.getElementById('previewNotice').textContent='Open cluster: '+name;}};
+  window.fetch=async(url,options)=>{if(!url.startsWith('https://fixture.invalid/rest/v1/'))throw Error('Unexpected demo request');const kind=url.includes('clustr_cluster_watchlist')?'cluster':'stock',field=kind==='cluster'?'cluster_key':'symbol',rows=saved[kind],query=new URL(url).searchParams;if(options.method==='POST'){const row=JSON.parse(options.body);rows.set(row.market+':'+row[field],row);}if(options.method==='DELETE')rows.delete(query.get('market').slice(3)+':'+query.get(field).slice(3));return{ok:true,status:options.method==='GET'?200:204,json:async()=>[...rows.values()]};};
+</script><script src="../js/watchlist.js"></script><script>
+  (async()=>{await ClustrWatchlist.init({id:'fixture-user'});ClustrWatchlist.setView('watchlist');ClustrWatchlist.mount(document.getElementById('watchlistPreview'));document.getElementById('sampleClusterButton').innerHTML=ClustrWatchlist.clusterButton('AI');})();
+</script></body></html>
