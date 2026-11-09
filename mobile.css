@@ -210,3 +210,16 @@
   .top-app-bar .publish-nav { order:1; }
   .main:has(> #stocksView:not(.hidden)) .top-app-bar .stocks-dock-label { order:2; min-width:0; padding:0; font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 }
+
+/* Keep a usable graph when fullscreen controls stack on narrow phones. */
+@media(max-width:768px) {
+  .cx-explorer:is(:fullscreen,.cx-fullscreen) { overflow-y:auto; }
+  #connectionsView .cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-workspace {
+    display:grid;
+    flex:1 0 auto;
+    grid-template-rows:minmax(320px,50dvh) minmax(140px,25dvh);
+  }
+  #connectionsView .cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-scroll { height:auto; }
+  #connectionsView .cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-inspector { overflow:auto; }
+  #connectionsView .cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-inspector-body { max-height:none; }
+}
