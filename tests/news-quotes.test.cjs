@@ -6,7 +6,7 @@ function setup() {
   const c = { window: {}, document: { hidden: false }, console };
   vm.createContext(c);
   vm.runInContext(fs.readFileSync('js/util.js','utf8'), c);
-  vm.runInContext(fs.readFileSync('js/render.js','utf8').replace('  window.ClustrRender = {', '  window.audit = { bubbleBtn, refreshNewsQuotes, quoteSessionLabel };\n  window.ClustrRender = {'), c);
+  vm.runInContext(fs.readFileSync('js/render.js','utf8').replace('  window.ClustrRender = {', '  window.audit = { bubbleBtn, refreshNewsQuotes, quoteSessionLabel, basketSessionChange, priceBarHtml };\n  window.ClustrRender = {'), c);
   return c;
 }
 test('News chips never present saved percentages as current quotes', () => {
@@ -21,6 +21,23 @@ test('Session labels use exchange dates and distinguish weekends from today', ()
   const q = { asOf: '2026-11-06T21:00:00Z' };
   assert.equal(audit.quoteSessionLabel(q, 'US', Date.parse('2026-11-08T14:00:00Z')), 'Last session');
   assert.equal(audit.quoteSessionLabel(q, 'US', Date.parse('2026-11-07T01:00:00Z')), 'Today');
+});
+
+test('Weekend cards emphasize session change, not the unchanged publish baseline', async () => {
+  const c = setup();
+  let requestedMarket;
+  c.window.ClustrQuotes = { getLatestQuotes: async (_, market) => {
+    requestedMarket = market;
+    return { AAPL: { price: 100, changePercent: -2, asOf: '2026-11-06T21:00:00Z' }, MSFT: {price: 110, changePercent: 0, asOf: '2026-11-06T21:00:00Z'}, BAD: { price: 0, changePercent: 20, asOf: '2026-11-06T21:00:00Z' } };
+  } };
+  const basket = await c.window.audit.basketSessionChange([{symbol:'AAPL'}, {symbol:'AAPL'}, {symbol:'MSFT'}, {symbol:'BAD'}, {symbol:'MISSING'}], 'NO');
+  assert.equal(requestedMarket, 'NO');
+  assert.equal(basket.average, -1); assert.equal(basket.priced, 2); assert.equal(basket.total, 4);
+  const html = c.window.audit.priceBarHtml('AAPL', 'Apple', 100, 99, { price: 100, changePercent: -2, asOf: '2026-11-06T21:00:00Z' }, {__publishAsOf: '2026-11-08T21:00:00Z'});
+  assert.match(html, /change<\/div>\s*<div class="price-value tone-down">-2\.00%/);
+  assert.match(html, /No regular-session quote since publish/);
+  assert.doesNotMatch(html, /99\.00%|\+0\.00%/);
+  assert(html.indexOf('change</div>') < html.indexOf('At publish</div>'));
 });
 test('Latest quotes update chips, clear old tones, and never turn unavailable data into zero', async () => {
   const c = setup(), classes = new Set(['tone-down']), meta = {};

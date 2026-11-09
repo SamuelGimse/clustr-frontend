@@ -90,7 +90,7 @@ assert.equal(audit.weeklyVelocity(dstHistory,'2026-10-27T18:00:00Z').delta,2);
   const a=race.show('AAA'), b=race.show('BBB'); pending.BBB({price:200}); await b; pending.AAA({price:101}); await a;
   assert.equal(race.priceMount.innerHTML,'BBB:200');
   const groupPending = {};
-  const groupRace = {groupRequest:0, sinceEl:{}, stockGroups:[{id:'a',label:'A',list:['a']},{id:'b',label:'B',list:['b']}],select:{value:'a'}, group:{__historyScope:{}}, basketSincePublish:list=>new Promise(resolve=>groupPending[list[0]]=resolve), util};
+  const groupRace = {groupRequest:0, sinceEl:{}, stockGroups:[{id:'a',label:'A',list:['a']},{id:'b',label:'B',list:['b']}],select:{value:'a'}, group:{__historyScope:{}}, basketSessionChange:list=>new Promise(resolve=>groupPending[list[0]]=resolve), util};
   vm.createContext(groupRace);
   const groupStart=renderSource.indexOf('    async function updateGroupSincePublish(');
   vm.runInContext(renderSource.slice(groupStart,renderSource.indexOf('    function renderBubbleGroup(',groupStart))+'\nglobalThis.update=updateGroupSincePublish;',groupRace);

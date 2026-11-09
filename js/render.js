@@ -193,6 +193,15 @@
     return (await basketSincePublish(list)).average;
   }
 
+  async function basketSessionChange(list, market = 'US') {
+    const symbols = [...new Set((list || []).map(stock => U().normalizeSymbol(stock.symbol)).filter(U().isQuoteSymbol))];
+    const quotes = await window.ClustrQuotes?.getLatestQuotes?.(symbols, market) || {};
+    const values = symbols.map(symbol => quotes[symbol]).filter(quote =>
+      quote && Number.isFinite(quote.price) && quote.price > 0 && Number.isFinite(Date.parse(quote.asOf)) && Number.isFinite(quote.changePercent)
+    ).map(quote => quote.changePercent);
+    return { average: values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null, priced: values.length, total: symbols.length };
+  }
+
   async function basketSincePublish(list, asOf) {
     const stocks = [...new Map((list || []).map((stock, i) => [U().normalizeSymbol(stock.symbol) || `unresolved-${i}`, stock])).values()];
     const result = { average: null, priced: 0, total: stocks.length };
@@ -924,7 +933,6 @@
     const livePct = live?.changePercent ?? null;
     const predatesPublish = Number.isFinite(Date.parse(live?.asOf)) && Date.parse(live.asOf) < Date.parse(stock?.__publishAsOf);
     const since = predatesPublish ? null : util.deltaSincePublish(publishPrice, livePrice);
-    const hasProxy = !!(window.ClustrQuotes && window.ClustrQuotes.isEnabled());
     const signals = stock?.technical_signals;
     const metric = value => Number.isFinite(Number(value)) && value != null ? util.formatPct(value) : '—';
     const unsignedMetric = value => Number.isFinite(Number(value)) && value != null ? `${Number(value).toFixed(1)}%` : '—';
@@ -940,25 +948,21 @@
         }</span>${window.ClustrWatchlist?.button({ symbol, name }, stock?.__market || 'US') || ''}</div>
         <div class="price-bar-grid">
           <div class="price-cell">
-            <div class="price-label">At publish</div>
-            <div class="price-value">${util.formatMoney(publishPrice)}</div>
-            <div class="price-sub">${util.formatPct(publishPct) || '—'} · session change at publish</div>
+            <div class="price-label">${live ? quoteSessionLabel(live, stock?.__market) : 'Session'} change</div>
+            <div class="price-value ${util.toneClass(livePct)}">${util.formatPct(livePct) || '—'}</div>
+            <div class="price-sub">${livePrice != null ? util.formatMoney(livePrice) : '—'} · vs previous close</div>
           </div>
           <div class="price-cell">
-            <div class="price-label">Latest quote</div>
-            <div class="price-value">${
-              livePrice != null ? util.formatMoney(livePrice) : '—'
-            }</div>
-            <div class="price-sub">${
-              live ? `${util.formatPct(livePct) || '—'} · ${quoteSessionLabel(live, stock?.__market)}` : (hasProxy ? '…' : 'quotes off')
-            }</div>
+            <div class="price-label">At publish</div>
+            <div class="price-value">${util.formatMoney(publishPrice)}</div>
+            <div class="price-sub">Saved price baseline</div>
           </div>
           <div class="price-cell">
             <div class="price-label">Since publish</div>
             <div class="price-value ${util.toneClass(since)}">${
               since == null ? '—' : util.formatPct(since)
             }</div>
-            <div class="price-sub">signal track</div>
+            <div class="price-sub">${predatesPublish ? 'No regular-session quote since publish' : 'Publish-relative performance, not daily change'}</div>
           </div>
         </div>
         <div class="technical-metrics" aria-label="Historical price signals at publish">
@@ -1675,7 +1679,7 @@
     const sinceEl = el.querySelector('.group-since-publish');
 
     /**
-     * Update average since-publish for the active stock bucket.
+     * Update average session change for the active stock bucket.
      * @param {string} groupId
      * @returns {Promise<void>}
      */
@@ -1691,12 +1695,12 @@
       sinceEl.className = 'group-since-publish is-loading';
       sinceEl.textContent = `${g.label} · loading…`;
       let basket;
-      try { basket = await basketSincePublish(g.list, group.__historyScope.asOf); } catch (_) { basket = { average: null, priced: 0, total: g.list.length }; }
+      try { basket = await basketSessionChange(g.list, group.__historyScope.market || group.market || 'US'); } catch (_) { basket = { average: null, priced: 0, total: g.list.length }; }
       if (request !== groupRequest || select.value !== g.id) return;
       const avg = basket.average;
       if (avg == null) {
         sinceEl.className = 'group-since-publish';
-        sinceEl.textContent = `${g.label} · ${basket.priced}/${basket.total} stocks priced · return unavailable`;
+        sinceEl.textContent = `${g.label} · ${basket.priced}/${basket.total} stocks priced · session change unavailable`;
         return;
       }
       const tone = util.toneClass(avg);
@@ -1705,7 +1709,7 @@
         g.label
       )}</span> <span class="group-since-value">${util.formatPct(
         avg
-      )}</span> <span class="group-since-hint">since publish · ${basket.priced}/${basket.total} stocks priced · equal weight</span>`;
+      )}</span> <span class="group-since-hint">latest regular session vs previous close · ${basket.priced}/${basket.total} stocks priced · equal weight</span>`;
     }
 
     function renderBubbleGroup(groupId) {
