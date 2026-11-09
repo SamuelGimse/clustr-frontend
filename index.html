@@ -30,6 +30,7 @@
   <link rel="stylesheet" href="atlas/atlas.css?v=price-impact-1" />
   <link rel="stylesheet" href="dashboard/dashboard.css?v=stock-news-network-layout-1" />
   <link rel="stylesheet" href="world.css?v=globe-1" />
+  <link rel="stylesheet" href="mobile.css?v=mobile-simplify-1" />
 </head>
 <body>
   <div class="app-halos" aria-hidden="true">
@@ -196,6 +197,7 @@
 
       <!-- Events -->
       <div id="eventsView">
+        <h1 class="mobile-page-title">News</h1>
 
         <div id="eventsList" class="events-list"></div>
       </div>
@@ -209,10 +211,10 @@
       </div>
 
       <section id="mapView" class="hidden" aria-label="World news globe">
-        <header class="globe-heading"><div><p class="globe-eyebrow">CLUSTR MARKET / WORLD</p><h1>News around the world</h1><p>Country-level locations tagged in this report. Select a marker or country to read its stories.</p></div><span id="globeCount" class="globe-count"></span></header>
+        <header class="globe-heading"><div><p class="globe-eyebrow">CLUSTR MARKET / WORLD</p><h1>World</h1><p>Country-level locations tagged in this report. Select a marker or country to read its stories.</p></div><span id="globeCount" class="globe-count"></span></header>
         <div class="globe-layout">
           <div class="globe-stage"><canvas id="map" class="globe-canvas" tabindex="0" role="application" aria-label="Interactive news globe. Drag or use arrow keys to rotate, plus and minus to zoom. Choose a country from the list to read stories."></canvas><div id="globeTooltip" class="globe-tooltip" hidden></div><div class="globe-controls"><button type="button" data-globe-zoom="in" aria-label="Zoom in">+</button><button type="button" data-globe-zoom="out" aria-label="Zoom out">−</button><button type="button" data-globe-reset>Reset</button></div><p id="globeStatus" class="globe-hint">Drag to rotate · Scroll to zoom · Select a marker</p></div>
-          <div class="globe-sidebar"><h2>Locations in this report</h2><div id="countryPanel" class="country-panel"></div><div id="countryArticles" class="country-articles"></div></div>
+          <div class="globe-sidebar"><h2>Locations</h2><div id="countryPanel" class="country-panel"></div><div id="countryArticles" class="country-articles"></div></div>
         </div>
         <p class="globe-source">Map outlines: <a href="https://www.naturalearthdata.com/downloads/110m-cultural-vectors/">Natural Earth</a> public-domain 1:110m data. Markers show country-level tags, not precise event coordinates.</p>
       </section>
@@ -249,7 +251,7 @@
       <!-- Days -->
       <div id="daysView" class="hidden days-list"></div>
       <section id="weeklyView" class="hidden weekly-page" aria-label="Weekly clusters and trends">
-        <div class="weekly-heading"><div><div class="weekly-eyebrow">CLUSTR MARKET / 7 DAY WINDOW</div><h1>Weekly clusters &amp; trends</h1><p id="weeklyRange" class="weekly-range"></p></div>
+        <div class="weekly-heading"><div><div class="weekly-eyebrow">CLUSTR MARKET / 7 DAY WINDOW</div><h1>Trends</h1><p id="weeklyRange" class="weekly-range"></p></div>
           <div class="weekly-tabs" role="tablist"><button type="button" class="weekly-tab is-active" data-weekly-mode="clusters" role="tab" aria-selected="true">Clusters</button><button type="button" class="weekly-tab" data-weekly-mode="trends" role="tab" aria-selected="false">Trends</button></div>
         </div>
         <div id="weeklyAiSummary" class="weekly-ai-summary" aria-live="polite"></div>
@@ -290,7 +292,7 @@
           <select id="accountPreviewChoice"><option value="">Admin (actual account)</option><option value="free">Free</option><option value="pro">Pro subscription</option><option value="permanent">Lifetime Pro</option></select>
           <p id="accountPreviewStatus" role="status"></p>
         </section>
-        <div class="account-shell"><div class="account-eyebrow">CLUSTR MARKET / ADMIN</div><h1>Admin tools</h1><p id="adminMessage" class="account-message" role="status"></p><section class="account-plan admin-plan"><div class="admin-publish-head"><div><h2>Full publish</h2><p>Fetch news and movers, score articles, group related stories, map stocks, snapshot prices, and save a new publish.</p></div><span class="account-publish-market">United States</span><button class="account-primary" type="button" data-account-action="publish">Run full publish</button><span class="account-plan-note">The backend on this PC must be running. One publish can run at a time.</span></div><div class="admin-monitor-grid"><section class="admin-monitor-panel"><h3>Live filtering &amp; grouping</h3><canvas id="publishChart" class="publish-chart" role="img" aria-label="Live article filtering and cluster progress"></canvas><p id="publishProgressText" class="account-plan-note">Waiting for a publish.</p></section><section class="admin-monitor-panel"><h3>Publish console</h3><pre id="publishConsole" class="publish-console" aria-live="polite"></pre></section><section class="admin-monitor-panel admin-model-panel"><h3>Live filter model &amp; reply</h3><p id="publishModelName" class="account-plan-note">Model: waiting for publish</p><p id="publishModelActivity" class="account-plan-note">Waiting for filtering.</p><p id="publishModelArticle" class="account-plan-note"></p><pre id="publishModelReply" class="publish-model-reply" aria-live="polite">The newest model reply will appear here.</pre></section></div></section></div>
+        <div class="account-shell"><div class="account-eyebrow">CLUSTR MARKET / ADMIN</div><h1>Admin tools</h1><p id="adminMessage" class="account-message" role="status"></p><section class="account-plan admin-plan"><div class="admin-publish-head"><div><h2>Full publish</h2><p>Collect news, analyze events, and save a new report.</p></div><span class="account-publish-market">United States</span><button class="account-primary" type="button" data-account-action="publish">Run full publish</button><span class="account-plan-note">Backend required · One run at a time.</span></div><div class="admin-monitor-grid"><section class="admin-monitor-panel"><h3>Progress</h3><canvas id="publishChart" class="publish-chart" role="img" aria-label="Live article filtering and cluster progress"></canvas><p id="publishProgressText" class="account-plan-note">Waiting for a publish.</p></section><section class="admin-monitor-panel"><h3>Logs</h3><pre id="publishConsole" class="publish-console" aria-live="polite"></pre></section><section class="admin-monitor-panel admin-model-panel"><h3>Model activity</h3><p id="publishModelName" class="account-plan-note">Model: waiting for publish</p><p id="publishModelActivity" class="account-plan-note">Waiting for filtering.</p><p id="publishModelArticle" class="account-plan-note"></p><pre id="publishModelReply" class="publish-model-reply" aria-live="polite">The newest model reply will appear here.</pre></section></div></section></div>
       </section>
       <footer class="app-footer" aria-label="App information and technology credits">
         <div class="app-footer-top"><strong>Clustr Market · Gimse Media</strong><nav class="app-footer-links" aria-label="App information"><a href="info.html#about" target="_blank" rel="noopener">About</a><a href="info.html#guide" target="_blank" rel="noopener">Help &amp; docs</a><a href="info.html#terms" target="_blank" rel="noopener">Terms · Draft</a><a href="info.html#privacy" target="_blank" rel="noopener">Privacy · Draft</a></nav></div>
@@ -311,20 +313,21 @@
   <script src="js/push.js?v=publish-push-1"></script>
   <script src="js/cluster-taxonomy.js?v=curated-baskets-1"></script>
   <script src="js/api.js?v=curated-baskets-1"></script>
-  <script src="js/watchlist.js?v=scope-indicator-1"></script>
-  <script src="atlas/atlas.js?v=event-scores-1"></script>
+  <script src="js/watchlist.js?v=mobile-simplify-1"></script>
+  <script src="atlas/atlas.js?v=mobile-simplify-1"></script>
   <script src="dashboard/regression.js?v=projection-2"></script>
-  <script src="dashboard/dashboard.js?v=stock-news-network-layout-1"></script>
+  <script src="dashboard/dashboard.js?v=mobile-simplify-1"></script>
   <script src="js/themes.js?v=wallpaper-default-1"></script>
   <script src="js/map.js?v=globe-1"></script>
   <script src="js/mindmap.js?v=mobile-audit-1"></script>
-  <script src="js/render.js?v=compact-data-details-1"></script>
+  <script src="js/render.js?v=mobile-simplify-1"></script>
   <script src="js/signal.js?v=repo-exact"></script>
   <script src="js/polymarket.js?v=clustrmarket-1"></script>
-  <script src="js/stocks.js?v=reddit-buzz-1"></script>
+  <script src="js/stocks.js?v=mobile-simplify-1"></script>
   <script src="connections/canvas.js?v=pointer-float-2"></script>
-  <script src="connections/connections.js?v=fullscreen-tools-1"></script>
+  <script src="connections/connections.js?v=mobile-simplify-1"></script>
   <script src="js/pro-preview.js?v=2"></script>
-  <script src="js/app.js?v=world-globe-1"></script>
+  <script src="js/mobile-ui.js?v=mobile-simplify-1"></script>
+  <script src="js/app.js?v=mobile-simplify-1"></script>
 </body>
 </html>

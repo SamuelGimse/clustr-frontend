@@ -415,7 +415,7 @@
       const digests = publishedMarkets.flatMap(market => {
         const rows = (dailyByMarket.get(market) || []).sort((a, b) => b.summary_date.localeCompare(a.summary_date));
         if (rows.length) return rows.map(row => `<section class="weekly-ai-digest"><div class="weekly-ai-digest-head"><span>DAILY MARKET BRIEF</span><time>${window.ClustrUtil.escapeHtml(row.summary_date)}</time></div><h2>United States</h2><p>${window.ClustrUtil.escapeHtml(row.summary)}</p><small>Generated with ${window.ClustrUtil.escapeHtml(row.model || 'local Ollama')}</small></section>`);
-        return [`<section class="weekly-ai-digest weekly-ai-digest-empty"><div class="weekly-ai-digest-head"><span>DAILY MARKET BRIEF</span><span>${market}</span></div><h2>United States</h2><p>${summaryError ? `Could not load the saved summary: ${window.ClustrUtil.escapeHtml(summaryError)}` : 'No daily digest is saved in this seven-day window yet. It is created after a publish with same-day stories and a successful Ollama summary run.'}</p></section>`];
+        return [`<section class="weekly-ai-digest weekly-ai-digest-empty"><div class="weekly-ai-digest-head"><span>DAILY MARKET BRIEF</span><span>${market}</span></div><h2>United States</h2><p>${summaryError ? `Could not load the saved summary: ${window.ClustrUtil.escapeHtml(summaryError)}` : 'No brief saved for this week.'}</p></section>`];
       });
       aiSummary.innerHTML = window.ClustrWatchlist?.isFiltered() ? '<p class="weekly-ai-cluster-note">Watchlist scope: summaries for linked clusters are shown below.</p>' : `<div class="weekly-ai-heading"><div><span>AI SUMMARIES</span><h2>Daily market briefs</h2></div><p>Saved daily briefs from the rolling seven-day window</p></div><div class="weekly-ai-digest-grid">${digests.join('')}</div>`;
     }
@@ -453,7 +453,7 @@
       const summarizedClusters = clusters.filter(cluster => cluster.summary).length;
       weeklyNote.textContent = summarizedClusters
         ? `${summarizedClusters} weekly cluster summaries are shown inside their matching cluster cards below.`
-        : 'No saved weekly cluster summaries were found for this period. They appear after a full publish completes its Ollama summary step.';
+        : 'No cluster briefs saved this week.';
       aiSummary.appendChild(weeklyNote);
     }
     const days = new Map();
@@ -475,7 +475,7 @@
     const uniqueStories = [...new Set(clusters.flatMap(cluster => [...cluster.stories.keys()]))].length;
     const averageScore = window.ClustrUtil.exponentialMeanRating(clusters.map(cluster => cluster.score));
     const repeatedClusters = clusters.filter(cluster => cluster.days.size > 1).length;
-    summary.innerHTML = `<div><b>${clusters.length}</b><span>active clusters</span></div><div><b>${uniqueStories}</b><span>unique stories</span></div><div><b>${repeatedClusters}</b><span>clusters covered on multiple days</span></div><div><b>${averageScore == null ? '—' : `${averageScore > 0 ? '+' : ''}${averageScore.toFixed(1)}`}</b><span>average cluster impact</span></div>`;
+    summary.innerHTML = `<div><b>${clusters.length}</b><span>active clusters</span></div><div><b>${uniqueStories}</b><span>unique stories</span></div><div><b>${repeatedClusters}</b><span>multi-day clusters</span></div><div><b>${averageScore == null ? '—' : `${averageScore > 0 ? '+' : ''}${averageScore.toFixed(1)}`}</b><span>average impact</span></div>`;
     if (weeklyMode === 'trends') {
       chart.innerHTML = weeklyTrendChart(orderedDays);
       const changes = clusters.filter(c => c.days.size > 1).map(c => {
@@ -674,7 +674,7 @@
       content.innerHTML = `<p>${window.ClustrUtil.escapeHtml(account.user.email || '')}</p><form id="passwordForm" class="account-form"><label>New password<input name="password" type="password" minlength="8" autocomplete="new-password" required></label><button class="account-primary" type="submit">Update password</button></form>`;
       return;
     }
-    title.textContent = 'Your Clustr Market account';
+    title.textContent = 'Account';
     const permanent = isPermanentPro();
     const claimOffer = foundingStatus?.remaining > 0 && !foundingStatus.claimed && authState.role !== 'admin' ? `<section class="account-plan"><h2>Lifetime Pro · ${foundingStatus.remaining} places left</h2><p>Free lifetime Pro access. Press the button to claim a place; signing in alone does not claim one.</p><button class="account-primary" type="button" data-account-action="claim-founding20">Accept &amp; claim Lifetime Pro</button></section>` : '';
     content.innerHTML = `<div class="account-profile"><span>${window.ClustrUtil.escapeHtml(account.user.email || '')}</span><span class="account-plan-badge">${account.role === 'admin' ? 'PRO · ADMIN' : permanent ? 'LIFETIME PRO' : account.role === 'pro' ? 'PRO · ACTIVE' : 'FREE'}</span></div>` +

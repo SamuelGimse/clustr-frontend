@@ -232,7 +232,7 @@
     const projectionKeys = forecast ? '<span><i class="dash-key-projection"></i>+1 day projection</span><span><i class="dash-key-prediction"></i>95% prediction interval</span>' : '';
     const shown = fits.models.filter(model => model.fit && (showAllFits || model.fit === best));
     const options = summary.clusterTrends.map(item => `<option value="${esc(item.name)}"${item === series ? ' selected' : ''}>${esc(item.name)}${item.watchlisted?' · Watchlist':''}</option>`).join('');
-    const controls = `<div class="dash-trend-controls"><label for="dashTrendCluster">Cluster</label><select id="dashTrendCluster" data-dash-cluster>${options}</select><button type="button" role="switch" aria-checked="${cumulativeImpact}" class="dash-mode-toggle" data-dash-cumulative><span class="dash-switch-track" aria-hidden="true"></span><span>Cumulative impact</span></button><label class="dash-show-fits"><input type="checkbox" data-dash-show-fits${showAllFits ? ' checked' : ''}>Show all regression fits</label></div>`;
+    const controls = `<div class="dash-trend-controls"><label for="dashTrendCluster">Cluster</label><select id="dashTrendCluster" data-dash-cluster>${options}</select><button type="button" role="switch" aria-checked="${cumulativeImpact}" class="dash-mode-toggle" data-dash-cumulative><span class="dash-switch-track" aria-hidden="true"></span><span>Cumulative</span></button><label class="dash-show-fits"><input type="checkbox" data-dash-show-fits${showAllFits ? ' checked' : ''}>Compare fits</label></div>`;
     if(cumulativeImpact){
       const total=impactDays(series.days,true).filter(day=>day.score!=null).at(-1)?.score??null;
       const keys=fits.models.filter(model=>model.fit&&(showAllFits||model.fit===best)).map(model=>`<span><i class="dash-key-model dash-key-model--${model.kind}${model.fit===best?' dash-key-best':''}"></i>${model.label}${model.fit===best?' · best':''}</span>`).join('');
@@ -255,7 +255,7 @@
   function paint(root, summary) {
     const esc = window.ClustrUtil.escapeHtml;
     if (!summary) {
-      root.innerHTML = `<div class="dash-shell"><header class="dash-header"><div><p class="dash-kicker">CLUSTR MARKET / OVERVIEW</p><h1>Dashboard</h1></div></header><div class="dash-empty">No approved ${esc(market)} publishes are available yet.</div></div>`;
+      root.innerHTML = `<div class="dash-shell"><header class="dash-header"><div><p class="dash-kicker">CLUSTR MARKET / OVERVIEW</p><h1>Overview</h1></div></header><div class="dash-empty">No approved ${esc(market)} publishes are available yet.</div></div>`;
       return;
     }
     const date = new Date(summary.latest.created_at).toLocaleString('en', { timeZone: 'America/New_York', dateStyle: 'medium', timeStyle: 'short' });
@@ -263,7 +263,7 @@
     const latestDay = summary.days.at(-1);
     const metric = (label, value, note) => `<div class="dash-metric"><span>${label}</span><strong>${value}</strong><small>${note}</small></div>`;
     const clusterRow = theme => `<div class="dash-list-row"><span class="dash-score dash-score--${tone(theme.score)}">${scoreText(theme.score)}</span><div><strong>${esc(theme.name)}</strong><small>${theme.articles} stories · ${theme.sources} sources</small></div><span class="dash-delta">${theme.delta == null ? 'New' : `${theme.delta > 0 ? '+' : ''}${theme.delta} shift`}</span></div>`;
-    root.innerHTML = `<div class="dash-shell"><header class="dash-header"><div><p class="dash-kicker">CLUSTR MARKET / OVERVIEW</p><h1>Dashboard</h1><p>${esc(market)} report · ${esc(date)} · ${summary.reports} reports in history</p></div></header>
+    root.innerHTML = `<div class="dash-shell"><header class="dash-header"><div><p class="dash-kicker">CLUSTR MARKET / OVERVIEW</p><h1>Overview</h1><p>${esc(market)} report · ${esc(date)} · ${summary.reports} reports in history</p></div></header>
       ${watchlistPanels(summary.watchlist,esc)}
       <div class="dash-metrics">${metric('Clusters in latest report', summary.themes.length, `${latestDay.positive} positive · ${latestDay.negative} negative`)}${metric('Distinct stories', summary.stories, `${summary.rated} rated on −10 to +10`)}${metric('Stocks connected', summary.stocks.length, 'Linked to latest clusters')}${metric('News sources', summary.sourceCount, 'In the latest report')}</div>
       <div class="dash-grid">${trendPanel(summary, esc)}<section class="dash-panel"><div class="dash-panel-head"><div><p class="dash-kicker">DIRECTION</p><h2>News balance</h2></div><span>Latest report per US market day · up to 14 days</span></div><div class="dash-balance">${summary.days.map(day => {

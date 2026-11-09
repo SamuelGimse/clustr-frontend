@@ -823,9 +823,9 @@
     }[stance] || 'Watch — monitor, no clear action yet';
 
     const horizonText = {
-      days: 'Days — short-term move',
-      weeks: 'Weeks — medium-term setup',
-      months: 'Months — longer theme'
+      days: 'Days',
+      weeks: 'Weeks',
+      months: 'Months'
     }[horizon] || '';
 
     const confidenceText = {
@@ -1905,7 +1905,7 @@
     const daysView = document.getElementById('daysView');
     if (!daysView) return;
     const util = U();
-    daysView.innerHTML = publishes
+    daysView.innerHTML = '<h1 class="mobile-page-title">Reports</h1>' + publishes
       .map(
         (p, i) => `
       <button type="button" class="day-item ${
@@ -1916,7 +1916,7 @@
             p.title || 'Publish #' + p.id
           )}</div>
           <div class="day-s">${util.escapeHtml(
-            new Date(p.created_at).toLocaleString()
+            new Date(p.created_at).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
           )}</div>
         </div>
         <div class="day-s">${p.__clusterCount ?? (window.ClustrWatchlist?.filterGroups(window.ClustrApp?.getGroupsCache?.()[p.id] || [], p.market) || window.ClustrApp?.getGroupsCache?.()[p.id] || []).length} clusters</div>

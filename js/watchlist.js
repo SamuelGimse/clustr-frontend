@@ -222,11 +222,11 @@
     if (!manager || view !== 'watchlist') return;
     const rows = [...entries.values()].sort((a, b) => a.symbol.localeCompare(b.symbol) || a.market.localeCompare(b.market));
     manager.querySelector('[data-watch-count]').textContent = `${rows.length} saved stock${rows.length === 1 ? '' : 's'}`;
-    manager.querySelector('[data-watch-manager-status]').textContent = message || (loading ? 'Syncing your account watchlist…' : 'Saved privately to your account. Available across devices.');
+    manager.querySelector('[data-watch-manager-status]').textContent = message || (loading ? 'Syncing your account watchlist…' : 'Saved to your account.');
     manager.querySelector('[data-watch-saved]').innerHTML = rows.length ? rows.map(stockRow).join('') : '<p class="watchlist-empty">No saved stocks yet. Add a ticker below or star a stock in Stocks.</p>';
     const matches = recentStocks().filter(stock => `${stock.symbol} ${stock.name}`.toLowerCase().includes(search.trim().toLowerCase()));
     manager.querySelector('[data-watch-recent]').innerHTML = matches.slice(0, limit).map(stockRow).join('') || '<p class="watchlist-empty">No recent stocks match. You can add a ticker manually.</p>';
-    manager.querySelector('[data-watch-results]').textContent = `${matches.length} matching stocks from the selected report`;
+    manager.querySelector('[data-watch-results]').textContent = `Matches: ${matches.length}`;
     manager.querySelector('[data-watch-more]').hidden = matches.length <= limit;
     manager.querySelector('[data-watch-add]').disabled = !ready || pending.size > 0;
   }
@@ -234,7 +234,7 @@
   function mount(host) {
     manager = host;
     if (!host) return;
-    host.innerHTML = `<div class="watchlist-heading"><div><h1>My watchlist</h1><p data-watch-count></p></div><button type="button" class="watchlist-action" data-watch-refresh>Refresh</button></div><p class="watchlist-status" data-watch-manager-status role="status"></p><div class="watchlist-grid" data-watch-saved></div><section class="watchlist-panel"><h2>Add a stock</h2><form id="watchlistAddForm" class="watchlist-add-form"><label>Ticker<input name="symbol" placeholder="NVDA or AAPL" maxlength="32" autocomplete="off" required></label><button type="submit" class="watchlist-action" data-watch-add>Add stock</button></form></section><section class="watchlist-panel"><h2>From the selected report</h2><label class="watchlist-search">Search stocks<input type="search" data-watch-search placeholder="Ticker or company name" autocomplete="off"></label><p class="watchlist-status" data-watch-results role="status"></p><div class="watchlist-grid" data-watch-recent></div><button type="button" class="watchlist-action" data-watch-more>Show more stocks</button></section>`;
+    host.innerHTML = `<div class="watchlist-heading"><div><h1>Watchlist</h1><p data-watch-count></p></div><button type="button" class="watchlist-action" data-watch-refresh>Refresh</button></div><p class="watchlist-status" data-watch-manager-status role="status"></p><div class="watchlist-grid" data-watch-saved></div><section class="watchlist-panel"><h2>Add a stock</h2><form id="watchlistAddForm" class="watchlist-add-form"><label>Ticker<input name="symbol" placeholder="NVDA or AAPL" maxlength="32" autocomplete="off" required></label><button type="submit" class="watchlist-action" data-watch-add>Add stock</button></form></section><section class="watchlist-panel"><h2>Report stocks</h2><label class="watchlist-search">Search stocks<input type="search" data-watch-search placeholder="Ticker or company name" autocomplete="off"></label><p class="watchlist-status" data-watch-results role="status"></p><div class="watchlist-grid" data-watch-recent></div><button type="button" class="watchlist-action" data-watch-more>Show more stocks</button></section>`;
     host.querySelector('[data-watch-search]').value = search;
     paintManager();
   }
