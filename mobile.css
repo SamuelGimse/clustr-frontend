@@ -180,7 +180,7 @@
   .mobile-view-options>summary { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:44px; min-height:48px; list-style:none; cursor:pointer; font-size:9px; color:var(--text); border-radius:22px; }
   .mobile-view-options>summary::-webkit-details-marker { display:none; }
   .mobile-view-options[open]>summary { background:var(--panel-2); }
-  .mobile-view-popover { position:absolute; right:0; bottom:calc(100% + 10px); width:min(340px,calc(100vw - 24px)); max-height:min(65dvh,520px); overflow:auto; overscroll-behavior:contain; padding:14px; border:1px solid var(--border); border-radius:18px; background:var(--panel); color:var(--text); box-shadow:0 12px 36px rgba(0,0,0,.3); box-sizing:border-box; }
+  .mobile-view-popover { position:absolute; right:0; bottom:calc(100% + 10px); width:min(340px,calc(100vw - 24px)); max-height:min(65dvh,520px); overflow:auto; overscroll-behavior:contain; padding:14px; border:1px solid var(--border); border-radius:18px; background:linear-gradient(var(--panel),var(--panel)),var(--bg); color:var(--text); box-shadow:0 12px 36px rgba(0,0,0,.3); box-sizing:border-box; }
   .mobile-view-popover h2 { margin:0 0 12px; font-size:16px; }.mobile-view-popover h3 { margin:14px 0 8px; font-size:12px; }
   .mobile-view-popover .view-mode-bar:not([hidden]) { display:grid; gap:12px; margin:0; padding:0; border:0; }
   .mobile-view-popover .view-mode-hint { display:none; }
