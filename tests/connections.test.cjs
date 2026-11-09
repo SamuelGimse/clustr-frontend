@@ -91,8 +91,8 @@ test('GPU adapter rejection falls back and gestures do not select accidentally',
   let disconnected=false,cancelled=false;
   const ctx=new Proxy({},{get:()=>()=>{}});
   const labels={getContext:()=>ctx,addEventListener(){},setPointerCapture(){}};
-  const pixels={width:1200,height:800},backend={};
-  const container={querySelector:s=>s==='.cx-pixels'?pixels:s==='.cx-labels'?labels:backend,
+  const pixels={width:1200,height:800},backend={},motionButton={setAttribute(){}};
+  const container={querySelector:s=>s==='.cx-pixels'?pixels:s==='.cx-labels'?labels:s==='.cx-motion'?motionButton:backend,
     getBoundingClientRect:()=>({width:1200,height:800})};
   const sandbox={navigator:{gpu:{requestAdapter:async()=>{throw Error('Unavailable');}}},
     window:{matchMedia:()=>({matches:true,addEventListener(){},removeEventListener(){}}),devicePixelRatio:1},
@@ -107,6 +107,9 @@ test('GPU adapter rejection falls back and gestures do not select accidentally',
   const scene=sandbox.window.ClustrGraphCanvas.mount(container,graph,layout(graph.nodes),()=>selections++);
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(backend.textContent,'Canvas 2D');
+  assert.equal(motionButton.textContent,'Enable motion');
+  motionButton.onclick();assert.equal(motionButton.textContent,'Pause motion');
+  motionButton.onclick();assert.equal(motionButton.textContent,'Enable motion');
   labels.onpointerdown({pointerId:1,offsetX:600,offsetY:218});
   labels.onpointerdown({pointerId:2,offsetX:700,offsetY:218});
   labels.onpointermove({pointerId:2,offsetX:800,offsetY:218});
@@ -186,16 +189,6 @@ test('Unavailable and wrong-market prices remain unavailable; zero article impac
   assert(graph.nodes.filter(node=>node.type==='stock').every(node=>node.price===null));assert(!graph.nodes.some(node=>node.label==='WRONG'));assert.equal(graph.nodes.find(node=>node.label==='Zero').score,0);assert.equal(graph.nodes.find(node=>node.label==='Invalid').score,null);
 });
 
-test('ambient motion stays bounded, continues after settling and leaves the layout unchanged',()=>{
-  const {motionPositions}=require('../connections/canvas');
-  const positions=new Float32Array([100,200,600,400,900,650]),before=positions.slice();
-  const first=motionPositions(positions,0),later=motionPositions(positions,120);
-  assert.notDeepEqual(first,later);
-  assert.deepEqual(positions,before);
-  for(let t=0;t<600;t+=7){const points=motionPositions(positions,t);for(let i=0;i<points.length;i++)assert(Math.abs(points[i]-positions[i])<=18.001);}
-  assert.equal(motionPositions(new Float32Array(),1).length,0);
-});
-
 test('moving a node updates its anchor without moving unrelated nodes or accepting invalid input',()=>{
   const graph=buildGraph([{name:'AI',stocks:[{symbol:'NVDA'}]}]);
   const engine=simulation(graph,layout(graph.nodes)),before=engine.positions.slice();
@@ -205,14 +198,14 @@ test('moving a node updates its anchor without moving unrelated nodes or accepti
   for(let i=0;i<200;i++)engine.step();assert([...engine.positions].every(Number.isFinite));
 });
 
-test('hover pushes nearby nodes smoothly, leaves distant nodes still, and eases back on leave',()=>{
-  const {pointerMotion}=require('../connections/canvas');
-  const base=new Float32Array([620,400,1000,700]),offsets=new Float32Array(4);
-  let frame=base.slice();pointerMotion(frame,offsets,{x:600,y:400},1);
-  assert(frame[0]>620&&frame[0]<652);assert.equal(frame[2],1000);
-  const first=offsets[0];
-  for(let i=0;i<60;i++){frame=base.slice();pointerMotion(frame,offsets,{x:600,y:400},1);}
-  assert(offsets[0]>first);assert(offsets[0]<=32);
-  for(let i=0;i<120;i++){frame=base.slice();pointerMotion(frame,offsets,null,1);}
-  assert(Math.abs(offsets[0])<.001);assert.deepEqual(base,new Float32Array([620,400,1000,700]));
+test('continuous physics remains alive after settling and transfers movement through links',()=>{
+  const graph={nodes:[{id:'a'},{id:'b'}],edges:[{from:'a',to:'b'}]},initial=new Map([['a',{x:500,y:400}],['b',{x:650,y:400}]]);
+  const still=simulation(graph,initial),interactive=simulation(graph,initial);
+  for(let i=0;i<600;i++){still.step(null,i/60);interactive.step(null,i/60);}
+  const before=still.positions.slice();
+  for(let i=600;i<720;i++){still.step(null,i/60);interactive.step({x:interactive.positions[0]-30,y:interactive.positions[1]},i/60);}
+  assert.notDeepEqual(still.positions,before);
+  assert(Math.abs(interactive.positions[0]-still.positions[0])>10);
+  assert(Math.abs(interactive.positions[2]-still.positions[2])>1,'connected neighbor responds to the force');
+  assert([...interactive.positions].every(Number.isFinite));
 });

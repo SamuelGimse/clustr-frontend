@@ -12,7 +12,7 @@
     const positions=new Float32Array(graph.nodes.length*2),velocities=new Float32Array(positions.length);
     graph.nodes.forEach((n,i)=>{const p=initial.get(n.id);positions[i*2]=p.x;positions[i*2+1]=p.y;});
     const anchors=positions.slice(),links=graph.edges.map(e=>[ids.get(e.from),ids.get(e.to)]);
-    function step(){
+    function step(pointer=null,seconds=0,scale=1){
       for(let i=0;i<graph.nodes.length;i++)for(let j=i+1;j<graph.nodes.length;j++){
         let dx=positions[i*2]-positions[j*2],dy=positions[i*2+1]-positions[j*2+1];
         if(Math.abs(dx)+Math.abs(dy)<.01){dx=.1*(i+1);dy=.1;}
@@ -20,33 +20,22 @@
         velocities[i*2]+=dx*f;velocities[i*2+1]+=dy*f;velocities[j*2]-=dx*f;velocities[j*2+1]-=dy*f;
       }
       for(const[a,b]of links){const dx=positions[b*2]-positions[a*2],dy=positions[b*2+1]-positions[a*2+1],distance=Math.max(1,Math.hypot(dx,dy)),f=(distance-125)*.0007;velocities[a*2]+=dx/distance*f;velocities[a*2+1]+=dy/distance*f;velocities[b*2]-=dx/distance*f;velocities[b*2+1]-=dy/distance*f;}
-      for(let i=0;i<positions.length;i++){velocities[i]=(velocities[i]+(anchors[i]-positions[i])*.0008)*.82;positions[i]+=velocities[i];}
+      for(let i=0;i<positions.length;i+=2){
+        const phase=i*2.399963;
+        velocities[i]+=(anchors[i]+Math.sin(seconds*.6+phase)*35-positions[i])*.0015;
+        velocities[i+1]+=(anchors[i+1]+Math.cos(seconds*.5+phase)*28-positions[i+1])*.0015;
+        if(pointer){
+          const dx=positions[i]-pointer.x,dy=positions[i+1]-pointer.y,distance=Math.hypot(dx,dy),radius=180/scale;
+          if(distance>0&&distance<radius){const force=(1-distance/radius)**2*1.6/scale;velocities[i]+=dx/distance*force;velocities[i+1]+=dy/distance*force;}
+        }
+        velocities[i]*=.9;velocities[i+1]*=.9;positions[i]+=velocities[i];positions[i+1]+=velocities[i+1];
+      }
     }
     function move(index,x,y){
       if(!Number.isInteger(index)||index<0||index>=graph.nodes.length||!Number.isFinite(x)||!Number.isFinite(y))return;
       for(const [axis,value] of [[index*2,x],[index*2+1,y]]){positions[axis]=anchors[axis]=value;velocities[axis]=0;}
     }
     return{positions,step,move};
-  }
-  function motionPositions(positions, seconds, output=new Float32Array(positions.length)) {
-    for(let i=0;i<positions.length;i+=2){
-      const phase=i*2.399963;
-      output[i]=positions[i]+Math.sin(seconds*.48+phase)*18;
-      output[i+1]=positions[i+1]+Math.cos(seconds*.38+phase)*14;
-    }
-    return output;
-  }
-  function pointerMotion(positions, offsets, pointer, scale, delta=1/60) {
-    const easing=1-Math.exp(-8*Math.min(delta,.05)),radius=160/scale;
-    for(let i=0;i<positions.length;i+=2){
-      let x=0,y=0;
-      if(pointer){
-        const dx=positions[i]-pointer.x,dy=positions[i+1]-pointer.y,distance=Math.hypot(dx,dy);
-        if(distance>0&&distance<radius){const force=(1-distance/radius)**2*32/scale;x=dx/distance*force;y=dy/distance*force;}
-      }
-      offsets[i]+=(x-offsets[i])*easing;offsets[i+1]+=(y-offsets[i+1])*easing;
-      positions[i]+=offsets[i];positions[i+1]+=offsets[i+1];
-    }
   }
   async function gpuRenderer(canvas){
     if(!navigator.gpu)return null;
@@ -75,13 +64,17 @@ var o:Out;o.uv=corners[v];o.p=vec4f(center+corners[v]*radius,0,1);o.color=color;
     } catch(error){device.destroy();throw error;}
   }
   function mount(container,graph,initial,onSelect){
-    container.innerHTML='<canvas class="cx-pixels" aria-hidden="true"></canvas><canvas class="cx-labels" tabindex="0" aria-label="Interactive market graph. Drag a node to move it, drag empty space to pan, scroll or use plus and minus to zoom. Use search or the cluster list for keyboard selection."></canvas><span class="cx-backend">Canvas</span>';
+    container.innerHTML='<canvas class="cx-pixels" aria-hidden="true"></canvas><canvas class="cx-labels" tabindex="0" aria-label="Interactive market graph. Drag a node to move it, drag empty space to pan, scroll or use plus and minus to zoom. Use search or the cluster list for keyboard selection."></canvas><button type="button" class="cx-motion"></button><span class="cx-backend">Canvas</span>';
     let pixels=container.querySelector('.cx-pixels');const labels=container.querySelector('.cx-labels'),ctx=labels.getContext('2d');
     const state=simulation(graph,initial),ids=new Map(graph.nodes.map((n,i)=>[n.id,i]));
-    let renderer=null,closed=false,frame=0,iteration=0,selected=null,query='',type='',scale=1,offsetX=0,offsetY=0,width=1,height=1,drag=null,hover=null,pinch=0;
-    const pointers=new Map(),displayPositions=state.positions.slice(),pointerOffsets=new Float32Array(state.positions.length);
+    let renderer=null,closed=false,frame=0,selected=null,query='',type='',scale=1,offsetX=0,offsetY=0,width=1,height=1,drag=null,hover=null,pinch=0;
+    const pointers=new Map(),displayPositions=state.positions.slice();
     const motionPreference=window.matchMedia('(prefers-reduced-motion: reduce)');
-    let reduced=motionPreference.matches,visible=true,lastTime=0,motionTime=0,pointer=null;
+    let reduced=motionPreference.matches,visible=true,lastTime=0,motionTime=0,pointer=null,motionOverride=null,physicsTime=0;
+    const motionButton=container.querySelector('.cx-motion');
+    function syncMotion(){motionButton.textContent=reduced?'Enable motion':'Pause motion';motionButton.setAttribute('aria-pressed',String(!reduced));}
+    motionButton.onclick=()=>{motionOverride=reduced;reduced=!motionOverride;syncMotion();lastTime=0;request();};
+    syncMotion();
     function camera(){return Math.min(width/1200,height/800)*scale;}
     function point(i){const s=camera();return{x:(displayPositions[i*2]-600)*s+width/2+offsetX,y:(displayPositions[i*2+1]-400)*s+height/2+offsetY};}
     function active(){const set=new Set();if(selected){set.add(selected);for(const e of graph.edges)if(e.from===selected||e.to===selected){set.add(e.from);set.add(e.to);}}return set;}
@@ -102,10 +95,10 @@ var o:Out;o.uv=corners[v];o.p=vec4f(center+corners[v]*radius,0,1);o.color=color;
       frame=0;if(closed||document.hidden||!visible){lastTime=0;return;}
       if(!reduced){
         const delta=lastTime?Math.min(time-lastTime,50)/1000:1/60;motionTime+=delta;lastTime=time;
-        if(iteration++<100)state.step();
-        motionPositions(state.positions,motionTime,displayPositions);
         const s=camera(),cursor=pointer&&!drag?{x:(pointer.x-width/2-offsetX)/s+600,y:(pointer.y-height/2-offsetY)/s+400}:null;
-        pointerMotion(displayPositions,pointerOffsets,cursor,s,delta);
+        physicsTime+=delta;
+        while(physicsTime>=1/60){state.step(cursor,motionTime,s);physicsTime-=1/60;}
+        displayPositions.set(state.positions);
         if(drag?.node!=null&&drag.moved){state.move(drag.node,drag.nx,drag.ny);displayPositions[drag.node*2]=drag.nx;displayPositions[drag.node*2+1]=drag.ny;}
         frame=requestAnimationFrame(tick);
       }else{lastTime=0;displayPositions.set(state.positions);}
@@ -143,7 +136,7 @@ var o:Out;o.uv=corners[v];o.p=vec4f(center+corners[v]*radius,0,1);o.color=color;
     const visibilityObserver=new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;if(visible)request();else lastTime=0;});
     visibilityObserver.observe(container);
     function visibilityChanged(){lastTime=0;if(!document.hidden)request();}
-    function motionChanged(){reduced=motionPreference.matches;lastTime=0;request();}
+    function motionChanged(){reduced=motionOverride===null?motionPreference.matches:!motionOverride;syncMotion();lastTime=0;request();}
     document.addEventListener('visibilitychange',visibilityChanged);
     motionPreference.addEventListener('change',motionChanged);
     const observer=new ResizeObserver(resize);observer.observe(container);resize();
@@ -154,5 +147,5 @@ var o:Out;o.uv=corners[v];o.p=vec4f(center+corners[v]*radius,0,1);o.color=color;
     gpuRenderer(pixels).then(result=>{if(closed){result?.destroy();return;}renderer=result;container.querySelector('.cx-backend').textContent=renderer?'WebGPU':'Canvas 2D';renderer?.lost.then(fallback);resize();}).catch(fallback);
     return{update(id,text,kind=''){selected=id;query=text;type=kind;request();},zoom(amount){scale=Math.max(.4,Math.min(4,scale+amount));request();},reset(){scale=1;offsetX=offsetY=0;request();},destroy(){closed=true;cancelAnimationFrame(frame);observer.disconnect();visibilityObserver.disconnect();document.removeEventListener('visibilitychange',visibilityChanged);motionPreference.removeEventListener('change',motionChanged);themeObserver?.disconnect();colorMode?.removeEventListener?.('change',request);renderer?.destroy();}};
   }
-  const api={simulation,motionPositions,pointerMotion,mount,palette,paletteStyle};if(typeof module!=='undefined'&&module.exports)module.exports=api;root.ClustrGraphCanvas=api;
+  const api={simulation,mount,palette,paletteStyle};if(typeof module!=='undefined'&&module.exports)module.exports=api;root.ClustrGraphCanvas=api;
 })(typeof window==='undefined'?globalThis:window);
