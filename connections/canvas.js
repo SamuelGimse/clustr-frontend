@@ -31,10 +31,22 @@
   function motionPositions(positions, seconds, output=new Float32Array(positions.length)) {
     for(let i=0;i<positions.length;i+=2){
       const phase=i*2.399963;
-      output[i]=positions[i]+Math.sin(seconds*.32+phase)*9;
-      output[i+1]=positions[i+1]+Math.cos(seconds*.26+phase)*7;
+      output[i]=positions[i]+Math.sin(seconds*.48+phase)*18;
+      output[i+1]=positions[i+1]+Math.cos(seconds*.38+phase)*14;
     }
     return output;
+  }
+  function pointerMotion(positions, offsets, pointer, scale, delta=1/60) {
+    const easing=1-Math.exp(-8*Math.min(delta,.05)),radius=160/scale;
+    for(let i=0;i<positions.length;i+=2){
+      let x=0,y=0;
+      if(pointer){
+        const dx=positions[i]-pointer.x,dy=positions[i+1]-pointer.y,distance=Math.hypot(dx,dy);
+        if(distance>0&&distance<radius){const force=(1-distance/radius)**2*32/scale;x=dx/distance*force;y=dy/distance*force;}
+      }
+      offsets[i]+=(x-offsets[i])*easing;offsets[i+1]+=(y-offsets[i+1])*easing;
+      positions[i]+=offsets[i];positions[i+1]+=offsets[i+1];
+    }
   }
   async function gpuRenderer(canvas){
     if(!navigator.gpu)return null;
@@ -67,9 +79,9 @@ var o:Out;o.uv=corners[v];o.p=vec4f(center+corners[v]*radius,0,1);o.color=color;
     let pixels=container.querySelector('.cx-pixels');const labels=container.querySelector('.cx-labels'),ctx=labels.getContext('2d');
     const state=simulation(graph,initial),ids=new Map(graph.nodes.map((n,i)=>[n.id,i]));
     let renderer=null,closed=false,frame=0,iteration=0,selected=null,query='',type='',scale=1,offsetX=0,offsetY=0,width=1,height=1,drag=null,hover=null,pinch=0;
-    const pointers=new Map(),displayPositions=state.positions.slice();
+    const pointers=new Map(),displayPositions=state.positions.slice(),pointerOffsets=new Float32Array(state.positions.length);
     const motionPreference=window.matchMedia('(prefers-reduced-motion: reduce)');
-    let reduced=motionPreference.matches,visible=true,lastTime=0,motionTime=0;
+    let reduced=motionPreference.matches,visible=true,lastTime=0,motionTime=0,pointer=null;
     function camera(){return Math.min(width/1200,height/800)*scale;}
     function point(i){const s=camera();return{x:(displayPositions[i*2]-600)*s+width/2+offsetX,y:(displayPositions[i*2+1]-400)*s+height/2+offsetY};}
     function active(){const set=new Set();if(selected){set.add(selected);for(const e of graph.edges)if(e.from===selected||e.to===selected){set.add(e.from);set.add(e.to);}}return set;}
@@ -89,9 +101,11 @@ var o:Out;o.uv=corners[v];o.p=vec4f(center+corners[v]*radius,0,1);o.color=color;
     function tick(time){
       frame=0;if(closed||document.hidden||!visible){lastTime=0;return;}
       if(!reduced){
-        motionTime+=lastTime?Math.min(time-lastTime,50)/1000:0;lastTime=time;
+        const delta=lastTime?Math.min(time-lastTime,50)/1000:1/60;motionTime+=delta;lastTime=time;
         if(iteration++<100)state.step();
         motionPositions(state.positions,motionTime,displayPositions);
+        const s=camera(),cursor=pointer&&!drag?{x:(pointer.x-width/2-offsetX)/s+600,y:(pointer.y-height/2-offsetY)/s+400}:null;
+        pointerMotion(displayPositions,pointerOffsets,cursor,s,delta);
         if(drag?.node!=null&&drag.moved){state.move(drag.node,drag.nx,drag.ny);displayPositions[drag.node*2]=drag.nx;displayPositions[drag.node*2+1]=drag.ny;}
         frame=requestAnimationFrame(tick);
       }else{lastTime=0;displayPositions.set(state.positions);}
@@ -108,6 +122,7 @@ var o:Out;o.uv=corners[v];o.p=vec4f(center+corners[v]*radius,0,1);o.color=color;
       pinch=distance();labels.setPointerCapture(e.pointerId);
     };
     labels.onpointermove=e=>{
+      pointer=e.pointerType==='touch'?null:{x:e.offsetX,y:e.offsetY};
       if(pointers.has(e.pointerId))pointers.set(e.pointerId,{x:e.offsetX,y:e.offsetY});
       if(pointers.size>1){const next=distance();if(pinch>0)scale=Math.max(.4,Math.min(4,scale*next/pinch));pinch=next;}
       else if(drag&&drag.id===e.pointerId){
@@ -121,7 +136,8 @@ var o:Out;o.uv=corners[v];o.p=vec4f(center+corners[v]*radius,0,1);o.color=color;
       request();
     };
     labels.onpointerup=e=>{if(drag&&drag.id===e.pointerId&&!drag.moved&&Math.hypot(e.offsetX-drag.x,e.offsetY-drag.y)<5){const id=hit(e.offsetX,e.offsetY);if(id)onSelect(id);}pointers.delete(e.pointerId);drag=null;pinch=0;};
-    labels.onpointercancel=e=>{pointers.delete(e.pointerId);drag=null;pinch=0;};
+    labels.onpointerleave=()=>{pointer=null;hover=null;request();};
+    labels.onpointercancel=e=>{pointer=null;pointers.delete(e.pointerId);drag=null;pinch=0;};
     labels.addEventListener('wheel',e=>{if(e.ctrlKey)return;e.preventDefault();scale=Math.max(.4,Math.min(4,scale*Math.exp(-e.deltaY*.001)));request();},{passive:false});
     labels.onkeydown=e=>{if(['+','=','-','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();if(e.key==='-')scale=Math.max(.4,scale-.2);else if(['+','='].includes(e.key))scale=Math.min(4,scale+.2);else{offsetX+=e.key==='ArrowLeft'?30:e.key==='ArrowRight'?-30:0;offsetY+=e.key==='ArrowUp'?30:e.key==='ArrowDown'?-30:0;}request();}};
     const visibilityObserver=new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;if(visible)request();else lastTime=0;});
@@ -138,5 +154,5 @@ var o:Out;o.uv=corners[v];o.p=vec4f(center+corners[v]*radius,0,1);o.color=color;
     gpuRenderer(pixels).then(result=>{if(closed){result?.destroy();return;}renderer=result;container.querySelector('.cx-backend').textContent=renderer?'WebGPU':'Canvas 2D';renderer?.lost.then(fallback);resize();}).catch(fallback);
     return{update(id,text,kind=''){selected=id;query=text;type=kind;request();},zoom(amount){scale=Math.max(.4,Math.min(4,scale+amount));request();},reset(){scale=1;offsetX=offsetY=0;request();},destroy(){closed=true;cancelAnimationFrame(frame);observer.disconnect();visibilityObserver.disconnect();document.removeEventListener('visibilitychange',visibilityChanged);motionPreference.removeEventListener('change',motionChanged);themeObserver?.disconnect();colorMode?.removeEventListener?.('change',request);renderer?.destroy();}};
   }
-  const api={simulation,motionPositions,mount,palette,paletteStyle};if(typeof module!=='undefined'&&module.exports)module.exports=api;root.ClustrGraphCanvas=api;
+  const api={simulation,motionPositions,pointerMotion,mount,palette,paletteStyle};if(typeof module!=='undefined'&&module.exports)module.exports=api;root.ClustrGraphCanvas=api;
 })(typeof window==='undefined'?globalThis:window);

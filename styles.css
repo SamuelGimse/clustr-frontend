@@ -4759,3 +4759,21 @@ html[data-screen-style="crt"] :is(.nav-rail-btn.is-active, .cluster-card, .md-ca
   html[data-theme] .burger-btn:has(.dock-pro-badge:not([hidden])) .burger-label { display:none; }
   html[data-theme] .top-app-bar:has(.dock-pro-badge:not([hidden])).is-scroll-hidden { transform:none; opacity:1; visibility:visible; pointer-events:auto; }
 }
+
+/* Keep methodology available without filling the data cards with paragraphs. */
+.data-details { min-width:0; margin:4px 0; color:var(--text-meta); font-size:11px; }
+.data-details > summary { display:inline-flex; align-items:center; gap:7px; min-height:32px; cursor:pointer; list-style:none; }
+.data-details > summary::-webkit-details-marker { display:none; }
+.data-details > summary::before { content:''; width:5px; height:5px; border:solid currentColor; border-width:0 1px 1px 0; transform:rotate(-45deg); transition:transform .15s; }
+.data-details[open] > summary::before { transform:rotate(45deg); }
+.data-details > summary:focus-visible { outline:2px solid var(--text); outline-offset:3px; border-radius:3px; }
+.data-details-body { max-width:78ch; padding:4px 0 8px 12px; border-left:1px solid var(--border); line-height:1.6; }
+.data-details-body > :is(p,div) { margin:0 0 8px; font-size:11px; }
+.data-details-body > :last-child { margin-bottom:0; }
+.data-details-body .history-data-note { white-space:pre-line; }
+.stock-sidebar .price-bar > .data-details { grid-column:1 / -1; margin:0; }
+.chart-data-meta { display:flex; flex-wrap:wrap; align-items:center; gap:4px 14px; margin:4px 0 8px; }
+.chart-data-meta > .data-details[open] { flex-basis:100%; }
+.data-quality-status { color:var(--text-meta); font-size:11px; }
+@media(max-width:768px) { .data-details > summary { min-height:44px; } }
+@media(prefers-reduced-motion:reduce) { .data-details > summary::before { transition:none; } }

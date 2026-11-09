@@ -7,6 +7,10 @@
   let renderGeneration = 0;
   let newsQuoteTimer = null;
 
+  function dataDetailsHtml(label, body) {
+    return `<details class="data-details"><summary>${U().escapeHtml(label)}</summary><div class="data-details-body">${body}</div></details>`;
+  }
+
   function quoteSessionLabel(quote, market = 'US', now = Date.now()) {
     if (!Number.isFinite(Date.parse(quote?.asOf))) return 'Quote time unavailable';
     const day = value => new Date(value).toLocaleDateString('en-CA', { timeZone: market === 'NO' ? 'Europe/Oslo' : 'America/New_York' });
@@ -551,7 +555,7 @@
             spanGaps: false
           },
           {
-            label: cumulativePrice ? series.priceIncomplete ? 'Partial cumulative price % · missing intervals excluded' : 'Cumulative matched-default return %' : 'Defaults → next publish / latest quote %',
+            label: cumulativePrice ? series.priceIncomplete ? 'Cumulative price % · partial' : 'Cumulative price %' : 'Basket interval return %',
             data: retData,
             yAxisID: 'yRet',
             borderColor: accent,
@@ -632,11 +636,11 @@
   }
 
   /**
-   * Panel HTML with empty canvas; call mountStanceChart after insert.
-   * @param {Array<Object>} enriched
+   * Chart controls, canvas and optional methodology disclosure.
+   * @param {string} [intervalNote]
    * @returns {string}
    */
-  function stanceChartShellHtml() {
+  function stanceChartShellHtml(intervalNote = '') {
     return `
       <div class="stance-chart-controls" role="group" aria-label="Stance history chart modes">
         <button type="button" role="switch" aria-checked="true" class="dash-mode-toggle" data-cumulative-stance><span class="dash-switch-track" aria-hidden="true"></span><span>Cumulative stance</span></button>
@@ -644,7 +648,7 @@
       </div>
       <div class="stance-history-chart-wrap">
         <canvas class="stance-history-canvas" aria-label="Stance and theme comparison basket returns"></canvas>
-      </div><p class="history-data-note" data-stance-chart-note aria-live="polite"></p>`;
+      </div><div class="chart-data-meta"><span class="data-quality-status" data-stance-chart-status role="status" hidden></span>${dataDetailsHtml('Chart details', '<p class="history-data-note" data-stance-chart-note></p>' + (intervalNote ? `<p>${U().escapeHtml(intervalNote)}</p>` : ''))}</div>`;
   }
 
   function mountStanceHistory(root, enriched) {
@@ -662,7 +666,16 @@
       const gapNote = cumulativePrice && series?.priceIncomplete ? ' Unpriced intervals remain gaps and are excluded. Accumulation resumes from the last known value, never resets to 0%. This partial index is not a complete whole-period return.' : '';
       const historyNote = enriched.some(row => row.historicalN > 0) ? ' Missing snapshots are backfilled using completed historical hourly bars at or before each publish (up to 7 days old); these are approximate publish-time prices, not exact executions.' : '';
       const emptyNote = series?.pricedIntervals === 0 ? ' No comparable prices are available for this cluster yet.' : '';
-      if (note) note.textContent = `${stanceNote} ${priceNote}${historyNote}${gapNote}${emptyNote} Summary cards below remain interval averages.`;
+      const stanceGapNote = enriched.some(row => historyRowScore(row) == null) ? ' Missing numeric stance scores are left as gaps; categorical labels are available in the history list.' : '';
+      if (note) note.textContent = [stanceNote, priceNote, historyNote.trim(), gapNote.trim(), emptyNote.trim(), stanceGapNote.trim(), 'Summary cards below remain interval averages.'].filter(Boolean).join('\n\n');
+      const status = root.querySelector('[data-stance-chart-status]');
+      if (status) {
+        const priced = enriched.filter(row => Number.isFinite(row.defaultRet) && row.defaultRet >= -100).length;
+        const partial = series?.priceIncomplete || priced < enriched.length;
+        const flags = [!priced ? 'No price data' : partial ? 'Partial prices' : '', enriched.some(row => row.historicalN > 0) ? 'Approx. historical prices' : ''].filter(Boolean);
+        status.textContent = flags.join(' · ');
+        status.hidden = !flags.length;
+      }
     };
     for (const toggle of [stanceToggle, priceToggle]) toggle?.addEventListener('click', () => {
       toggle.setAttribute('aria-checked', String(toggle.getAttribute('aria-checked') !== 'true'));
@@ -697,7 +710,7 @@
 
     const enriched = await attachDefaultReturns(history, group.__historyScope);
     const stats = stancePriceStats(enriched);
-    const chart = stanceChartShellHtml();
+    const chart = stanceChartShellHtml(stats.insight);
 
     const fmt = v => (v == null ? '—' : util.formatPct(v));
 
@@ -730,7 +743,6 @@
       html: `
       <div class="stance-history-panel">
         <div class="stance-history-title">Stance × theme comparison basket</div>
-        ${enriched.some(row => historyRowScore(row) == null) ? '<p class="history-data-note">Missing numeric stance scores are left as gaps; categorical labels are available in the history list.</p>' : ''}
         ${chart}
         <div class="stance-stat-grid">
           <div class="stance-stat">
@@ -755,7 +767,6 @@
             <div class="stance-stat-h">${stats.counts.cautious} intervals · next / latest quote</div>
           </div>
         </div>
-        <p class="stance-insight">${util.escapeHtml(stats.insight)}</p>
         <button type="button" class="stance-toggle-history" data-toggle-history aria-expanded="false">
           Show history list
         </button>
@@ -957,8 +968,10 @@
           <div><span>Avg traded value/day 20d</span><strong>${turnover}</strong></div>
           <div><span>Volume vs prior 20d avg</span><strong>${Number.isFinite(Number(signals?.relativeVolume20d)) && signals?.relativeVolume20d != null ? Number(signals.relativeVolume20d).toFixed(2) + '×' : '—'}</strong></div>
         </div>
+        ${dataDetailsHtml('Price details', `
         <div class="technical-metrics-note">${signals?.status === 'ok' ? `Completed daily bars through ${util.escapeHtml(signals.asOf || '')}. Traded value is a liquidity proxy, not a spread quote.` : 'Historical price signals unavailable for this stock.'}</div>
         <div class="quote-asof">${predatesPublish ? 'Quote predates this publication; return unavailable. ' : ''}${live ? live.asOf && Number.isFinite(Date.parse(live.asOf)) ? `Regular-session quote as of ${util.escapeHtml(new Date(live.asOf).toLocaleString())} · may be delayed` : 'Quote timestamp unavailable' : 'Quote unavailable or loading'}</div>
+        `)}
       </div>`;
   }
 
@@ -1263,8 +1276,7 @@
             </select>
             <div class="group-since-publish" aria-live="polite"></div>
           </div>
-          <p class="stock-group-context" role="note">${util.escapeHtml(stockGroups[0]?.description || 'No stock associations are available for the selected scope.')}</p>
-          <p class="stock-group-context" data-news-quote-note>Latest regular-session prices · change vs previous close · refreshes every minute · may be delayed</p>
+          ${dataDetailsHtml('About stock data', `<p class="stock-group-context">${util.escapeHtml(stockGroups[0]?.description || 'No stock associations are available for the selected scope.')}</p><p class="stock-group-context" data-news-quote-note>Latest regular-session prices · change vs previous close · refreshes every minute · may be delayed</p>`)}
           <div class="bubbles-scroll stock-bubbles" role="group" aria-label="Stocks in selected group"></div>
         </div>
 

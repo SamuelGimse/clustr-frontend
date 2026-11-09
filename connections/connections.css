@@ -96,3 +96,7 @@
 .cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-inspector { max-height:none; min-height:0; }
 .cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-picker { flex-shrink:0; }
 @media(max-width:768px) { .cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-workspace { grid-template-rows:minmax(0,1fr) minmax(100px,25dvh); } }
+
+.cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-tools { flex-shrink:0; flex-direction:row; align-items:flex-end; padding:8px 0; gap:8px; }
+.cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-tools label { flex:1 1 220px; width:auto; }
+.cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-tools label.cx-period { flex:0 0 auto; width:auto; }

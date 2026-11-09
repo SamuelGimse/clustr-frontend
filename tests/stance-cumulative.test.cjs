@@ -11,7 +11,7 @@ function setup() {
   vm.createContext(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/util.js'), 'utf8'), context);
   context.window.Chart = function (_canvas, config) { this.config = config; this.destroy = () => { this.destroyed = true; }; charts.push(this); };
-  vm.runInContext(source.replace('  window.ClustrRender = {', '  window.audit = { stanceChartSeries, mountStanceChart, mountStanceHistory, stanceChartShellHtml };\n  window.ClustrRender = {'), context);
+  vm.runInContext(source.replace('  window.ClustrRender = {', '  window.audit = { stanceChartSeries, mountStanceChart, mountStanceHistory, stanceChartShellHtml, dataDetailsHtml, priceBarHtml };\n  window.ClustrRender = {'), context);
   return { audit: context.window.audit, charts };
 }
 const plain = value => JSON.parse(JSON.stringify(value));
@@ -102,9 +102,29 @@ test('Switches independently rebuild the chart, preserve zero-centered axes and 
   price.click(); config = charts.at(-1).config;
   assert.equal(config.data.datasets[1].data.length, rows.length);
   assert.equal(config.data.datasets[1].data[0].y, 10);
-  assert.equal(config.data.datasets[1].label, 'Defaults → next publish / latest quote %');
+  assert.equal(config.data.datasets[1].label, 'Basket interval return %');
   assert.equal(stance.checked, 'false'); assert.equal(price.checked, 'false');
   assert.match(note.textContent, /Summary cards below remain interval averages/);
   assert.match(audit.stanceChartShellHtml(), /role="switch" aria-checked="true"/);
   assert.equal((audit.stanceChartShellHtml().match(/role="switch"/g) || []).length, 2);
+});
+
+
+test('Methodology is in closed accessible disclosures and data-quality flags remain visible', () => {
+  const { audit } = setup();
+  const html = audit.dataDetailsHtml('<Data>', '<p>Explanation</p>');
+  assert.match(html, /<details class="data-details"><summary>&lt;Data&gt;<\/summary>/);
+  assert.doesNotMatch(html, /<details[^>]*\bopen\b/);
+  assert.match(audit.stanceChartShellHtml(), /<summary>Chart details<\/summary>/);
+  const priceHtml = audit.priceBarHtml('TEST', 'Example', 100, 1, {price:105,asOf:'2026-11-06T21:00:00Z'}, {});
+  assert.match(priceHtml, /<summary>Price details<\/summary><div class="data-details-body">[\s\S]*technical-metrics-note[\s\S]*quote-asof/);
+  const status = {}, note = {};
+  const root = {querySelector:key=>({'[data-stance-chart-note]':note,'[data-stance-chart-status]':status})[key]};
+  audit.mountStanceHistory(root, [{...rows[0],defaultRet:null,historicalN:1}]);
+  assert.equal(status.hidden, false);
+  assert.equal(status.textContent, 'No price data · Approx. historical prices');
+  assert.match(note.textContent, /completed historical hourly bars/);
+  audit.mountStanceHistory(root, rows);
+  assert.equal(status.hidden, true);
+  assert.equal(status.textContent, '');
 });

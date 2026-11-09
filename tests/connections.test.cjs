@@ -192,7 +192,7 @@ test('ambient motion stays bounded, continues after settling and leaves the layo
   const first=motionPositions(positions,0),later=motionPositions(positions,120);
   assert.notDeepEqual(first,later);
   assert.deepEqual(positions,before);
-  for(let t=0;t<600;t+=7){const points=motionPositions(positions,t);for(let i=0;i<points.length;i++)assert(Math.abs(points[i]-positions[i])<=9.001);}
+  for(let t=0;t<600;t+=7){const points=motionPositions(positions,t);for(let i=0;i<points.length;i++)assert(Math.abs(points[i]-positions[i])<=18.001);}
   assert.equal(motionPositions(new Float32Array(),1).length,0);
 });
 
@@ -203,4 +203,16 @@ test('moving a node updates its anchor without moving unrelated nodes or accepti
   assert.deepEqual(engine.positions.slice(2),before.slice(2));
   engine.move(0,NaN,100);engine.move(-1,1,1);assert.equal(engine.positions[0],350);
   for(let i=0;i<200;i++)engine.step();assert([...engine.positions].every(Number.isFinite));
+});
+
+test('hover pushes nearby nodes smoothly, leaves distant nodes still, and eases back on leave',()=>{
+  const {pointerMotion}=require('../connections/canvas');
+  const base=new Float32Array([620,400,1000,700]),offsets=new Float32Array(4);
+  let frame=base.slice();pointerMotion(frame,offsets,{x:600,y:400},1);
+  assert(frame[0]>620&&frame[0]<652);assert.equal(frame[2],1000);
+  const first=offsets[0];
+  for(let i=0;i<60;i++){frame=base.slice();pointerMotion(frame,offsets,{x:600,y:400},1);}
+  assert(offsets[0]>first);assert(offsets[0]<=32);
+  for(let i=0;i<120;i++){frame=base.slice();pointerMotion(frame,offsets,null,1);}
+  assert(Math.abs(offsets[0])<.001);assert.deepEqual(base,new Float32Array([620,400,1000,700]));
 });
