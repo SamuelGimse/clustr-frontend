@@ -57,7 +57,7 @@
       const story=[...(direct.length?direct:stories)].sort((a,b)=>(Date.parse(b.article.published_at||b.article.date)||0)-(Date.parse(a.article.published_at||a.article.date)||0)||a.label.localeCompare(b.label))[0];
       const history=priceModel.stocks.find(stock=>stock.market===market&&stock.symbol===node.label);
       const quote=history?.entries.findLast(Boolean);
-      return {node,clusters,stories,story,direct:direct.length>0,score:util.articleImpactScore(clusters.map(cluster=>cluster.score)),price:quote?.price??null,priceChange:quote?.priceChange??null};
+      return {node,clusters,stories,story,direct:direct.length>0,score:util.articleImpactScore(clusters.map(cluster=>cluster.score)),price:quote?.price??null,priceChange:quote?.priceChange??null,priceAt:quote?.publish.created_at??null,priceFrom:quote?.priceFrom??null,priceHistory:priceModel.columns.map((p,i)=>({date:p.created_at,price:history?.entries[i]?.price??null})).slice(-14)};
     }).sort((a,b)=>b.clusters.length-a.clusters.length||b.stories.length-a.stories.length||a.node.label.localeCompare(b.node.label));
     const mostConnected=stocks[0];
     return {publish,total:items.length,items,stocks,graph,stories:graph.nodes.filter(node=>node.type==='news').length,
@@ -86,10 +86,19 @@
     }).join('')}</div></aside>`;
   }
 
+  function stockPriceChart(stock,esc){
+    const days=stock.priceHistory||[],values=days.filter(d=>typeof d.price==='number'&&Number.isFinite(d.price));
+    if(values.length<2)return '<p class="dash-footnote">More saved prices needed for a price chart.</p>';
+    const low=Math.min(...values.map(d=>d.price)),high=Math.max(...values.map(d=>d.price));let path='',connected=false;
+    days.forEach((d,i)=>{if(d.price==null||!Number.isFinite(d.price)){connected=false;return;}const x=8+i*284/Math.max(1,days.length-1),y=high===low?37:62-(d.price-low)/(high-low)*50;path+=`${connected?'L':'M'}${x.toFixed(1)},${y.toFixed(1)} `;connected=true;});
+    return `<svg class="dash-stock-spark" viewBox="0 0 300 74" role="img" aria-label="${esc(stock.node.label)} saved USD prices over up to 14 reports, range ${low.toFixed(2)} to ${high.toFixed(2)}"><path d="${path}"/></svg><small class="dash-stock-range">Saved USD range ${low.toFixed(2)}–${high.toFixed(2)} · up to 14 reports</small>`;
+  }
   function selectedStockNews(stock, esc) {
     if (!stock) return '<p class="dash-footnote">No saved connections for your stocks in this 24-hour window.</p>';
     const stories=[...stock.stories].sort((a,b)=>Number(storyMentionsStock(b,stock.node.label))-Number(storyMentionsStock(a,stock.node.label)) || (Date.parse(b.article.published_at||b.article.date)||0)-(Date.parse(a.article.published_at||a.article.date)||0) || a.label.localeCompare(b.label));
-    return `<div class="dash-watch-stock-head dash-selected-stock-metrics"><span class="dash-score dash-score--${tone(stock.score)}">${scoreText(stock.score)} impact</span>${stock.priceChange==null?'':`<span class="dash-watch-price dash-watch-price--${tone(stock.priceChange)}">${stock.priceChange>=0?'+':''}${stock.priceChange.toFixed(2)}% price</span>`}</div><div class="dash-watch-list" role="region" aria-label="Linked news for ${esc(stock.node.label)}">${stories.length?stories.slice(0,5).map(story=>`<article class="dash-watch-stock"><p>${story.url?`<a href="${esc(story.url)}" target="_blank" rel="noopener noreferrer">${esc(story.label)}</a>`:esc(story.label)}</p><small>${storyMentionsStock(story,stock.node.label)?'Article mention':'Linked cluster story'} · ${esc(story.article.source||'Source unavailable')}</small></article>`).join(''):'<p class="dash-footnote">No linked stories for this stock in this window.</p>'}</div>${stories.length>5?`<p class="dash-footnote">Showing 5 of ${stories.length} linked stories.</p>`:''}`;
+    const date=Number.isFinite(Date.parse(stock.priceAt))?new Date(stock.priceAt).toLocaleString('en',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+' ET':'Unavailable';
+    const from=Number.isFinite(Date.parse(stock.priceFrom))?new Date(stock.priceFrom).toLocaleDateString('en',{timeZone:'America/New_York',month:'short',day:'numeric'}):null;
+    return `<div class="dash-ticker-summary"><div><p class="dash-ticker-company">${esc(stock.node.name||stock.node.label)}</p><div class="dash-ticker-data"><div><small>Saved price · USD</small><strong>${stock.price==null?'—':Number(stock.price).toFixed(2)}</strong></div><div><small>Price change${from?' since '+esc(from):''}</small><strong class="dash-score--${tone(stock.priceChange)}">${stock.priceChange==null?'—':(stock.priceChange>=0?'+':'')+stock.priceChange.toFixed(2)+'%'}</strong></div><div><small>Linked news impact</small><strong class="dash-score--${tone(stock.score)}">${scoreText(stock.score)}</strong></div></div><p class="dash-stock-stamp">Report snapshot ${esc(date)} · ${stock.clusters.length} clusters · ${stock.stories.length} stories</p></div><div>${stockPriceChart(stock,esc)}</div></div><div class="dash-news-columns"><span>Related news</span><span>Article impact</span></div><div class="dash-watch-list dash-watch-list--compact" role="region" aria-label="Linked news for ${esc(stock.node.label)}">${stories.length?stories.slice(0,8).map(story=>{const impact=window.ClustrUtil.numericStance(story.article.rating??story.article.score);return `<article class="dash-watch-stock"><div><p>${story.url?`<a href="${esc(story.url)}" target="_blank" rel="noopener noreferrer">${esc(story.label)}</a>`:esc(story.label)}</p><small>${storyMentionsStock(story,stock.node.label)?'Article mention':'Linked cluster story'} · ${esc(story.article.source||'Source unavailable')}</small></div><span class="dash-score--${tone(impact)}" title="Article news impact">${scoreText(impact)}</span></article>`;}).join(''):'<p class="dash-footnote">No linked stories for this stock in this window.</p>'}</div>${stories.length>8?`<p class="dash-footnote">Showing 8 of ${stories.length} linked stories. Open Network to explore all.</p>`:''}`;
   }
 
   function watchlistPanels(recap, esc) {
@@ -164,7 +173,7 @@
       ],
       rankedThemes: currentThemes.filter(theme => theme.score != null).sort((a, b) => Math.abs(b.score) - Math.abs(a.score) || b.articles - a.articles).slice(0, 6),
       shifts: currentThemes.filter(theme => theme.delta != null).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 5),
-      stocks, stories: stories.size, rated, sourceCount: sources.size,
+      stocks, stories: stories.size, rated, sourceCount: sources.size, articles:[...stories.values()],allSources:[...sources].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])),
       sources: [...sources].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 5)
     };
   }
@@ -293,6 +302,7 @@
       <section class="dash-panel"><div class="dash-panel-head"><div><p class="dash-kicker">COVERAGE</p><h2>Where the stories came from</h2></div></div><div class="dash-sources">${summary.sources.length ? summary.sources.map(([source, count]) => `<div><span>${esc(source)}</span><strong>${count}</strong></div>`).join('') : '<p class="dash-footnote">No source labels in this report.</p>'}</div><p class="dash-footnote">Distinct stories, counted once per source in the latest report.</p></section>
       <section class="dash-panel"><div class="dash-panel-head"><div><p class="dash-kicker">SCORE SPREAD</p><h2>Latest impact distribution</h2></div></div>${distributionChart(summary.distribution, esc)}<p class="dash-footnote">Number of latest-report clusters in each news-impact band.</p></section>
 </div></details></div></div>`;
+    window.ClustrDashboardWorkspace?.mount(root,summary);
   }
 
   function repaintTrend(root, summary) {

@@ -206,3 +206,14 @@ test('Preview watchlist selection updates its graph and opens that stock with th
   assert.equal(navigation.view,'connections');assert.equal(navigation.context.focusId,'stock:US:AMD');assert.equal(navigation.context.publish.id,2);assert.equal(navigation.context.days,1);
   delete window.ClustrWatchlist;delete window.ClustrConnections;delete window.ClustrGraphCanvas;invalidate();
 });
+
+test('compact ticker summary keeps price, snapshot time, prior interval and history in the selected market',()=>{
+  const network=require('../connections/connections.js');
+  const publishes=[{id:1,market:'US',created_at:'2026-11-08T20:00:00Z'},{id:2,market:'US',created_at:'2026-11-09T20:00:00Z'},{id:3,market:'NO',created_at:'2026-11-09T21:00:00Z'}];
+  const groups=new Map(publishes.map(p=>[String(p.id),[{name:'Tech',market:p.market,stance_score:1,stocks:[{symbol:'AAPL',priceAtPublish:p.id===1?100:p.id===2?110:999}]}]]));
+  const watchlist={getItems:()=>[{symbol:'AAPL',market:'US'}],linkedGroups:rows=>rows};
+  const recap=buildSummary(publishes,groups,'US',util,atlas,watchlist,network).watchlist.stocks[0];
+  assert.equal(recap.price,110);assert(Math.abs(recap.priceChange-10)<1e-9);
+  assert.equal(recap.priceAt,publishes[1].created_at);assert.equal(recap.priceFrom,publishes[0].created_at);
+  assert.deepEqual(recap.priceHistory.map(d=>d.price),[100,110]);
+});

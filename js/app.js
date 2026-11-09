@@ -1101,6 +1101,7 @@
     viewMode = button.dataset.viewMode;
     try { localStorage.setItem('clustr-view-mode', viewMode); } catch {}
     updateViewMode();
+    if (view === 'dashboard') window.ClustrDashboard?.render(dashboardView,setNav);
     if (view === 'weekly') renderWeekly();
     if (view === 'watchlist' && hasProAccess()) window.ClustrWatchlist?.mount(watchlistView);
     if (view === 'stocks') window.ClustrStocks?.refreshDetail();
