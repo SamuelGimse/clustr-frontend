@@ -12,6 +12,8 @@
   const SCREEN_STYLE_KEY = 'clustr-screen-style';
 
   const root = document.documentElement;
+  const systemPreference = root.getAttribute?.('data-system-theme') === 'true'
+    ? window.matchMedia('(prefers-color-scheme: dark)') : null;
   const themeMenu = document.getElementById('themeMenu');
   const wallpaperToggle = document.getElementById('wallpaperToggle');
   const fontChoice = document.getElementById('fontChoice');
@@ -124,9 +126,10 @@
    * @returns {void}
    */
   function initTheme() {
-    let saved = DEFAULT_THEME;
+    const fallback = systemPreference && !systemPreference.matches ? 'apple-light' : DEFAULT_THEME;
+    let saved = fallback;
     try {
-      saved = localStorage.getItem(STORAGE_KEY) || DEFAULT_THEME;
+      saved = localStorage.getItem(STORAGE_KEY) || fallback;
       // Dark was the former implicit default; make the new Apple design the default.
       if (saved === 'dark') saved = DEFAULT_THEME;
       if (saved === 'glass-crt') {
@@ -294,6 +297,12 @@
   /** @deprecated */
   window.EventlineThemes = window.ClustrThemes;
 
+  if (systemPreference) {
+    systemPreference.addEventListener('change', initTheme);
+    window.addEventListener('storage', event => {
+      if (event.key === STORAGE_KEY || event.key === null) initTheme();
+    });
+  }
   initTheme();
   initMobileNav();
 })();
