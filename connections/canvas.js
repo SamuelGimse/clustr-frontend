@@ -22,11 +22,11 @@
       for(const[a,b]of links){const dx=positions[b*2]-positions[a*2],dy=positions[b*2+1]-positions[a*2+1],distance=Math.max(1,Math.hypot(dx,dy)),f=(distance-125)*.0007;velocities[a*2]+=dx/distance*f;velocities[a*2+1]+=dy/distance*f;velocities[b*2]-=dx/distance*f;velocities[b*2+1]-=dy/distance*f;}
       for(let i=0;i<positions.length;i+=2){
         const phase=i*2.399963;
-        velocities[i]+=(anchors[i]+Math.sin(seconds*.6+phase)*35-positions[i])*.0015;
-        velocities[i+1]+=(anchors[i+1]+Math.cos(seconds*.5+phase)*28-positions[i+1])*.0015;
+        velocities[i]+=(anchors[i]+Math.sin(seconds*.35+phase)*12-positions[i])*.0015;
+        velocities[i+1]+=(anchors[i+1]+Math.cos(seconds*.3+phase)*10-positions[i+1])*.0015;
         if(pointer){
           const dx=positions[i]-pointer.x,dy=positions[i+1]-pointer.y,distance=Math.hypot(dx,dy),radius=180/scale;
-          if(distance>0&&distance<radius){const force=(1-distance/radius)**2*1.6/scale;velocities[i]+=dx/distance*force;velocities[i+1]+=dy/distance*force;}
+          if(distance>60/scale&&distance<radius){const force=(1-distance/radius)**2*.25/scale;velocities[i]+=dx/distance*force;velocities[i+1]+=dy/distance*force;}
         }
         velocities[i]*=.9;velocities[i+1]*=.9;positions[i]+=velocities[i];positions[i+1]+=velocities[i+1];
       }
@@ -35,7 +35,8 @@
       if(!Number.isInteger(index)||index<0||index>=graph.nodes.length||!Number.isFinite(x)||!Number.isFinite(y))return;
       for(const [axis,value] of [[index*2,x],[index*2+1,y]]){positions[axis]=anchors[axis]=value;velocities[axis]=0;}
     }
-    return{positions,step,move};
+    function hold(index,x,y){positions[index*2]=x;positions[index*2+1]=y;velocities[index*2]=velocities[index*2+1]=0;}
+    return{positions,step,move,hold};
   }
   async function gpuRenderer(canvas){
     if(!navigator.gpu)return null;
@@ -70,7 +71,7 @@ var o:Out;o.uv=corners[v];o.p=vec4f(center+corners[v]*radius,0,1);o.color=color;
     let renderer=null,closed=false,frame=0,selected=null,query='',type='',scale=1,offsetX=0,offsetY=0,width=1,height=1,drag=null,hover=null,pinch=0;
     const pointers=new Map(),displayPositions=state.positions.slice();
     const motionPreference=window.matchMedia('(prefers-reduced-motion: reduce)');
-    let reduced=motionPreference.matches,visible=true,lastTime=0,motionTime=0,pointer=null,motionOverride=null,physicsTime=0;
+    let reduced=motionPreference.matches,visible=true,lastTime=0,motionTime=0,pointer=null,motionOverride=null,physicsTime=0,hoverLock=null;
     const motionButton=container.querySelector('.cx-motion');
     function syncMotion(){motionButton.textContent=reduced?'Enable motion':'Pause motion';motionButton.setAttribute('aria-pressed',String(!reduced));}
     motionButton.onclick=()=>{motionOverride=reduced;reduced=!motionOverride;syncMotion();lastTime=0;request();};
@@ -99,16 +100,18 @@ var o:Out;o.uv=corners[v];o.p=vec4f(center+corners[v]*radius,0,1);o.color=color;
         physicsTime+=delta;
         while(physicsTime>=1/60){state.step(cursor,motionTime,s);physicsTime-=1/60;}
         displayPositions.set(state.positions);
-        if(drag?.node!=null&&drag.moved){state.move(drag.node,drag.nx,drag.ny);displayPositions[drag.node*2]=drag.nx;displayPositions[drag.node*2+1]=drag.ny;}
+        if(drag?.node!=null){state.hold(drag.node,drag.nx,drag.ny);displayPositions[drag.node*2]=drag.nx;displayPositions[drag.node*2+1]=drag.ny;}
+        else if(hoverLock){state.hold(hoverLock.node,hoverLock.x,hoverLock.y);displayPositions[hoverLock.node*2]=hoverLock.x;displayPositions[hoverLock.node*2+1]=hoverLock.y;}
         frame=requestAnimationFrame(tick);
       }else{lastTime=0;displayPositions.set(state.positions);}
       draw();
     }
     function request(){if(!closed&&!frame)frame=requestAnimationFrame(tick);}
     function resize(){const rect=container.getBoundingClientRect();width=Math.max(1,rect.width);height=Math.max(1,rect.height);const dpr=Math.min(window.devicePixelRatio||1,2);for(const canvas of[pixels,labels]){canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);}ctx.setTransform(dpr,0,0,dpr,0,0);request();}
-    function hit(x,y){let found=null,dist=22;const lit=active();graph.nodes.forEach((n,i)=>{if(!root.ClustrConnections.matches(n,query,type)||selected&&!lit.has(n.id))return;const p=point(i),d=Math.hypot(p.x-x,p.y-y);if(d<dist){dist=d;found=n.id;}});return found;}
+    function hit(x,y,radius=22){let found=null,dist=radius;const lit=active();graph.nodes.forEach((n,i)=>{if(!root.ClustrConnections.matches(n,query,type)||selected&&!lit.has(n.id))return;const p=point(i),d=Math.hypot(p.x-x,p.y-y);if(d<dist){dist=d;found=n.id;}});return found;}
     function distance(){const[a,b]=[...pointers.values()];return a&&b?Math.hypot(a.x-b.x,a.y-b.y):0;}
     labels.onpointerdown=e=>{
+      hoverLock=null;
       pointers.set(e.pointerId,{x:e.offsetX,y:e.offsetY});
       const id=hit(e.offsetX,e.offsetY),node=id==null?null:ids.get(id);
       drag=pointers.size===1?{id:e.pointerId,x:e.offsetX,y:e.offsetY,ox:offsetX,oy:offsetY,node,nx:node==null?0:displayPositions[node*2],ny:node==null?0:displayPositions[node*2+1],moved:false}:null;
@@ -125,12 +128,17 @@ var o:Out;o.uv=corners[v];o.p=vec4f(center+corners[v]*radius,0,1);o.color=color;
           drag.nx+=dx/camera();drag.ny+=dy/camera();drag.x=e.offsetX;drag.y=e.offsetY;
           state.move(drag.node,drag.nx,drag.ny);displayPositions[drag.node*2]=drag.nx;displayPositions[drag.node*2+1]=drag.ny;
         }else if(drag.node==null){offsetX=drag.ox+dx;offsetY=drag.oy+dy;}
-      }else hover=hit(e.offsetX,e.offsetY);
+      }else{
+        hover=hit(e.offsetX,e.offsetY,40);
+        const node=hover==null?null:ids.get(hover);
+        if(node==null)hoverLock=null;
+        else if(hoverLock?.node!==node)hoverLock={node,x:displayPositions[node*2],y:displayPositions[node*2+1]};
+      }
       request();
     };
-    labels.onpointerup=e=>{if(drag&&drag.id===e.pointerId&&!drag.moved&&Math.hypot(e.offsetX-drag.x,e.offsetY-drag.y)<5){const id=hit(e.offsetX,e.offsetY);if(id)onSelect(id);}pointers.delete(e.pointerId);drag=null;pinch=0;};
-    labels.onpointerleave=()=>{pointer=null;hover=null;request();};
-    labels.onpointercancel=e=>{pointer=null;pointers.delete(e.pointerId);drag=null;pinch=0;};
+    labels.onpointerup=e=>{if(drag&&drag.id===e.pointerId&&!drag.moved&&Math.hypot(e.offsetX-drag.x,e.offsetY-drag.y)<5){const id=drag.node==null?hit(e.offsetX,e.offsetY):graph.nodes[drag.node].id;if(id)onSelect(id);}pointers.delete(e.pointerId);drag=null;pinch=0;};
+    labels.onpointerleave=()=>{pointer=null;hover=null;hoverLock=null;request();};
+    labels.onpointercancel=e=>{pointer=null;hoverLock=null;pointers.delete(e.pointerId);drag=null;pinch=0;};
     labels.addEventListener('wheel',e=>{if(e.ctrlKey)return;e.preventDefault();scale=Math.max(.4,Math.min(4,scale*Math.exp(-e.deltaY*.001)));request();},{passive:false});
     labels.onkeydown=e=>{if(['+','=','-','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();if(e.key==='-')scale=Math.max(.4,scale-.2);else if(['+','='].includes(e.key))scale=Math.min(4,scale+.2);else{offsetX+=e.key==='ArrowLeft'?30:e.key==='ArrowRight'?-30:0;offsetY+=e.key==='ArrowUp'?30:e.key==='ArrowDown'?-30:0;}request();}};
     const visibilityObserver=new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;if(visible)request();else lastTime=0;});

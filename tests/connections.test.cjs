@@ -203,9 +203,16 @@ test('continuous physics remains alive after settling and transfers movement thr
   const still=simulation(graph,initial),interactive=simulation(graph,initial);
   for(let i=0;i<600;i++){still.step(null,i/60);interactive.step(null,i/60);}
   const before=still.positions.slice();
-  for(let i=600;i<720;i++){still.step(null,i/60);interactive.step({x:interactive.positions[0]-30,y:interactive.positions[1]},i/60);}
+  for(let i=600;i<720;i++){still.step(null,i/60);interactive.step({x:interactive.positions[0]-80,y:interactive.positions[1]},i/60);}
   assert.notDeepEqual(still.positions,before);
-  assert(Math.abs(interactive.positions[0]-still.positions[0])>10);
-  assert(Math.abs(interactive.positions[2]-still.positions[2])>1,'connected neighbor responds to the force');
+  assert(Math.abs(interactive.positions[0]-still.positions[0])>2);
+  assert(Math.abs(interactive.positions[2]-still.positions[2])>.1,'connected neighbor responds to the force');
   assert([...interactive.positions].every(Number.isFinite));
+});
+
+test('holding a node keeps its click position without changing its layout anchor',()=>{
+  const graph={nodes:[{id:'a'}],edges:[]},engine=simulation(graph,new Map([['a',{x:600,y:400}]]));
+  for(let i=0;i<120;i++){engine.step({x:600,y:400},i/60);engine.hold(0,610,410);assert.equal(engine.positions[0],610);assert.equal(engine.positions[1],410);}
+  for(let i=0;i<120;i++)engine.step();
+  assert(Math.abs(engine.positions[0]-600)<2);
 });
