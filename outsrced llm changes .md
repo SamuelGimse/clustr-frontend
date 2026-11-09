@@ -15,3 +15,6 @@
 - Reports selects a day present in newly loaded results, disables empty dates, and shows the selected reports before the calendar on phones.
 - Applied Trends score badges, compact headers and summary treatment to Briefing grid cards without removing story or stock actions.
 - Verification: 151 code checks; long country-list browser regression at 1440/1024/390px; History mode differences; actual app.js Reports navigation with mocked authentication/data and a failed history-summary RPC. No signed-in production account was accessed.
+
+## 2026-11-09 — World search surface
+- Removed the opaque background behind the pinned location search on desktop and mobile. Browser checks confirm transparent search/rail surfaces at 1440, 1024 and 390px while country scrolling and search still work.
