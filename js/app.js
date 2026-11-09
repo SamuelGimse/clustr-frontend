@@ -4,6 +4,10 @@
 
 (function () {
   const cfg = window.ClustrConfig || {};
+  window.addEventListener('clustr-signed-out', () => window.location.reload());
+  window.addEventListener('storage', event => {
+    if (event.key === 'clustr-auth-session-v1' && !event.newValue) window.location.reload();
+  });
 
   /** @type {Array<Object>} */
   let publishes = [];
@@ -141,6 +145,7 @@
   }
 
   function setNav(which, context = null) {
+    if (!authState.user || authState.recovery) which = 'account';
     window.ClustrConnections?.hide();
     if (which === 'admin' && authState.role !== 'admin') which = 'account';
     closeEventSortMenu();
@@ -661,6 +666,11 @@
     const note = document.getElementById('accountMessage');
     const content = document.getElementById('accountContent');
     if (!title || !content) return;
+    const credits = document.getElementById('accountTechnologyCredits');
+    if (credits && !credits.childElementCount) {
+      const source = document.querySelector('.app-footer .technology-credits');
+      if (source) credits.append(source.cloneNode(true));
+    }
     note.textContent = message;
     if (!account.user) {
       const places = foundingStatus?.remaining;
@@ -970,13 +980,14 @@
     try {
       const bootP = runBoot();
       authState = await window.ClustrAuth.restore();
+      document.body.classList.toggle('auth-locked', !authState.user || !!authState.recovery);
       foundingStatus = await window.ClustrAuth.foundingStatus().catch(() => null);
       await window.ClustrWatchlist?.init(hasProAccess() ? authState.user : null);
       window.ClustrThemes.setAccess(authState.role);
       renderProBadges();
       renderPlanAccess();
       if (navAdmin) navAdmin.classList.toggle('hidden', authState.role !== 'admin');
-      if (!authState.user) {
+      if (!authState.user || authState.recovery) {
         await bootP;
         setNav('account');
         if (authState.authError) renderAccount(authState.authError);
@@ -1026,6 +1037,7 @@
       await endBoot();
     } catch (err) {
       console.error(err);
+      if (!authState.user) { setNav('account'); renderAccount(err.message || 'Could not restore your sign-in.'); }
       await endBoot();
       if (status) status.textContent = err.message || 'Load failed';
     }

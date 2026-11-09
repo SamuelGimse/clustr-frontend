@@ -16,6 +16,14 @@
 .app-footer-note { margin:10px 0 0; font-size:10px; }
 .account-policy-links { color:var(--text-meta); font-size:11px; line-height:1.8; }
 .account-policy-links a { text-decoration:underline; }
+.account-brand { display:flex; align-items:center; gap:12px; margin-bottom:20px; color:var(--text); font-size:22px; font-weight:700; }
+.account-brand-logo { width:40px; height:40px; flex:0 0 40px; background:currentColor; -webkit-mask:url('favicon.svg') center/contain no-repeat; mask:url('favicon.svg') center/contain no-repeat; }
+#accountTechnologyCredits { color:var(--text-meta); font-size:11px; }
+#accountTechnologyCredits a { color:inherit; text-decoration:none; }
+#accountTechnologyCredits a:hover { color:var(--text); text-decoration:underline; }
+body.auth-locked .nav-rail,body.auth-locked .nav-backdrop,body.auth-locked #main > :not(#accountView) { display:none !important; }
+body.auth-locked #main { margin:0 !important; padding:24px max(16px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left)) !important; width:100%; }
+body.auth-locked #accountView { min-height:calc(100dvh - 48px); padding:0; }
 .main:has(> #connectionsView:not(.hidden)) > .app-footer { max-width:none; }
 @media(max-width:768px) {
   .app-footer { margin-top:24px; padding-top:14px; }

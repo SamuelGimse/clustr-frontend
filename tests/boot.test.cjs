@@ -6,16 +6,17 @@ const path = require('node:path');
 const source = fs.readFileSync(path.join(__dirname, '../js/app.js'), 'utf8');
 const init = source.slice(source.indexOf('  async function init() {'), source.indexOf("  if (navPolymarket) navPolymarket.addEventListener"));
 
-async function check({ user = {}, rows = [{ id: 1 }], error = null, hash = '' } = {}) {
+async function check({ user = {}, rows = [{ id: 1 }], error = null, hash = '', recovery = false } = {}) {
   const calls = [];
   const context = {
     window: {
-      ClustrAuth: { restore: async () => ({ user, role: 'free' }), foundingStatus: async () => ({ remaining: 15 }) },
+      ClustrAuth: { restore: async () => ({ user, role: 'free', recovery }), foundingStatus: async () => ({ remaining: 15 }) },
       ClustrThemes: { setAccess: role => calls.push(`theme:${role}`) },
       ClustrConnections: { hide() {}, render() {} },
-      ClustrApi: { fetchPublishes: async () => { if (error) throw error; return rows; } }
+      ClustrApi: { fetchPublishes: async () => { calls.push('fetch'); if (error) throw error; return rows; } }
     },
     runBoot: async () => calls.push('boot'),
+    document: {body:{classList:{toggle:(name, locked)=>calls.push(`locked:${locked}`)}}},
     endBoot: async () => calls.push('end'),
     paintCurrent: async () => calls.push('paint'),
     setNav: view => calls.push(`nav:${view}`),
@@ -47,6 +48,10 @@ async function check({ user = {}, rows = [{ id: 1 }], error = null, hash = '' } 
   assert((await check({ rows: [], hash: '#/watchlist' })).calls.includes('nav:watchlist'));
   assert((await check({ hash: '#/connections' })).calls.includes('nav:connections'));
   const signedOut = await check({ user: null });
+  assert(signedOut.calls.includes('locked:true'));
+  assert(!signedOut.calls.includes('fetch'));
+  assert(signedIn.calls.includes('locked:false'));
+  assert((await check({recovery:true})).calls.includes('nav:account'));
   assert(signedOut.calls.includes('badge'));
   assert(signedOut.calls.indexOf('nav:account') < signedOut.calls.indexOf('end'));
   assert.equal((await check({ rows: [] })).status, 'No publishes yet');

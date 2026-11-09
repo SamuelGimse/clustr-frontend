@@ -22,7 +22,7 @@ test('Both credit surfaces retain visible accessible brand names without image c
     for (const name of ['DeepSeek', 'OpenAI SDK', 'JavaScript']) assert(credits.includes(`<span>${name}</span>`));
     assert.equal((credits.match(/aria-hidden="true"/g) || []).length, 3);
     assert.doesNotMatch(credits, /<img/);
-    assert.match(html, /footer.css\?v=monochrome-marks-1/);
+    assert.match(html, /footer.css\?v=(?:monochrome-marks-1|account-lock-1)/);
   }
 });
 test('JavaScript is a single-ink square with transparent original letter cutouts and retained licence', () => {

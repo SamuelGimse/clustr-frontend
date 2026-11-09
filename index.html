@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css?v=compact-data-details-1" />
-  <link rel="stylesheet" href="footer.css?v=monochrome-marks-1" />
+  <link rel="stylesheet" href="footer.css?v=account-lock-1" />
   <link rel="stylesheet" href="polymarket.css?v=1" />
   <link rel="stylesheet" href="connections/connections.css?v=live-physics-3" />
   <link rel="stylesheet" href="watchlist.css?v=world-scope-1" />
@@ -32,7 +32,7 @@
   <link rel="stylesheet" href="world.css?v=globe-1" />
   <link rel="stylesheet" href="mobile.css?v=mobile-simplify-1" />
 </head>
-<body>
+<body class="auth-locked">
   <div class="app-halos" aria-hidden="true">
     <div class="boot-orbit boot-orbit--outer"></div>
     <div class="boot-orbit boot-orbit--inner"></div>
@@ -266,7 +266,7 @@
       <section id="stocksView" class="hidden stocks-page" aria-label="Stocks and linked clusters"></section>
       <section id="polymarketView" class="hidden" aria-label="Polymarket questions and odds"><div id="clustrPolymarket"></div></section>
       <section id="accountView" class="hidden account-page" aria-label="Account and subscription">
-        <div class="account-shell"><div class="account-eyebrow">CLUSTR MARKET / ACCOUNT</div><h1 id="accountTitle">Free account</h1><p id="accountMessage" class="account-message" role="status"></p><div id="accountContent"></div><p class="account-policy-links"><a href="info.html#guide" target="_blank" rel="noopener">Help &amp; guide</a> · <a href="info.html#terms" target="_blank" rel="noopener">Terms (draft)</a> · <a href="info.html#privacy" target="_blank" rel="noopener">Privacy (draft)</a></p><section class="account-plan account-appearance"><h2>Appearance</h2>
+        <div class="account-shell"><div class="account-brand"><span class="account-brand-logo" aria-hidden="true"></span><span>Clustr Market</span></div><div class="account-eyebrow">CLUSTR MARKET / ACCOUNT</div><h1 id="accountTitle">Free account</h1><p id="accountMessage" class="account-message" role="status"></p><div id="accountContent"></div><div id="accountTechnologyCredits"></div><p class="account-policy-links"><a href="info.html#guide" target="_blank" rel="noopener">Help &amp; guide</a> · <a href="info.html#terms" target="_blank" rel="noopener">Terms (draft)</a> · <a href="info.html#privacy" target="_blank" rel="noopener">Privacy (draft)</a></p><section class="account-plan account-appearance"><h2>Appearance</h2>
           <div id="themeMenu" class="theme-menu account-theme-menu" role="group" aria-label="Theme">
             <button type="button" data-theme="apple">Dark</button>
             <button type="button" data-theme="apple-light">Light</button>
@@ -309,7 +309,7 @@
   <script src="js/config.js?v=publish-push-1"></script>
   <script src="js/util.js?v=us-state-1"></script>
   <script src="js/quotes.js?v=news-session-quotes-1"></script>
-  <script src="js/auth.js?v=lifetime-pro-1"></script>
+  <script src="js/auth.js?v=account-lock-1"></script>
   <script src="js/push.js?v=publish-push-1"></script>
   <script src="js/cluster-taxonomy.js?v=curated-baskets-1"></script>
   <script src="js/api.js?v=curated-baskets-1"></script>
@@ -328,6 +328,6 @@
   <script src="connections/connections.js?v=mobile-simplify-1"></script>
   <script src="js/pro-preview.js?v=2"></script>
   <script src="js/mobile-ui.js?v=mobile-simplify-1"></script>
-  <script src="js/app.js?v=mobile-simplify-1"></script>
+  <script src="js/app.js?v=account-lock-1"></script>
 </body>
 </html>

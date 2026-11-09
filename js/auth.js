@@ -7,7 +7,12 @@
   const headers = token => ({ apikey: cfg().SUPABASE_ANON_KEY, ...(token ? { Authorization: `Bearer ${token}` } : {}), 'Content-Type': 'application/json' });
   const endpoint = path => String(cfg().SUPABASE_URL || '').replace(/\/$/, '') + path;
   const read = () => { try { return JSON.parse(root.localStorage.getItem(key) || 'null'); } catch { return null; } };
-  const save = value => { session = value && value.access_token ? { ...value, expires_at: Number(value.expires_at) || Math.floor(Date.now()/1000)+(Number(value.expires_in)||3600) } : null; try { if(session) root.localStorage.setItem(key,JSON.stringify(session)); else root.localStorage.removeItem(key); } catch {} };
+  const save = value => {
+    const hadSession = !!(session || read())?.access_token;
+    session = value && value.access_token ? { ...value, expires_at: Number(value.expires_at) || Math.floor(Date.now()/1000)+(Number(value.expires_in)||3600) } : null;
+    try { if(session) root.localStorage.setItem(key,JSON.stringify(session)); else root.localStorage.removeItem(key); } catch {}
+    if (hadSession && !session && root.dispatchEvent && root.Event) root.dispatchEvent(new root.Event('clustr-signed-out'));
+  };
   async function request(path, method = 'GET', body, token) {
     const res = await root.fetch(endpoint(path), { method, headers: headers(token), body: body ? JSON.stringify(body) : undefined });
     const data = await res.json().catch(() => ({}));
@@ -57,7 +62,7 @@
     let current = session || read();
     if (!current?.access_token) return '';
     if (Number(current.expires_at) < Math.floor(Date.now()/1000)+60 || rejectedToken === current.access_token) {
-      if (!current.refresh_token) throw new Error('Your session expired. Sign in again to continue.');
+      if (!current.refresh_token) { save(null); throw new Error('Your session expired. Sign in again to continue.'); }
       try { current = await refresh(current); }
       catch (error) {
         if (error.status === 400 || error.status === 401) {

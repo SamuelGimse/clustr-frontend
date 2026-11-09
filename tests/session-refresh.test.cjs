@@ -48,15 +48,32 @@ test('Persistent 401 stops after one retry', async () => {
 
 test('Revoked refresh sessions ask for sign-in without anonymous fallback', async () => {
   const s=setup({refreshStatus:400});
+  const events=[];
+  s.window.Event=class {constructor(type){this.type=type;}};
+  s.window.dispatchEvent=event=>events.push(event.type);
   await assert.rejects(s.window.ClustrApi.fetchPublishes(),/Sign in again/);
   assert.equal(s.calls.filter(c=>c.url.includes('/rest/')).length,0);
   assert.equal(s.storage.get(s.key),undefined);
+  assert.deepEqual(events,['clustr-signed-out']);
 });
 
 test('Transient refresh failures retain the session for a later retry', async () => {
   const s=setup({refreshStatus:503});
   await assert.rejects(s.window.ClustrApi.fetchPublishes(),/Refresh failed/);
   assert.equal(JSON.parse(s.storage.get(s.key)).refresh_token,'refresh-old');
+});
+
+test('Expired sessions without a refresh token are cleared and return to sign-in', async () => {
+  const s=setup();
+  const value=JSON.parse(s.storage.get(s.key)); delete value.refresh_token;
+  s.storage.set(s.key,JSON.stringify(value));
+  const events=[];
+  s.window.Event=class {constructor(type){this.type=type;}};
+  s.window.dispatchEvent=event=>events.push(event.type);
+  await assert.rejects(s.window.ClustrAuth.getAccessToken(),/Sign in again/);
+  assert.equal(s.storage.get(s.key),undefined);
+  assert.deepEqual(events,['clustr-signed-out']);
+  assert.equal(s.calls.length,0);
 });
 
 test('Signing out while refreshing cannot restore the old session', async () => {

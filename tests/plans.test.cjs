@@ -14,7 +14,7 @@ function setup(role, signedIn = true) {
     document: { getElementById: id => elements[id] },
     window: { ClustrConnections: { hide() {} }, ClustrWatchlist: { setView() {}, mount() { calls.push('watchlist'); } },
       ClustrAtlas: { render() { calls.push('history'); } }, ClustrStocks: { leave() {}, mount() { calls.push('stocks'); } }, matchMedia: () => ({ matches: false }) },
-    renderWeekly: () => calls.push('trends'),
+    renderWeekly: () => calls.push('trends'), renderAccount: () => calls.push('signin'),
     view: 'events', publishes: [], publishIndex: 0, currentGroups: [], closeEventSortMenu() {},
     location: { hash: '', pathname: '/', search: '' }, history: { replaceState(_state, _title, hash) { context.location.hash = hash; } },
   };
@@ -60,9 +60,10 @@ test('Signed-out direct links ask users to sign in, never start checkout or moun
   context.renderPlanAccess();
   assert.equal(elements.freePlanBanner.hidden, true);
   context.setNav('watchlist');
-  assert.match(context.proFeatureView.innerHTML, /Sign in to explore Pro/);
+  assert.equal(context.view, 'account');
+  assert.equal(context.proFeatureView.innerHTML, '');
   assert.doesNotMatch(context.proFeatureView.innerHTML, /data-account-action="checkout"/);
-  assert.deepEqual(calls, []);
+  assert.deepEqual(calls, ['signin']);
 });
 
 test('Free messaging and upgrade links are consistent and mobile banner can wrap', () => {
