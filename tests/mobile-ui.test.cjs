@@ -33,3 +33,20 @@ test('Mobile disclosures keep control identity and state, avoid nesting, and res
   compact(host,true);assert.equal(host.children[0].lastElementChild,panel);
   compact(host,false);assert.deepEqual(host.children,[panel,note]);assert.equal(input.value,'dark');
 });
+
+
+test('mobile dock keeps the original controls, restores desktop placement, and does not repeat hidden mutations',()=>{
+  const {dockOptions}=require('../js/mobile-ui');let writes=0,focused=false;const listeners={};
+  class El{constructor(){this.children=[];this._hidden=false;this.open=false;}get hidden(){return this._hidden;}set hidden(v){writes++;this._hidden=v;}append(...nodes){for(const n of nodes){n.detach();this.children.push(n);n.parentElement=this;}}detach(){if(this.parentElement){const a=this.parentElement.children;a.splice(a.indexOf(this),1);}this.parentElement=null;}before(n){const a=this.parentElement.children;n.detach();a.splice(a.indexOf(this),0,n);n.parentElement=this.parentElement;}after(n){const a=this.parentElement.children;n.detach();a.splice(a.indexOf(this)+1,0,n);n.parentElement=this.parentElement;}contains(n){return this===n||this.children.some(c=>c.contains(n));}}
+  const home=new El(),menu=new El(),bar=new El(),sort=new El(),modeSlot=new El(),sortSlot=new El();home.append(bar,sort,menu);menu.append(modeSlot,sortSlot);menu.hidden=true;
+  menu.querySelector=s=>s==='[data-mobile-mode-slot]'?modeSlot:s==='[data-mobile-sort-slot]'?sortSlot:{focus(){focused=true;}};
+  const doc={getElementById:id=>({mobileViewOptions:menu,viewModeBar:bar,eventSortOptions:sort})[id],createComment:()=>new El(),addEventListener:(name,fn)=>listeners[name]=fn,documentElement:{dataset:{activeView:'dashboard',viewMode:'simple'}}};
+  const media={matches:true},sync=dockOptions(doc,media);sync();assert.equal(bar.parentElement,modeSlot);assert.equal(sort.parentElement,sortSlot);assert(!menu.hidden);assert(sortSlot.hidden);
+  const count=writes;sync();assert.equal(writes,count);
+  doc.documentElement.dataset.activeView='events';doc.documentElement.dataset.viewMode='advanced';sync();assert(!sortSlot.hidden);
+  menu.open=true;listeners.click({target:{closest:()=>({})}});assert(!menu.open); // Outside click.
+  menu.open=true;listeners.keydown({key:'Escape',preventDefault(){},stopPropagation(){}});assert(!menu.open);assert(focused);
+  media.matches=false;sync();assert.equal(bar.parentElement,home);assert.equal(sort.parentElement,home);assert(menu.hidden);
+  media.matches=true;bar.hidden=true;doc.documentElement.dataset.activeView='events';doc.documentElement.dataset.viewMode='advanced';sync();assert(menu.hidden);
+  doc.documentElement.dataset.activeView='watchlist';sync();assert(menu.hidden);
+});
