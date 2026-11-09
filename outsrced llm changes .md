@@ -18,3 +18,8 @@
 
 ## 2026-11-09 — World search surface
 - Removed the opaque background behind the pinned location search on desktop and mobile. Browser checks confirm transparent search/rail surfaces at 1440, 1024 and 390px while country scrolling and search still work.
+
+## 2026-11-09 — Simple Stocks cleanup
+- Removed visible duplicate heading/date range, search caption, result/link counts, US labels, relationship badges, link metadata and explanatory text from Simple Stocks.
+- Kept search accessible, moved Refresh beside it, and retained prices, watchlist buttons, connection filters, impact scores, summaries and source context. Advanced retains its metadata and restores Refresh to its header.
+- Verified browser mode switching, stock navigation/search, lazy TradingView loading and phone widths using sample data; production sign-in was not exercised.

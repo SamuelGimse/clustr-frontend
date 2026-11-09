@@ -176,6 +176,8 @@
   }
 
   function renderDetail() {
+    const refresh=root.querySelector('[data-stock-refresh]'),refreshHost=root.querySelector(advancedMode()?'.stocks-heading':'.stocks-search-row');
+    if(refresh&&refreshHost&&refresh.parentElement!==refreshHost)refreshHost.append(refresh);
     const stock = items.find(item => item.key === selected && (window.ClustrWatchlist?.allows(item, item.market) ?? true)), detail = root.querySelector('#stocksDetail');
     if (!stock) { detail.dataset.stockKey='';detail.innerHTML = '<div class="stocks-detail-empty"><h2>Select a stock</h2><p>Explore how its news and cluster relationships connect across the last seven days.</p></div>'; return; }
     const esc = U().escapeHtml, links = linksFor(stock, mode), articleLinks = linksFor(stock, 'articles');
