@@ -30,6 +30,11 @@
   try { if (localStorage.getItem('clustr-view-mode') === 'advanced') viewMode = 'advanced'; } catch {}
   let newsView = 'desk';
   try { if (localStorage.getItem('clustr-news-view') === 'feed') newsView = 'feed'; } catch {}
+  const newsModes = { desk: 'simple', feed: 'advanced' };
+  try {
+    const saved = JSON.parse(localStorage.getItem('clustr-news-modes') || '{}');
+    for (const name of ['desk', 'feed']) if (['simple', 'advanced'].includes(saved?.[name])) newsModes[name] = saved[name];
+  } catch {}
   document.documentElement.dataset.viewMode = viewMode;
   const viewModeBar = document.getElementById('viewModeBar');
   const viewModeHint = document.getElementById('viewModeHint');
@@ -45,21 +50,24 @@
     watchlist: 'Your companies, latest price and linked news.'
   };
   function updateViewMode() {
-    const mode = view === 'events' ? newsView === 'desk' ? 'simple' : 'advanced' : viewMode;
+    const mode = view === 'events' ? newsModes[newsView] : viewMode;
     document.documentElement.dataset.viewMode = mode;
+    document.documentElement.dataset.newsView = newsView;
     document.documentElement.dataset.activeView = view;
     const singleLayout = ['connections', 'map', 'weekly', 'days', 'watchlist'].includes(view);
     if (viewModeBar) viewModeBar.hidden = !dataViews.has(view) || !authState.user || singleLayout;
     if (viewModeHint) viewModeHint.textContent = mode === 'simple' ? modeHints[view] || '' : 'Full report detail and controls.';
-    viewModeBar?.querySelector?.('.view-mode-switch')?.setAttribute('aria-label', view === 'events' ? 'News view' : 'Page detail level');
+    const newsSwitch = document.getElementById('newsViewSwitch');
+    if (newsSwitch) newsSwitch.hidden = view !== 'events' || !authState.user;
+    document.querySelectorAll('button[data-news-view]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.newsView === newsView)));
     document.querySelectorAll('button[data-view-mode]').forEach(button => {
-      button.textContent = view === 'events' ? button.dataset.viewMode === 'simple' ? 'Connection desk' : 'Full feed' : button.dataset.viewMode === 'simple' ? 'Simple' : 'Advanced';
+      button.textContent = button.dataset.viewMode === 'simple' ? 'Simple' : 'Advanced';
       button.setAttribute('aria-pressed', String(button.dataset.viewMode === mode));
     });
     const more = dashboardView?.querySelector('.dash-more');
     if (more) more.open = true;
     const allowed = authState.user && dataViews.has(view) && (!['stocks', 'weekly', 'atlas', 'watchlist'].includes(view) || hasProAccess());
-    if ((mode === 'simple' || singleLayout) && allowed) window.ClustrSimple?.render(view, view === 'events');
+    if ((view === 'events' ? newsView === 'desk' : mode === 'simple' || singleLayout) && allowed) window.ClustrSimple?.render(view, view === 'events', mode === 'advanced');
     else window.ClustrSimple?.hide();
   }
 
@@ -836,6 +844,7 @@
    */
   function jumpToCluster(name) {
     setNav('events');
+    if (newsView === 'desk' && window.ClustrSimple?.selectCluster?.(name)) return;
     const el = document.querySelector(
       `.cluster-card[data-cluster="${CSS.escape(name)}"]`
     );
@@ -1104,10 +1113,15 @@
   }
 
   if (navPolymarket) navPolymarket.addEventListener('click', () => setNav('polymarket'));
+  document.querySelectorAll('button[data-news-view]').forEach(button => button.addEventListener('click', () => {
+    newsView = button.dataset.newsView;
+    try { localStorage.setItem('clustr-news-view', newsView); } catch {}
+    updateViewMode();
+  }));
   document.querySelectorAll('button[data-view-mode]').forEach(button => button.addEventListener('click', () => {
     if (view === 'events') {
-      newsView = button.dataset.viewMode === 'simple' ? 'desk' : 'feed';
-      try { localStorage.setItem('clustr-news-view', newsView); } catch {}
+      newsModes[newsView] = button.dataset.viewMode;
+      try { localStorage.setItem('clustr-news-modes', JSON.stringify(newsModes)); } catch {}
     } else {
       viewMode = button.dataset.viewMode;
       try { localStorage.setItem('clustr-view-mode', viewMode); } catch {}

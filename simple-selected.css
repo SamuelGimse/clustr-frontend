@@ -222,3 +222,12 @@ html[data-view-mode=simple] #stocksView :is(.stocks-selection-count,.stocks-tile
 html[data-view-mode=simple] #stocksView .stocks-tile{min-height:68px}
 html[data-view-mode=simple] #stocksView .stocks-tile .stocks-quote{grid-row:1/3}
 html[data-view-mode=simple] #stocksView .stocks-clusters{margin-top:14px}
+.desk-advanced-analysis{margin-top:20px;padding-top:20px;border-top:1px solid var(--border);min-width:0}
+.desk-advanced-analysis>h3{margin:0 0 14px;font-size:17px}
+.desk-advanced-analysis .cluster-card{margin:0;width:100%;max-width:none}
+html[data-active-view=events][data-news-view=feed][data-view-mode=simple] #eventsView :is(.cluster-news-ratings,.cluster-context,.group-since-publish,.technical-metrics,.related-under-chart,.stance-chart-controls,.stance-stat-grid){display:none!important}
+html[data-active-view=events][data-news-view=feed][data-view-mode=simple] #eventsView .stock-sidebar .price-bar{grid-template-columns:repeat(3,minmax(0,1fr))}
+#newsViewSwitch[hidden]{display:none!important}
+.view-mode-bar:has(#newsViewSwitch:not([hidden])){flex-wrap:wrap}
+.view-mode-bar:has(#newsViewSwitch:not([hidden])) .view-mode-hint{flex:1;min-width:140px}
+@media(max-width:600px){.view-mode-bar:has(#newsViewSwitch:not([hidden])) .view-mode-hint{display:none}.view-mode-bar:has(#newsViewSwitch:not([hidden])){gap:6px;justify-content:space-between}.desk-advanced-analysis .cluster-card{padding:12px}}

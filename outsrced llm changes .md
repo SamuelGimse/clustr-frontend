@@ -29,3 +29,10 @@
 - Connection desk opens directly; its old internal Briefing grid/Connection desk chooser is hidden in the app. Separate Simple/Advanced modes inside each News view remain deferred.
 - Scoped the mode-button selectors to buttons so the document root cannot receive button labels or switch-click handlers.
 - Verified actual app navigation with mocked authentication/data, both News choices, independent Stocks detail preference and Reports selection; all code checks pass.
+
+## 2026-11-09 — Detail levels within both News views
+- Added separate Simple/Advanced controls for Connection desk and Full feed. Each view stores its own detail preference independently of other tabs.
+- Full feed Simple hides the marked article-score strip, context/market-data block, basket-session aggregate, technical metrics, related clusters, chart switches and conditional-return summary. Cluster summaries, primary prices, source articles and charts remain available.
+- Connection desk Advanced reuses the native cluster-analysis renderer below the three-column desk: drivers, saved market observations, stock buckets, technical/Reddit signals, prices, related clusters, history, impact timeline, lazy TradingView and article categories. The centre summary links directly to the analysis workspace.
+- Cleans up mounted chart instances when changing clusters/modes and routes related-cluster navigation back to the desk. Quote refresh follows the visible workspace.
+- Verified all four modes, independent saved preferences, real component rendering, unique element IDs, lazy TradingView, cleanup, Reports navigation and 390px layout with mocked data; no production account or paid API was used.

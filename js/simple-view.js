@@ -1,7 +1,7 @@
 (function(root,factory){const api=factory(root);if(typeof module==='object'&&module.exports)module.exports=api;else root.ClustrSimple=api;})(typeof window==='undefined'?globalThis:window,function(win){
   let revision=0, active='', identity='', selected='', layout='grid', mobilePane='news', month='', selectedDay='', reportRows=null;
   const nativeViews=new Set(['dashboard','stocks','atlas','connections','map','weekly','watchlist']);
-  let groupsRef=null,newsSort='impact',reportScope='',reportSource=null,reportError='',stockConnection='all',deskCenter='summary';
+  let groupsRef=null,newsSort='impact',reportScope='',reportSource=null,reportError='',stockConnection='all',deskCenter='summary',deskAdvanced=false;
   try { if(win.localStorage?.getItem('clustr-simple-news-layout')==='desk')layout='desk'; } catch {}
   const esc = value => win.ClustrUtil.escapeHtml(String(value ?? ''));
   const score = group => win.ClustrUtil.articleImpactScore(group.articles || []) ?? win.ClustrUtil.numericStance(group.stance_score ?? group.cluster_score);
@@ -52,11 +52,19 @@
     selected=group?.name||'';
     const desk=host.querySelector('[data-simple-desk]');
     if(!desk)return;
+    clearDeskAnalysis();
     desk.hidden=layout==='grid'&&!selected;
     if(!group){desk.innerHTML='<p class="simple-empty">No cluster available.</p>';return;}
     const stocks=linkedStocks(group).filter(stock=>stockConnection==='all'||stockKinds(group,stock.label).includes({mentioned:'Mentioned',close:'Close link',related:'Related',defaults:'Comparison basket'}[stockConnection])), token=revision;
     desk.dataset.pane=mobilePane;
-    desk.innerHTML=`<div class="simple-desk-top"><h2>${esc(group.name)}</h2><button type="button" data-simple-close ${layout==='desk'?'hidden':''}>Close detail</button></div><div class="simple-desk-tabs" role="group" aria-label="Cluster detail section">${['news','cluster','stocks'].map(p=>`<button type="button" data-simple-pane="${p}" aria-pressed="${p===mobilePane}">${p[0].toUpperCase()+p.slice(1)}</button>`).join('')}</div><div class="simple-desk-columns"><section class="simple-desk-news"><h3>News <small>Scroll for stories</small></h3>${storyRows(group.articles||[])}</section><section class="simple-desk-cluster"><div class="simple-center-tabs" role="tablist" aria-label="Cluster detail"><button type="button" role="tab" data-simple-center="summary" aria-controls="simpleClusterSummary" aria-selected="${deskCenter==='summary'}">Summary</button><button type="button" role="tab" data-simple-center="chart" aria-controls="simpleClusterChart" aria-selected="${deskCenter==='chart'}">Impact chart</button></div><div id="simpleClusterSummary" role="tabpanel" aria-label="Cluster summary" ${deskCenter==='summary'?'':'hidden'}><strong class="simple-desk-score simple-${tone(score(group))}">${fmt(score(group))}</strong><p>${esc(group.reason||group.summary||'No summary supplied.')}</p><div class="simple-desk-meta"><span>Impact window <b>${esc(group.time_horizon||'Not supplied')}</b></span><span>${(group.articles||[]).length} stories</span></div>${stockButtons(group)}<button type="button" data-simple-network>Explore connections →</button></div><div id="simpleClusterChart" role="tabpanel" aria-label="Cluster impact history" ${deskCenter==='chart'?'':'hidden'}><p class="simple-note">Loading scored history…</p></div></section><section class="simple-desk-stocks"><h3>Stocks <small>Scroll for companies</small></h3><label class="simple-connections-filter">Connections <select data-simple-connections aria-label="Stock connection type">${[['all','All connections'],['mentioned','Article mentions'],['close','Close links'],['related','Related stocks'],['defaults','Comparison basket']].map(([value,label])=>`<option value="${value}" ${stockConnection===value?'selected':''}>${label}</option>`).join('')}</select></label>${stocks.map(stock=>`<div class="simple-desk-stock"><button type="button" data-simple-company="${esc(stock.label)}"><b>${esc(stock.label)}</b><small>${esc(stock.name)}</small></button><span data-simple-stock-price="${esc(stock.label)}">Loading quote…</span><small>${esc(stockKinds(group,stock.label))}</small></div>`).join('')||'<p class="simple-empty">No resolved stock links.</p>'}<p class="simple-note">Latest regular-session quotes · may be delayed. Cluster associations do not mean every story names this company.</p></section></div>`;
+    desk.innerHTML=`<div class="simple-desk-top"><h2>${esc(group.name)}</h2><button type="button" data-simple-close ${layout==='desk'?'hidden':''}>Close detail</button></div><div class="simple-desk-tabs" role="group" aria-label="Cluster detail section">${['news','cluster','stocks'].map(p=>`<button type="button" data-simple-pane="${p}" aria-pressed="${p===mobilePane}">${p[0].toUpperCase()+p.slice(1)}</button>`).join('')}</div><div class="simple-desk-columns"><section class="simple-desk-news"><h3>News <small>Scroll for stories</small></h3>${storyRows(group.articles||[])}</section><section class="simple-desk-cluster"><div class="simple-center-tabs" role="tablist" aria-label="Cluster detail"><button type="button" role="tab" data-simple-center="summary" aria-controls="simpleClusterSummary" aria-selected="${deskCenter==='summary'}">Summary</button><button type="button" role="tab" data-simple-center="chart" aria-controls="simpleClusterChart" aria-selected="${deskCenter==='chart'}">Impact chart</button></div><div id="simpleClusterSummary" role="tabpanel" aria-label="Cluster summary" ${deskCenter==='summary'?'':'hidden'}><strong class="simple-desk-score simple-${tone(score(group))}">${fmt(score(group))}</strong><p>${esc(group.reason||group.summary||'No summary supplied.')}</p><div class="simple-desk-meta"><span>Impact window <b>${esc(group.time_horizon||'Not supplied')}</b></span><span>${(group.articles||[]).length} stories</span></div>${stockButtons(group)}<button type="button" data-simple-network>Explore connections →</button>${deskAdvanced?'<button type="button" data-simple-research>Full analysis ↓</button>':''}</div><div id="simpleClusterChart" role="tabpanel" aria-label="Cluster impact history" ${deskCenter==='chart'?'':'hidden'}><p class="simple-note">Loading scored history…</p></div></section><section class="simple-desk-stocks"><h3>Stocks <small>Scroll for companies</small></h3><label class="simple-connections-filter">Connections <select data-simple-connections aria-label="Stock connection type">${[['all','All connections'],['mentioned','Article mentions'],['close','Close links'],['related','Related stocks'],['defaults','Comparison basket']].map(([value,label])=>`<option value="${value}" ${stockConnection===value?'selected':''}>${label}</option>`).join('')}</select></label>${stocks.map(stock=>`<div class="simple-desk-stock"><button type="button" data-simple-company="${esc(stock.label)}"><b>${esc(stock.label)}</b><small>${esc(stock.name)}</small></button><span data-simple-stock-price="${esc(stock.label)}">Loading quote…</span><small>${esc(stockKinds(group,stock.label))}</small></div>`).join('')||'<p class="simple-empty">No resolved stock links.</p>'}<p class="simple-note">Latest regular-session quotes · may be delayed. Cluster associations do not mean every story names this company.</p></section></div>`;
+    if(deskAdvanced){
+      const research=win.document.createElement('section');
+      research.className='desk-advanced-analysis';
+      research.innerHTML='<h3>Full cluster analysis</h3><div data-desk-analysis></div>';
+      desk.append(research);
+      win.ClustrRender?.renderClusterAnalysis?.(research.querySelector('[data-desk-analysis]'),group,win.ClustrApp.getGroups());
+    }
     if(deskCenter==='chart')drawDeskTrend(host,group,token);
     const quote=await win.ClustrQuotes?.getLatestQuotes?.(stocks.map(stock=>stock.label),'US')||{};
     if(token!==revision||selected!==group.name||active!=='events')return;
@@ -130,19 +138,20 @@
     start.forEach((price,symbol)=>{if(end.has(symbol))changes.push((end.get(symbol)/price-1)*100);});
     return changes.length?{value:changes.reduce((a,b)=>a+b,0)/changes.length,count:changes.length,total:start.size,from:previous.publish.created_at,to:latest.publish.created_at}:null;
   }
-  function render(view, deskOnly=false) {
+  function clearDeskAnalysis(){const target=win.document?.querySelector?.('[data-desk-analysis]');if(target)win.ClustrRender?.renderClusterAnalysis?.(target,null);}
+  function render(view, deskOnly=false, advanced=false) {
     const doc=win.document,host=doc.getElementById('simpleView');
-    if(!host||(doc.documentElement.dataset.viewMode!=='simple'&&!['connections','map','weekly','days','watchlist'].includes(view)))return;
-    if(nativeViews.has(view)){host.hidden=true;if(active!==view){revision++;active=view;identity='';}if(view==='map')prepareWorld();return;}
+    if(!host||(doc.documentElement.dataset.viewMode!=='simple'&&!['connections','map','weekly','days','watchlist'].includes(view)&&!(view==='events'&&deskOnly)))return;
+    if(nativeViews.has(view)){clearDeskAnalysis();host.hidden=true;if(active!==view){revision++;active=view;identity='';}if(view==='map')prepareWorld();return;}
     if(!['events','days'].includes(view)){hide();return;}
     const app=win.ClustrApp;if(!app)return;
     const publish=app.getPublishes()[app.getPublishIndex()];
     const key=[view,publish?.id,win.ClustrWatchlist?.scopeKey?.()].join('|');
     const changed=active!==view||identity!==key;
-    if(changed&&active===view&&doc.activeElement?.tagName==='SELECT'&&host.contains?.(doc.activeElement)){doc.activeElement.addEventListener('blur',()=>render(view),{once:true});return;}
+    if(changed&&active===view&&doc.activeElement?.tagName==='SELECT'&&host.contains?.(doc.activeElement)){doc.activeElement.addEventListener('blur',()=>render(view,deskOnly,advanced),{once:true});return;}
     const ref=app.getAllGroups?.()||app.getGroups(),dataChanged=groupsRef!==ref;groupsRef=ref;
     active=view;host.hidden=false;
-    if(changed){identity=key;revision++;selected='';if(view==='days'&&(reportSource!==app.getPublishes()||reportScope!==(win.ClustrWatchlist?.scopeKey?.()||'')))reportRows=null;host.innerHTML=`<div class="simple-shell"><header class="simple-hero"><h1>${view==='events'?'News':'Reports'}</h1><p>${publish?esc(new Date(publish.created_at).toLocaleString('en',{timeZone:'America/New_York',dateStyle:'medium',timeStyle:'short'}))+' ET':''}</p></header>${view==='events'?'<div class="simple-news-toolbar"><div class="simple-layout-switch" role="group" aria-label="News layout"><button type="button" data-simple-layout="grid">Briefing grid</button><button type="button" data-simple-layout="desk">Connection desk</button></div><label>Sort <select data-simple-sort aria-label="Sort news clusters"><option value="impact">Impact</option><option value="positive">Positive</option><option value="negative">Negative</option><option value="size">Size</option></select></label></div><div class="simple-cluster-buttons" data-simple-clusters role="group" aria-label="Choose news cluster"></div><div class="simple-briefing-grid" data-simple-grid></div><section class="simple-news-desk" data-simple-desk hidden></section>':'<div class="simple-calendar-toolbar"><label>Month <select data-simple-month aria-label="Report month"></select></label></div><div class="simple-report-calendar"><section data-simple-calendar></section><section data-simple-day-reports></section></div>'}</div>`;
+    if(changed){clearDeskAnalysis();identity=key;revision++;selected='';if(view==='days'&&(reportSource!==app.getPublishes()||reportScope!==(win.ClustrWatchlist?.scopeKey?.()||'')))reportRows=null;host.innerHTML=`<div class="simple-shell"><header class="simple-hero"><h1>${view==='events'?'News':'Reports'}</h1><p>${publish?esc(new Date(publish.created_at).toLocaleString('en',{timeZone:'America/New_York',dateStyle:'medium',timeStyle:'short'}))+' ET':''}</p></header>${view==='events'?'<div class="simple-news-toolbar"><div class="simple-layout-switch" role="group" aria-label="News layout"><button type="button" data-simple-layout="grid">Briefing grid</button><button type="button" data-simple-layout="desk">Connection desk</button></div><label>Sort <select data-simple-sort aria-label="Sort news clusters"><option value="impact">Impact</option><option value="positive">Positive</option><option value="negative">Negative</option><option value="size">Size</option></select></label></div><div class="simple-cluster-buttons" data-simple-clusters role="group" aria-label="Choose news cluster"></div><div class="simple-briefing-grid" data-simple-grid></div><section class="simple-news-desk" data-simple-desk hidden></section>':'<div class="simple-calendar-toolbar"><label>Month <select data-simple-month aria-label="Report month"></select></label></div><div class="simple-report-calendar"><section data-simple-calendar></section><section data-simple-day-reports></section></div>'}</div>`;
       host.onchange=event=>{if(event.target.matches('[data-simple-sort]')){newsSort=event.target.value;revision++;drawNews(host);}if(event.target.matches('[data-simple-connections]')){stockConnection=event.target.value;revision++;drawNews(host);}if(event.target.matches('[data-simple-month]')){month=event.target.value;selectedDay='';drawCalendar(host);}};
       host.onclick=async event=>{const button=event.target.closest('button');if(!button)return;
         if(button.hasAttribute('data-simple-select-cluster')){selected=button.dataset.simpleSelectCluster;revision++;drawNews(host);}
@@ -154,19 +163,22 @@
         if(button.dataset.simpleDay){selectedDay=button.dataset.simpleDay;drawCalendar(host);if(win.matchMedia?.('(max-width: 768px)').matches)host.querySelector('[data-simple-day-reports]').scrollIntoView({behavior:'smooth',block:'start'});}
         if(button.hasAttribute('data-simple-report')){button.disabled=true;try{await app.stepPublish(Number(button.dataset.simpleReport)-app.getPublishIndex());app.showView('events');}catch{button.disabled=false;setReportError('Could not open this report. Choose another day or reopen Reports to retry.');}}
         if(button.dataset.simpleCompany){app.showView('stocks');win.ClustrStocks?.selectSymbol?.(button.dataset.simpleCompany);}
+        if(button.hasAttribute('data-simple-research'))host.querySelector('.desk-advanced-analysis')?.scrollIntoView({behavior:'smooth',block:'start'});
         if(button.hasAttribute('data-simple-network'))app.showView('connections',{focusLabel:selected});
       };
     }
     if(view==='events'){
+      const detailChanged=deskAdvanced!==advanced;deskAdvanced=advanced;
       const layoutChanged=deskOnly&&layout!=='desk';
       if(deskOnly)layout='desk';
       const layoutSwitch=host.querySelector('.simple-layout-switch');
       if(layoutSwitch)layoutSwitch.hidden=deskOnly;
-      if(changed||dataChanged||layoutChanged)drawNews(host);
+      if(changed||dataChanged||layoutChanged||detailChanged)drawNews(host);
     }else drawCalendar(host);
   }
-  function hide(){revision++;active='';identity='';const host=win.document.getElementById('simpleView');if(host)host.hidden=true;restoreWorld();}
+  function hide(){clearDeskAnalysis();revision++;active='';identity='';const host=win.document.getElementById('simpleView');if(host)host.hidden=true;restoreWorld();}
   function setReports(rows){reportError='';reportRows=rows;reportSource=win.ClustrApp?.getPublishes();reportScope=win.ClustrWatchlist?.scopeKey?.()||'';if(active==='days'){const host=win.document.getElementById('simpleView');if(host&&!host.hidden)drawCalendar(host);}}
   function setReportError(message){reportError=message;const host=win.document.getElementById('simpleView');if(active==='days'&&host&&!host.hidden)drawCalendar(host);}
-  return {render,hide,prepareWeekly,setReports,setReportError,historyPoints,chart,calendarDays,etDay,basketInterval};
+  function selectCluster(name){const host=win.document.getElementById('simpleView');if(active!=='events'||!reportGroups().some(group=>group.name===name))return false;selected=name;revision++;drawNews(host);host.querySelector('[data-simple-desk]')?.scrollIntoView({behavior:'smooth',block:'start'});return true;}
+  return {render,hide,selectCluster,prepareWeekly,setReports,setReportError,historyPoints,chart,calendarDays,etDay,basketInterval};
 });

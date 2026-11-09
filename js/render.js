@@ -17,7 +17,7 @@
     return day(quote.asOf) === day(now) ? 'Today' : 'Last session';
   }
 
-  async function refreshNewsQuotes(root = document.getElementById('eventsList')) {
+  async function refreshNewsQuotes(root = document.querySelector('#simpleView:not([hidden]) [data-desk-analysis] .cluster-card') || document.getElementById('eventsList')) {
     if (!root || document.hidden || root.closest?.('#eventsView')?.classList.contains('hidden') || !window.ClustrQuotes?.getLatestQuotes) return;
     const buttons = [...root.querySelectorAll('[data-news-quote]:not(:disabled)')];
     for (const market of ['US', 'NO']) {
@@ -1786,6 +1786,17 @@
     return el;
   }
 
+  function renderClusterAnalysis(target, group, currentGroups) {
+    if (!target) return;
+    target.querySelectorAll('.stance-history-canvas').forEach(destroyStanceChart);
+    target.replaceChildren();
+    if (!group) return;
+    const card = buildGroupElement(group, 'desk-analysis', currentGroups);
+    target.append(card);
+    card.classList.add('is-visible');
+    card.querySelector('.cluster-expand').click();
+  }
+
   /**
    * @param {Array<Object>} groups
    * @param {Array<Object>} currentGroups
@@ -1961,6 +1972,7 @@
     collectMovers,
     renderMoversStrip,
     renderEvents,
+    renderClusterAnalysis,
     renderCountryPanel,
     highlightCountryCard,
     renderCountryArticles,
