@@ -7,7 +7,7 @@ global.window = {};
 require('../js/util.js');
 const util = window.ClustrUtil;
 
-test('Advanced opens the full dashboard analysis while Simple keeps it collapsed', async () => {
+test('Dashboard keeps panels mounted for the selected Simple grid and Advanced analysis', async () => {
   const publish = { id: 99, market: 'US', created_at: '2026-11-09T12:00:00Z' };
   window.ClustrApi = { fetchAllPublishes: async () => [publish], loadGroupsForPublish: async () => [{ name: 'Energy', stance_score: 5 }] };
   window.ClustrAtlas = atlas;
@@ -15,7 +15,7 @@ test('Advanced opens the full dashboard analysis while Simple keeps it collapsed
   global.document = { documentElement: { dataset: { viewMode: 'simple' } } };
   try {
     invalidate(); await render(root, () => {});
-    assert.match(root.innerHTML, /<details class="dash-more dash-panel--wide"><summary>/);
+    assert.match(root.innerHTML, /<details class="dash-more dash-panel--wide" open><summary>/);
     document.documentElement.dataset.viewMode = 'advanced';
     await render(root, () => {});
     assert.match(root.innerHTML, /<details class="dash-more dash-panel--wide" open><summary>/);

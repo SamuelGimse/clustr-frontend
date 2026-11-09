@@ -53,8 +53,8 @@
     const focus=settings===true || !!context.focusControls;
     if([1,2,3].includes(context.days))periodDays=context.days;
     const request=++revision,days=periodDays;
-    const change=value=>{periodDays=Number(value);mount(groups,publish,{focusControls:true,focusId:currentFocus?.id,focusLabel:currentFocus?.type==='cluster'?currentFocus.label:null});};
-    const options={days,onDays:change,focusId:context.focusId,focusLabel:context.focusLabel,scope:'Loading saved reports…'};
+    const change=value=>{periodDays=Number(value);mount(groups,publish,{focusControls:true,query:document.getElementById('connectionsView')?.querySelector('.cx-tools input')?.value||'',focusId:currentFocus?.id,focusLabel:currentFocus?.type==='cluster'?currentFocus.label:null});};
+    const options={days,onDays:change,query:context.query,focusId:context.focusId,focusLabel:context.focusLabel,scope:'Loading saved reports…'};
     if(!Array.isArray(context.windowGroups))render(groups,publish,options);
     if(focus)document.getElementById('connectionsView')?.querySelector('[aria-label="Network time range"]')?.focus();
     try {
@@ -155,7 +155,7 @@
     const nav = document.getElementById('navConnections');
     nav?.classList.add('is-active'); nav?.setAttribute('aria-current','page');
     const graph = buildGraph(groups,publish?.market), positions = layout(graph.nodes);
-    let selected = null, query = '', type='', zoom = 1; currentFocus=null;
+    let selected = null, query = options.query||'', type='', zoom = 1; currentFocus=null;
     const trail=[];
     host.innerHTML = `<header class="cx-hero"><div><p class="cx-eyebrow">CLUSTR MARKET / CONNECTIONS · ${escape(publish?.market || 'REPORT')}</p><h1>Network</h1><p>Explore the links between events, companies and source stories.</p></div><div class="cx-counts">${['cluster','stock','news'].map(type=>`<div><b>${graph.nodes.filter(n=>n.type===type).length}</b><span>${type==='news'?'stories':type+'s'}</span></div>`).join('')}</div></header>
       <div class="cx-explorer"><div class="cx-tools"><label>Find a connection<input type="search" placeholder="Search connections…" aria-label="Search connections"></label><div><button type="button" data-action="out" aria-label="Zoom out">−</button><button type="button" data-action="in" aria-label="Zoom in">+</button><button type="button" data-action="reset">Reset view</button></div></div>
@@ -163,6 +163,7 @@
       <div class="cx-workspace"><div class="cx-map"><div class="cx-map-caption">01 / THE NETWORK <span>Tap any node to follow its connections</span><button type="button" data-action="fullscreen" aria-label="Enter fullscreen network" aria-pressed="false">Fullscreen ⛶</button></div><div class="cx-scroll"><svg class="cx-svg" viewBox="0 0 1200 800" aria-label="Cluster, stock and news network"></svg></div><div class="cx-legend"><span>● Cluster</span><span>◆ Stock</span><span>○ News</span><span>┄ Default exposure</span></div></div><aside class="cx-inspector" aria-label="Selected connection details"><div class="cx-inspector-body"></div></aside></div>
       <section class="cx-picker cx-watch-picker"><div class="cx-picker-head"><h2 class="cx-watch-title">Watchlist</h2><input type="search" data-watchlist-search aria-label="Search watchlist stocks" placeholder="Search ticker or company…" autocomplete="off"></div><div class="cx-stock-list cx-picker-list" role="group" aria-label="Choose a watchlist stock"></div></section></div>`;
     const svg=host.querySelector('svg'), inspector=host.querySelector('.cx-inspector-body'), index=host.querySelector('.cx-clusters');
+    host.querySelector('.cx-tools input').value=query;
     const map=host.querySelector('.cx-explorer'),fullscreenButton=host.querySelector('[data-action="fullscreen"]');
     const isFullscreen=()=>document.fullscreenElement===map||map.classList.contains('cx-fullscreen');
     function syncFullscreen(){const active=isFullscreen();fullscreenButton.textContent=active?'Exit fullscreen ⛶':'Fullscreen ⛶';fullscreenButton.setAttribute('aria-label',active?'Exit fullscreen network':'Enter fullscreen network');fullscreenButton.setAttribute('aria-pressed',String(active));}

@@ -18,7 +18,7 @@ test('Simple and Advanced follow data pages, preserve mode, and leave account pa
   assert.equal(buttons[1]['aria-pressed'], 'true');
   vm.runInContext("viewMode = 'simple'; view = 'weekly'; updateViewMode()", context);
   assert.equal(document.documentElement.dataset.viewMode, 'simple');
-  assert.equal(more.open, false);
+  assert.equal(more.open, true);
   assert.match(hint.textContent, /week/);
   vm.runInContext("view = 'account'; updateViewMode()", context);
   assert.equal(bar.hidden, true);

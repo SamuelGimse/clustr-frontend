@@ -15,6 +15,7 @@
   let root, items = [], quotes = null, selected = '', mode = 'clusters', query = '';
   let generation = 0, active = false, listScroll = 0;
   let reportData=[];
+  let requestedSymbol = '';
 
   function usableStock(raw) {
     const stock = typeof raw === 'string' ? { symbol: raw } : raw;
@@ -229,10 +230,13 @@
       if (request !== generation || !active) return;
       reportData=result.data;
       items = buildScopedIndex(reportData,window.ClustrWatchlist);
+      if (requestedSymbol) { const match = items.find(item => item.symbol === requestedSymbol); if (match) selected = match.key; }
       if (!filteredItems().some(item => item.key === selected)) { selected = filteredItems()[0]?.key || ''; root.dataset.detailOpen = 'false'; }
       root.querySelector('#stocksRange').textContent = `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} · rolling 7 days · ${result.data.length}/${result.total} publishes`;
       status.textContent = result.failures.length ? result.data.length ? `Some data could not load (${result.failures.length} publishes). Showing available links. Refresh to retry.` : 'No publish details could load. Refresh to retry.' : items.length ? '' : 'No stocks are available in publishes from the last seven days.';
       renderGrid(); renderDetail();
+      if (requestedSymbol && items.some(item => item.symbol === requestedSymbol)) showStock(selected);
+      requestedSymbol = '';
       let latest = {};
       try { latest = await window.ClustrQuotes?.getLatestQuotes?.(items.map(item => item.symbol), 'US') || {}; }
       catch (error) { console.warn('Stock quotes:', error.message); }
@@ -283,5 +287,13 @@
     if (!filteredItems().some(item => item.key === selected)) { selected = filteredItems()[0]?.key || ''; root.dataset.detailOpen = 'false'; }
     renderGrid(); renderDetail();
   }
-  window.ClustrStocks = { mount, leave, refreshScope };
+  function selectSymbol(symbol) {
+    requestedSymbol = String(symbol || '').toUpperCase();
+    query = '';
+    const search = root?.querySelector('#stocksSearch');
+    if (search) { search.value = ''; renderGrid(); }
+    const item = items.find(item => item.symbol === requestedSymbol);
+    if (active && item) showStock(item.key);
+  }
+  window.ClustrStocks = { mount, leave, refreshScope, selectSymbol };
 })();

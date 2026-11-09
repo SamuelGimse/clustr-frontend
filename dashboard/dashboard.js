@@ -267,9 +267,10 @@
       ${watchlistPanels(summary.watchlist,esc)}
       <div class="dash-metrics">${metric('Clusters in latest report', summary.themes.length, `${latestDay.positive} positive · ${latestDay.negative} negative`)}${metric('Distinct stories', summary.stories, `${summary.rated} rated on −10 to +10`)}${metric('Stocks connected', summary.stocks.length, 'Linked to latest clusters')}${metric('News sources', summary.sourceCount, 'In the latest report')}</div>
       <div class="dash-grid">${trendPanel(summary, esc)}
-      <section class="dash-panel"><div class="dash-panel-head"><div><p class="dash-kicker">LATEST REPORT</p><h2>Strongest cluster impact</h2></div><button type="button" data-dash-nav="events">All events →</button></div><div class="dash-list">${summary.rankedThemes.length ? summary.rankedThemes.map(clusterRow).join('') : '<p class="dash-footnote">No scored clusters in this report.</p>'}</div></section>
-      <section class="dash-panel"><div class="dash-panel-head"><div><p class="dash-kicker">STOCK LINKS</p><h2>Stocks in the story</h2></div><button type="button" data-dash-nav="stocks">Open stocks →</button></div><div class="dash-list">${summary.stocks.length ? summary.stocks.slice(0, 7).map(stock => `<div class="dash-list-row"><span class="dash-ticker">${esc(stock.symbol)}</span><div><strong>${esc(stock.company)}</strong><small>${stock.clusters} linked clusters</small></div><span class="dash-score dash-score--${tone(stock.score)}">${scoreText(stock.score)}</span></div>`).join('') : '<p class="dash-footnote">No resolved stock links in this report.</p>'}</div><p class="dash-footnote">Scores combine linked cluster news. They are not stock returns.</p></section>
-      <details class="dash-more dash-panel--wide"${typeof document !== 'undefined' && document.documentElement.dataset.viewMode === 'advanced' ? ' open' : ''}><summary>Explore report analysis <span>News balance · coverage · sources · score spread · shifts</span></summary><div class="dash-grid"><section class="dash-panel"><div class="dash-panel-head"><div><p class="dash-kicker">DIRECTION</p><h2>News balance</h2></div><span>Latest report per US market day · up to 14 days</span></div><div class="dash-balance">${summary.days.map(day => {
+      <section class="dash-panel dash-simple-balance"><h2>News balance</h2><div class="dash-balance-ring" role="img" aria-label="${latestDay.positive} positive and ${latestDay.negative} negative clusters" style="--positive:${latestDay.positive / Math.max(1, latestDay.positive + latestDay.negative) * 100}%"><strong>${latestDay.positive} / ${latestDay.positive + latestDay.negative}</strong></div><p>${latestDay.positive} positive · ${latestDay.negative} negative · ${latestDay.neutral} neutral</p></section>
+      <section class="dash-panel dash-strongest"><div class="dash-panel-head"><div><p class="dash-kicker">LATEST REPORT</p><h2>Strongest cluster impact</h2></div><button type="button" data-dash-nav="events">All events →</button></div><div class="dash-list">${summary.rankedThemes.length ? summary.rankedThemes.map(clusterRow).join('') : '<p class="dash-footnote">No scored clusters in this report.</p>'}</div></section>
+      <section class="dash-panel dash-stock-links"><div class="dash-panel-head"><div><p class="dash-kicker">STOCK LINKS</p><h2>Stocks in the story</h2></div><button type="button" data-dash-nav="stocks">Open stocks →</button></div><div class="dash-list">${summary.stocks.length ? summary.stocks.slice(0, 7).map(stock => `<div class="dash-list-row"><span class="dash-ticker">${esc(stock.symbol)}</span><div><strong>${esc(stock.company)}</strong><small>${stock.clusters} linked clusters</small></div><span class="dash-score dash-score--${tone(stock.score)}">${scoreText(stock.score)}</span></div>`).join('') : '<p class="dash-footnote">No resolved stock links in this report.</p>'}</div><p class="dash-footnote">Scores combine linked cluster news. They are not stock returns.</p></section>
+      <details class="dash-more dash-panel--wide" open><summary>Explore report analysis <span>News balance · coverage · sources · score spread · shifts</span></summary><div class="dash-grid"><section class="dash-panel"><div class="dash-panel-head"><div><p class="dash-kicker">DIRECTION</p><h2>News balance</h2></div><span>Latest report per US market day · up to 14 days</span></div><div class="dash-balance">${summary.days.map(day => {
         const total = day.positive + day.negative;
         const positive = day.positive / maxDaily * 100;
         const negative = day.negative / maxDaily * 100;
@@ -278,7 +279,18 @@
       <section class="dash-panel"><div class="dash-panel-head"><div><p class="dash-kicker">COVERAGE TREND</p><h2>Stories and sources over time</h2></div></div>${coverageChart(summary.days, esc)}<p class="dash-footnote">Counts use distinct stories in each daily latest report. Both bars share a count scale.</p></section>
       <section class="dash-panel"><div class="dash-panel-head"><div><p class="dash-kicker">COVERAGE</p><h2>Where the stories came from</h2></div></div><div class="dash-sources">${summary.sources.length ? summary.sources.map(([source, count]) => `<div><span>${esc(source)}</span><strong>${count}</strong></div>`).join('') : '<p class="dash-footnote">No source labels in this report.</p>'}</div><p class="dash-footnote">Distinct stories, counted once per source in the latest report.</p></section>
       <section class="dash-panel"><div class="dash-panel-head"><div><p class="dash-kicker">SCORE SPREAD</p><h2>Latest impact distribution</h2></div></div>${distributionChart(summary.distribution, esc)}<p class="dash-footnote">Number of latest-report clusters in each news-impact band.</p></section>
-      <section class="dash-panel dash-panel--wide"><div class="dash-panel-head"><div><p class="dash-kicker">CHANGE</p><h2>Largest shifts since prior appearance</h2></div><button type="button" data-dash-nav="atlas">Explore history →</button></div><div class="dash-shifts">${summary.shifts.length ? summary.shifts.map(clusterRow).join('') : '<p class="dash-footnote">More report history is needed to compare cluster scores.</p>'}</div></section></div></details></div></div>`;
+      <section class="dash-panel dash-panel--wide dash-shift-panel"><div class="dash-panel-head"><div><p class="dash-kicker">CHANGE</p><h2>Largest shifts since prior appearance</h2></div><button type="button" data-dash-nav="atlas">Explore history →</button></div><div class="dash-shifts">${summary.shifts.length ? summary.shifts.map(clusterRow).join('') : '<p class="dash-footnote">More report history is needed to compare cluster scores.</p>'}</div></section></div></details></div></div>`;
+  }
+
+  function repaintTrend(root, summary) {
+    const current = root.querySelector('.dash-trend-panel');
+    if (typeof document === 'undefined' || !current?.querySelector) { paint(root, summary); return; }
+    const next = document.createElement('div');
+    next.innerHTML = trendPanel(summary, window.ClustrUtil.escapeHtml);
+    for (const selector of ['.dash-trend-layout', '.dash-panel-head > div:first-child']) {
+      const old = current.querySelector(selector), replacement = next.querySelector(selector);
+      if (old && replacement) old.replaceWith(replacement);
+    }
   }
 
   function scopedSummary() {
@@ -337,13 +349,13 @@
       if (!selector && !showFits) return;
       if (selector) trendCluster = selector.value;
       else showAllFits = showFits.checked;
-      paint(root, scopedSummary());
+      repaintTrend(root, scopedSummary());
       root.querySelector(selector ? '[data-dash-cluster]' : '[data-dash-show-fits]')?.focus({ preventScroll: true });
     };
     root.onclick = event => {
       if(event.target.closest('[data-dash-cumulative]')){
         cumulativeImpact=!cumulativeImpact;
-        paint(root,scopedSummary());
+        repaintTrend(root,scopedSummary());
         root.querySelector('[data-dash-cumulative]')?.focus({preventScroll:true});
         return;
       }
