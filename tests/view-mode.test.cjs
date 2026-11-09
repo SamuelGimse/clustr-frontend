@@ -10,7 +10,7 @@ test('Simple and Advanced follow data pages, preserve mode, and leave account pa
   const buttons = ['simple', 'advanced'].map(mode => ({ dataset: { viewMode: mode }, setAttribute(name, value) { this[name] = value; } }));
   const bar = { hidden: true }, hint = { textContent: '' }, more = { open: false };
   const document = { documentElement: { dataset: {} }, getElementById: id => id === 'viewModeBar' ? bar : hint, querySelectorAll: () => buttons };
-  const context = { document, localStorage: { getItem: () => 'advanced' }, view: 'dashboard', authState: { user: { id: 1 } }, dashboardView: { querySelector: () => more } };
+  const context = { document, window: {}, hasProAccess: () => true, localStorage: { getItem: () => 'advanced' }, view: 'dashboard', authState: { user: { id: 1 } }, dashboardView: { querySelector: () => more } };
   vm.createContext(context);
   vm.runInContext(controller + '\nupdateViewMode()', context);
   assert.equal(bar.hidden, false);

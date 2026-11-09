@@ -32,15 +32,15 @@
   const viewModeBar = document.getElementById('viewModeBar');
   const viewModeHint = document.getElementById('viewModeHint');
   const modeHints = {
-    dashboard: 'A quick read of this report. Advanced adds the full analysis.',
-    events: 'Cluster scores, key stories and linked stocks. Advanced adds charts and context.',
-    stocks: 'Prices and linked clusters. Advanced adds connection filters and context.',
-    connections: 'Browse linked clusters, stocks and stories. Advanced adds the full graph.',
-    map: 'Explore the six busiest locations and their stories. Advanced shows every location.',
-    weekly: 'The week’s main trends. Advanced shows every cluster.',
-    atlas: 'Follow scores and prices across the latest three reports. Advanced shows the full history.',
-    days: 'Browse the latest 12 reports. Advanced shows the complete archive.',
-    watchlist: 'Your saved stocks and a quick add. Advanced helps discover more.'
+    dashboard: 'Your report in three numbers and one clear trend.',
+    events: 'Important themes and the stories behind them.',
+    stocks: 'Latest price, session change and the news behind it.',
+    connections: 'One theme, its companies and the source stories.',
+    map: 'Where coverage is gathering, with stories by country.',
+    weekly: 'A clean view of daily news impact across the week.',
+    atlas: 'Follow a theme through its daily report history.',
+    days: 'Choose a report to revisit its news.',
+    watchlist: 'Your companies, latest price and linked news.'
   };
   function updateViewMode() {
     document.documentElement.dataset.viewMode = viewMode;
@@ -50,6 +50,9 @@
     document.querySelectorAll('[data-view-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.viewMode === viewMode)));
     const more = dashboardView?.querySelector('.dash-more');
     if (more) more.open = viewMode === 'advanced';
+    const allowed = authState.user && dataViews.has(view) && (!['stocks', 'weekly', 'atlas', 'watchlist'].includes(view) || hasProAccess());
+    if (viewMode === 'simple' && allowed) window.ClustrSimple?.render(view);
+    else window.ClustrSimple?.hide();
   }
 
   const meta = document.getElementById('meta');
@@ -935,6 +938,7 @@
     }
 
     if (view === 'days') renderReportDays();
+    updateViewMode();
   }
 
   async function refreshPublishes() {
@@ -1305,6 +1309,7 @@
   }
 
   window.addEventListener('clustr:watchlist-change', event => {
+    if (viewMode === 'simple') updateViewMode();
     if (!publishes.length || (!event.detail.scopeChanged && !window.ClustrWatchlist?.isFiltered())) return;
     if (view === 'stocks') { window.ClustrStocks?.refreshScope(); return; }
     const target = view;
