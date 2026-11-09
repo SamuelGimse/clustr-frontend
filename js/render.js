@@ -278,14 +278,34 @@
     return { slope, delta: rows.at(-1)[1] - rows[0][1], count: rows.length };
   }
 
+  function weeklyTrendPoints(history, asOf) {
+    const valid = history.filter(row => Number.isFinite(Date.parse(row.date)));
+    const cutoff = Date.parse(asOf) || Math.max(...valid.map(row => Date.parse(row.date)));
+    if (!Number.isFinite(cutoff)) return [];
+    const dayNumber = date => Date.parse(window.ClustrSimple.etDay(date)) / 86400000;
+    const end = dayNumber(cutoff), daily = new Map();
+    for (const row of valid.slice().sort((a, b) => Date.parse(a.date) - Date.parse(b.date))) {
+      const day = dayNumber(row.date);
+      if (day >= end - 6 && day <= end && Date.parse(row.date) <= cutoff) daily.set(day, row);
+    }
+    return Array.from({ length: 7 }, (_, index) => {
+      const day = end - 6 + index, row = daily.get(day);
+      return { date: row?.date || new Date(day * 86400000 + 12 * 3600000).toISOString(), value: row ? historyRowScore(row) : null };
+    });
+  }
+
   function weeklyVelocityHtml(group) {
     const app = window.ClustrApp;
     const publish = app?.getPublishes?.()[app?.getPublishIndex?.() ?? 0];
+    const asOf = group.__historyScope?.asOf || publish?.created_at;
     const history = stanceHistoryForCluster(group.name, group.__historyScope);
-    const velocity = weeklyVelocity(history, publish?.created_at);
+    if (!window.ClustrSimple) return '';
+    const points = weeklyTrendPoints(history, asOf);
+    if (!points.length || !points.some(point => point.value != null)) return '<p class="cluster-trend-empty">No scored history yet.</p>';
+    const velocity = weeklyVelocity(points.map(point => ({ date: point.date, stanceScore: point.value })), asOf);
     const direction = !velocity || Math.abs(velocity.slope) < 0.05 ? 'flat' : velocity.slope > 0 ? 'up' : 'down';
-    const velocityHtml = `<div class="weekly-velocity weekly-velocity--${direction}" title="Linear slope of the latest numeric score per US market calendar day over the last 7 days. Requires 3 observed days. Descriptive, not a forecast."><span>7-day velocity</span>${velocity ? `<strong>${direction === 'up' ? '↗' : direction === 'down' ? '↘' : '→'} ${velocity.slope >= 0 ? '+' : ''}${velocity.slope.toFixed(2)} pts/day</strong><span>Δ ${velocity.delta >= 0 ? '+' : ''}${velocity.delta.toFixed(1)} pts · ${velocity.count}/7 days</span>` : '<span>Needs 3 scored days</span>'}</div>`;
-    return velocityHtml;
+    const date = value => U().escapeHtml(new Date(value).toLocaleDateString('en', { timeZone: 'America/New_York', month: 'short', day: 'numeric' }));
+    return `<div class="cluster-trend weekly-velocity--${direction}"><div class="cluster-trend-head"><span>7-day impact</span>${velocity ? `<strong title="Daily score slope; descriptive, not a forecast">${velocity.slope >= 0 ? '+' : ''}${velocity.slope.toFixed(2)} pts/day</strong>` : ''}</div>${window.ClustrSimple.chart(points, group.name, true)}<div class="cluster-trend-dates"><span>${date(points[0].date)}</span><span>${date(points.at(-1).date)}</span></div></div>`;
   }
 
   /**
