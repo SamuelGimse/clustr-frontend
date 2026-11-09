@@ -193,7 +193,7 @@ html[data-view-mode=simple] :is(#dashboardView,#stocksView,#atlasView,#connectio
 #mapView .simple-world-rail .country-panel{display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:max-content;flex-wrap:nowrap;width:100%;min-width:0;box-sizing:border-box;margin:0;padding:0;overflow-x:hidden;overflow-y:auto;max-height:min(470px,55vh);overscroll-behavior:contain}
 #mapView .simple-world-rail .country-card{display:block;flex:none;width:100%;min-width:0;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere}
 #mapView .country-card[hidden]{display:none!important}
-@media(max-width:768px){#mapView .simple-world-rail{top:0;z-index:5;background:transparent}#mapView .simple-world-rail>label{top:0}#mapView .simple-world-rail .country-panel{max-height:170px}}
+@media(max-width:768px){#mapView .simple-world-rail{position:static;z-index:auto;background:transparent}#mapView .simple-world-rail>label{position:static}#mapView .simple-world-rail .country-panel{max-height:170px}}
 
 .simple-cluster-buttons{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;margin-bottom:8px}
 .simple-cluster-buttons button{display:flex;flex:none;align-items:center;gap:9px;border:1px solid var(--border);border-radius:8px;padding:9px 12px;background:none;color:var(--text);font:inherit;font-size:12px;cursor:pointer}
