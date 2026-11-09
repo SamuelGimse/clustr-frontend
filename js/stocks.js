@@ -2,6 +2,7 @@
 (function () {
   const U = () => window.ClustrUtil;
   const DAY = 86400000;
+  const quoteTime = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
   const LAYERS = {
     mentioned: ['mentioned_stocks'],
     close: ['close_stocks', 'direct_stocks'],
@@ -132,8 +133,8 @@
     const valid = quote && Number.isFinite(quote.price) && quote.price > 0 && Number.isFinite(Date.parse(quote.asOf));
     const price = loading ? 'Loading price…' : valid ? `USD ${U().formatMoney(quote.price)}` : 'Price unavailable';
     const change = valid && Number.isFinite(quote.changePercent) ? U().formatPct(quote.changePercent) : '';
-    const asOf = valid ? `Quote ${new Date(quote.asOf).toLocaleString()} · may be delayed` : 'No latest quote available';
-    return `<span class="stocks-quote" title="${U().escapeHtml(asOf)}"><span>Latest quote</span><strong>${U().escapeHtml(price)}</strong>${change ? `<small class="${U().toneClass(quote.changePercent)}">${change} session</small>` : ''}${detail && valid ? `<small>${U().escapeHtml(asOf)}</small>` : ''}</span>`;
+    const asOf = valid ? `As of ${quoteTime.format(new Date(quote.asOf))}` : '';
+    return `<span class="stocks-quote" title="${U().escapeHtml(asOf ? asOf + ' · may be delayed' : 'No latest quote available')}"><span>Last available price</span><strong>${U().escapeHtml(price)}</strong>${change ? `<small class="${U().toneClass(quote.changePercent)}">${change} session</small>` : ''}${asOf ? `<small>${U().escapeHtml(asOf)}${detail ? ' · may be delayed' : ''}</small>` : ''}</span>`;
   }
 
   function renderGrid() {

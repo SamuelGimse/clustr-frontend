@@ -40,6 +40,7 @@ assert.match(clusterHtml({ ...articleLink, articles: new Map([['bad', { title: '
 assert(!clusterHtml({ ...articleLink, articles: new Map([['bad', { title: 'Bad', link: 'javascript:alert(1)' }]]) }).includes('href="javascript:'));
 assert.match(quoteHtml({ price: 123.45, changePercent: -1.2, asOf: '2026-11-06T21:00:00Z' }, false, true), /USD 123\.45/);
 assert.match(quoteHtml({ price: 123.45, changePercent: -1.2, asOf: '2026-11-06T21:00:00Z' }, false), /-1\.20% session/);
+assert.match(quoteHtml({ price: 123.45, asOf: '2026-11-06T21:00:00Z' }, false), /Last available price[\s\S]*As of Nov 6, 4:00 PM EST/);
 assert.match(quoteHtml({ price: 123.45, asOf: null }, false), /Price unavailable/);
 assert.match(quoteHtml(null, true), /Loading price/);
 
