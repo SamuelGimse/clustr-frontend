@@ -222,12 +222,32 @@ html[data-view-mode=simple] #stocksView :is(.stocks-selection-count,.stocks-tile
 html[data-view-mode=simple] #stocksView .stocks-tile{min-height:68px}
 html[data-view-mode=simple] #stocksView .stocks-tile .stocks-quote{grid-row:1/3}
 html[data-view-mode=simple] #stocksView .stocks-clusters{margin-top:14px}
-.desk-advanced-analysis{margin-top:20px;padding-top:20px;border-top:1px solid var(--border);min-width:0}
-.desk-advanced-analysis>h3{margin:0 0 14px;font-size:17px}
-.desk-advanced-analysis .cluster-card{margin:0;width:100%;max-width:none}
+.simple-news-desk[data-detail=advanced] .simple-desk-columns{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,.85fr)}
+.simple-news-desk[data-detail=advanced] .simple-desk-cluster{display:flex;flex-direction:column;height:clamp(340px,60dvh,680px);min-height:0}
+.simple-news-desk[data-detail=advanced] .simple-center-tabs{flex:none;flex-wrap:wrap;gap:0 14px}
+.simple-news-desk[data-detail=advanced] .simple-desk-cluster>[role=tabpanel]{min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;flex:1}
+.desk-center-analysis .cluster-card{margin:0!important;padding:0!important;width:100%;max-width:none;border:0!important;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;transform:none!important}
+.desk-center-analysis :is(.cluster-layout,.cluster-main,.cluster-body,.cluster-overview,.cluster-details,.stock-analysis){display:block!important;min-width:0;margin:0;padding:0;border:0;cursor:default}
+.desk-center-analysis :is(.cluster-top,.cluster-summary,.cluster-stance-preview,.cluster-context,.stock-panel,.stock-sidebar,.chart-folder,.toggle-articles,.stance-aside,.articles-panel,.desk-market-empty){display:none!important}
+.desk-center-analysis[data-analysis-tab=context] :is(.cluster-top,.cluster-stance-preview,.cluster-context){display:block!important}
+.desk-center-analysis[data-analysis-tab=context] :is(.cluster-title,.cluster-score,.cluster-market-signals){display:none!important}
+.desk-center-analysis[data-analysis-tab=context] .stance-mount{margin-bottom:16px}
+.desk-center-analysis[data-analysis-tab=market] :is(.cluster-context,.desk-market-empty){display:block!important}
+.desk-center-analysis[data-analysis-tab=market] .cluster-context>:not(.cluster-market-signals){display:none!important}
+.desk-center-analysis[data-analysis-tab=stocks] :is(.stock-panel,.stock-sidebar),.desk-center-analysis[data-analysis-tab=charts] :is(.stock-panel,.chart-folder),.desk-center-analysis[data-analysis-tab=sources] .articles-panel{display:block!important}
+.desk-center-analysis .stock-panel-head{grid-template-columns:minmax(0,1fr);gap:8px}
+.desk-center-analysis :is(.stock-panel,.stock-analysis){margin-bottom:14px}
+.desk-center-analysis .chart-folder-tabs{flex-wrap:wrap}
+.desk-center-analysis .chart-tab{flex:1;padding:9px 6px;white-space:normal}
+.desk-center-analysis :is(.article-grid,.cluster-market-signals-list,.stance-stat-grid){grid-template-columns:minmax(0,1fr)}
+.desk-center-analysis .article-card{min-width:0;padding:12px}
+.desk-center-analysis .cluster-market-signal{min-width:0}
+.desk-center-analysis .stock-sidebar .price-bar{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px}
+.desk-center-analysis .stock-sidebar :is(.price-cell,.technical-metrics>div){grid-template-rows:auto auto auto}
+@media(max-width:768px){.simple-news-desk[data-detail=advanced] .simple-desk-columns{display:block}.simple-news-desk[data-detail=advanced][data-pane=cluster] .simple-desk-cluster{display:flex!important;height:72dvh}}
 html[data-active-view=events][data-news-view=feed][data-view-mode=simple] #eventsView :is(.cluster-news-ratings,.cluster-context,.group-since-publish,.technical-metrics,.related-under-chart,.stance-chart-controls,.stance-stat-grid){display:none!important}
 html[data-active-view=events][data-news-view=feed][data-view-mode=simple] #eventsView .stock-sidebar .price-bar{grid-template-columns:repeat(3,minmax(0,1fr))}
 #newsViewSwitch[hidden]{display:none!important}
 .view-mode-bar:has(#newsViewSwitch:not([hidden])){flex-wrap:wrap}
 .view-mode-bar:has(#newsViewSwitch:not([hidden])) .view-mode-hint{flex:1;min-width:140px}
-@media(max-width:600px){.view-mode-bar:has(#newsViewSwitch:not([hidden])) .view-mode-hint{display:none}.view-mode-bar:has(#newsViewSwitch:not([hidden])){gap:6px;justify-content:space-between}.desk-advanced-analysis .cluster-card{padding:12px}}
+@media(max-width:600px){.view-mode-bar:has(#newsViewSwitch:not([hidden])) .view-mode-hint{display:none}.view-mode-bar:has(#newsViewSwitch:not([hidden])){gap:6px;justify-content:space-between}}
