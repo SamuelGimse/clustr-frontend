@@ -984,6 +984,11 @@
     try {
       const bootP = runBoot();
       authState = await window.ClustrAuth.restore();
+      if (!authState.user && !authState.authError && !['#/login', '#/account', '#/signup'].includes(location.hash)) {
+        window.location.replace('welcome.html');
+        return;
+      }
+      if (location.hash === '#/signup') accountMode = 'signup';
       document.body.classList.toggle('auth-locked', !authState.user || !!authState.recovery);
       foundingStatus = await window.ClustrAuth.foundingStatus().catch(() => null);
       await window.ClustrWatchlist?.init(hasProAccess() ? authState.user : null);
@@ -1112,7 +1117,7 @@
     const action = button.getAttribute('data-account-action');
     try {
       if (authState.role === 'admin' && accountPreview && ['checkout', 'portal', 'logout'].includes(action)) throw new Error('This is an account preview. Exit preview to use real billing or sign out.');
-      if (action === 'switch') { accountMode = accountMode === 'signup' ? 'signin' : 'signup'; renderAccount(); }
+      if (action === 'switch') { accountMode = accountMode === 'signup' ? 'signin' : 'signup'; history.replaceState(null, '', accountMode === 'signup' ? '#/signup' : '#/login'); renderAccount(); }
       if (action === 'claim-founding20') {
         button.disabled = true;
         try { await window.ClustrAuth.claimFounding20(); window.location.reload(); }

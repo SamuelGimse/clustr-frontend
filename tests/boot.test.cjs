@@ -6,11 +6,12 @@ const path = require('node:path');
 const source = fs.readFileSync(path.join(__dirname, '../js/app.js'), 'utf8');
 const init = source.slice(source.indexOf('  async function init() {'), source.indexOf("  if (navPolymarket) navPolymarket.addEventListener"));
 
-async function check({ user = {}, rows = [{ id: 1 }], error = null, hash = '', recovery = false } = {}) {
+async function check({ user = {}, rows = [{ id: 1 }], error = null, hash = '', recovery = false, authError = '' } = {}) {
   const calls = [];
   const context = {
     window: {
-      ClustrAuth: { restore: async () => ({ user, role: 'free', recovery }), foundingStatus: async () => ({ remaining: 15 }) },
+      ClustrAuth: { restore: async () => ({ user, role: 'free', recovery, authError }), foundingStatus: async () => ({ remaining: 15 }) },
+      location: {replace:url=>calls.push(`redirect:${url}`)},
       ClustrThemes: { setAccess: role => calls.push(`theme:${role}`) },
       ClustrConnections: { hide() {}, render() {} },
       ClustrApi: { fetchPublishes: async () => { calls.push('fetch'); if (error) throw error; return rows; } }
@@ -27,14 +28,15 @@ async function check({ user = {}, rows = [{ id: 1 }], error = null, hash = '', r
     hasProAccess: () => false,
     warmGroupsCache: () => {},
     navAdmin: null,
+    accountMode: 'signin',
     location: { hash, search: '' },
     status: { textContent: '' },
     console: { error() {} },
     URLSearchParams
   };
   await vm.runInNewContext(`${init}\ninit()`, context);
-  assert.equal(calls.filter(call => call === 'end').length, 1);
-  return { calls, status: context.status.textContent };
+  assert.equal(calls.filter(call => call === 'end').length, calls.includes('redirect:welcome.html') ? 0 : 1);
+  return { calls, status: context.status.textContent, mode:context.accountMode };
 }
 
 (async () => {
@@ -47,13 +49,20 @@ async function check({ user = {}, rows = [{ id: 1 }], error = null, hash = '', r
   assert((await check({ hash: '#/watchlist' })).calls.includes('nav:watchlist'));
   assert((await check({ rows: [], hash: '#/watchlist' })).calls.includes('nav:watchlist'));
   assert((await check({ hash: '#/connections' })).calls.includes('nav:connections'));
-  const signedOut = await check({ user: null });
+  const signedOut = await check({ user: null, hash:'#/login' });
   assert(signedOut.calls.includes('locked:true'));
   assert(!signedOut.calls.includes('fetch'));
   assert(signedIn.calls.includes('locked:false'));
   assert((await check({recovery:true})).calls.includes('nav:account'));
   assert(signedOut.calls.includes('badge'));
   assert(signedOut.calls.indexOf('nav:account') < signedOut.calls.indexOf('end'));
+  const welcome=await check({user:null});
+  assert(welcome.calls.includes('redirect:welcome.html'));
+  assert(!welcome.calls.includes('fetch'));
+  assert(!welcome.calls.includes('nav:account'));
+  assert(!(await check({user:null,authError:'OAuth cancelled'})).calls.includes('redirect:welcome.html'));
+  assert.equal((await check({user:null,hash:'#/signup'})).mode,'signup');
+  assert((await check({user:null,hash:'#/signup'})).calls.includes('nav:account'));
   assert.equal((await check({ rows: [] })).status, 'No publishes yet');
   assert((await check({ rows: [], hash: '#/connections' })).calls.includes('nav:connections'));
   assert.equal((await check({ error: new Error('Offline') })).status, 'Offline');

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en" data-theme="apple" data-color-mode="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="Discover Clustr Market: news grouped into market themes, connected to companies, with source context, impact scores and timelines.">
+  <title>Clustr Market — See the market behind the headlines</title>
+  <link rel="canonical" href="https://clustrmarket.com/welcome.html">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="styles.css?v=compact-data-details-1">
+  <link rel="stylesheet" href="welcome.css?v=1">
+  <script src="js/themes.js?v=wallpaper-default-1" defer></script>
+  <script src="js/welcome.js?v=1" defer></script>
+</head>
+<body class="welcome-page">
+  <a class="welcome-skip" href="#welcomeMain">Skip to content</a>
+  <header class="welcome-header">
+    <a class="welcome-brand" href="welcome.html"><span aria-hidden="true"></span>Clustr Market</a>
+    <nav aria-label="Welcome navigation"><a href="#how">How it works</a><a href="#visuals">Charts &amp; network</a><a href="#plans">Plans</a><a href="./#/login" class="welcome-signin">Sign in <span aria-hidden="true">↗</span></a></nav>
+  </header>
+  <main id="welcomeMain" class="welcome-main">
+    <section class="welcome-hero" aria-labelledby="welcomeTitle">
+      <p class="welcome-kicker">NEWS / THEMES / COMPANIES</p>
+      <h1 id="welcomeTitle">See the market<br><em>behind the headlines.</em></h1>
+      <div class="welcome-hero-bottom"><p>One story rarely tells the whole story. Clustr Market connects related news, market themes and listed companies—so you can explore the context, not just the headline.</p><div class="welcome-actions"><a class="welcome-cta" href="./#/signup">Create a free account <span aria-hidden="true">↗</span></a><a class="welcome-text-link" href="#preview">Try the example below ↓</a></div></div>
+    </section>
+
+    <section id="preview" class="welcome-demo" aria-labelledby="demoTitle">
+      <div class="welcome-section-head"><div><p class="welcome-kicker">01 / FOLLOW A CONNECTION</p><h2 id="demoTitle">From a headline to the bigger picture.</h2></div><span class="welcome-demo-label">Illustrative demo · not current news</span></div>
+      <div class="welcome-demo-tabs" role="tablist" aria-label="Example cluster">
+        <button type="button" id="demo-ai" role="tab" aria-controls="clusterDemo" aria-selected="true" tabindex="0" data-demo="ai">AI infrastructure</button>
+        <button type="button" id="demo-energy" role="tab" aria-controls="clusterDemo" aria-selected="false" tabindex="-1" data-demo="energy">Energy supply</button>
+        <button type="button" id="demo-cyber" role="tab" aria-controls="clusterDemo" aria-selected="false" tabindex="-1" data-demo="cyber">Cybersecurity</button>
+      </div>
+      <div id="clusterDemo" class="welcome-demo-flow" role="tabpanel" aria-labelledby="demo-ai" tabindex="0">
+        <article class="welcome-demo-story"><p class="welcome-kicker">THE EVENT</p><h3 data-demo-headline>A cloud operator announces a larger data-center build.</h3><p data-demo-context>A hypothetical expansion raises questions about demand for chips, cooling and electricity.</p><span class="welcome-demo-source">Example headline · not a published article</span></article>
+        <article class="welcome-demo-cluster"><p class="welcome-kicker">THE CLUSTER</p><h3 data-demo-name>AI infrastructure</h3><p data-demo-summary>Related stories about computing capacity, semiconductors and power demand share one research theme.</p><div class="welcome-demo-metrics"><div><span>Example impact · −10 to +10</span><strong data-demo-score>+3</strong></div><div><span>Impact window</span><strong data-demo-window>Weeks</strong></div></div></article>
+        <article class="welcome-demo-companies"><p class="welcome-kicker">THE CONNECTIONS</p><ul data-demo-links><li><strong>Cloud operator</strong><span>Named in the example</span></li><li><strong>Chip supplier</strong><span>Potential close link</span></li><li><strong>Power equipment</strong><span>Related business</span></li></ul><p>Example business types, not stock picks. A relationship is not proof that a stock will move.</p></article>
+      </div>
+      <p class="welcome-demo-footnote">The real app links you back to source articles and distinguishes named companies, close links, related stocks and theme comparison baskets. An AI score is not a price forecast.</p>
+      <noscript><p>The example above works without JavaScript. Sign in to explore the app; enable JavaScript to switch demo themes.</p></noscript>
+    </section>
+
+    <section id="visuals" class="welcome-visuals" aria-labelledby="visualsTitle">
+      <div class="welcome-section-head"><div><p class="welcome-kicker">SEE THE WORKSPACE</p><h2 id="visualsTitle">Connections you can see.<br>Changes you can follow.</h2></div><p>Preview the Network view and history charts.<br>All names and values below are fictional examples.</p></div>
+      <div class="welcome-preview-grid">
+        <figure class="welcome-visual-card welcome-network-preview">
+          <figcaption><div><span class="welcome-kicker">NETWORK</span><h3>One event. A web of relationships.</h3></div><span class="welcome-demo-label">Illustrative interface · fictional data</span></figcaption>
+          <div class="welcome-network-stage" tabindex="0" role="region" aria-label="Scrollable illustrative network chart">
+            <svg viewBox="0 0 1000 350" role="img" aria-labelledby="networkPreviewTitle networkPreviewDesc">
+              <title id="networkPreviewTitle">Example network connecting news, clusters and fictional companies</title><desc id="networkPreviewDesc">AI infrastructure connects a hypothetical data-center announcement to Northstar Compute and Gridline Power. Cybersecurity connects a fictional security review to Shieldware. Lines represent associations, not predictions.</desc>
+              <g class="welcome-network-background" fill="none" stroke="currentColor" opacity=".07"><ellipse cx="500" cy="175" rx="380" ry="145"/><ellipse cx="500" cy="175" rx="240" ry="100"/><path d="M50 175h900M500 12v325"/></g>
+              <g fill="none" stroke="currentColor" stroke-width="1.2" opacity=".22"><path d="M130 75 415 115 700 70M415 115 785 175M415 115 660 280M165 255 470 255 785 175M470 255 835 300M470 255 700 70M130 75 470 255M165 255 415 115"/></g>
+              <g fill="none" stroke="var(--accent,currentColor)" stroke-width="2" opacity=".8"><path d="M130 75 415 115 700 70M415 115 785 175"/></g>
+              <g stroke="currentColor" stroke-width="1.2" opacity=".3" stroke-dasharray="4 6"><path d="M415 115 660 280M470 255 835 300"/></g>
+              <g fill="var(--text-meta)"><circle cx="130" cy="75" r="6"/><circle cx="165" cy="255" r="6"/></g>
+              <g fill="var(--accent,currentColor)"><circle cx="415" cy="115" r="17"/><circle cx="470" cy="255" r="13"/></g>
+              <g fill="#b99cdb" stroke="var(--bg)" stroke-width="2"><circle cx="700" cy="70" r="9"/><circle cx="785" cy="175" r="9"/><circle cx="660" cy="280" r="8"/><circle cx="835" cy="300" r="7"/></g>
+              <g fill="currentColor" font-size="14" font-weight="600"><text x="130" y="104" text-anchor="middle">Data-center announcement</text><text x="165" y="284" text-anchor="middle">Security review</text><text x="415" y="154" text-anchor="middle">AI infrastructure</text><text x="470" y="290" text-anchor="middle">Cybersecurity</text><text x="700" y="48" text-anchor="middle">Northstar Compute</text><text x="785" y="153" text-anchor="middle">Gridline Power</text><text x="660" y="312" text-anchor="middle">Coolant Systems</text><text x="835" y="329" text-anchor="middle">Shieldware</text></g>
+              <g fill="currentColor" font-size="10" opacity=".55"><text x="415" y="171" text-anchor="middle">CLUSTER</text><text x="470" y="307" text-anchor="middle">CLUSTER</text><text x="700" y="34" text-anchor="middle">FICTIONAL COMPANY</text></g>
+            </svg>
+          </div>
+          <p class="welcome-network-hint">Swipe the network to explore →</p>
+          <div class="welcome-preview-legend"><span><i class="welcome-legend-cluster"></i>Clusters</span><span><i class="welcome-legend-stock"></i>Companies</span><span><i class="welcome-legend-news"></i>Source stories</span></div>
+          <p>In the app, select a node to follow its links. The Network view connects themes, stocks and articles; a line is a relationship, not a trade recommendation.</p>
+        </figure>
+        <figure class="welcome-visual-card">
+          <figcaption><div><span class="welcome-kicker">STANCE &amp; IMPACT</span><h3>Watch the narrative change.</h3></div></figcaption>
+          <svg viewBox="0 0 460 220" role="img" aria-labelledby="stancePreviewTitle stancePreviewDesc">
+            <title id="stancePreviewTitle">Illustrative cluster impact history</title><desc id="stancePreviewDesc">Fictional scores on five example days: plus two, plus three, plus one, minus four and minus two. Zero is centered between minus ten and plus ten.</desc>
+            <g stroke="currentColor" opacity=".12"><path d="M52 28h364M52 178h364"/></g><path d="M52 103h364" stroke="currentColor" opacity=".4" stroke-dasharray="3 5"/>
+            <g fill="currentColor" font-size="10" opacity=".6"><text x="13" y="32">+10</text><text x="28" y="107">0</text><text x="13" y="182">−10</text><text x="52" y="207">Day 1</text><text x="140" y="207">Day 2</text><text x="228" y="207">Day 3</text><text x="316" y="207">Day 4</text><text x="395" y="207">Day 5</text></g>
+            <path d="m60 88 88-7.5 88 15 88 37.5 88-15" fill="none" stroke="currentColor" stroke-width="2"/>
+            <g fill="#65c9a5"><circle cx="60" cy="88" r="5"/><circle cx="148" cy="80.5" r="5"/><circle cx="236" cy="95.5" r="5"/></g><g fill="#e78383"><circle cx="324" cy="133" r="5"/><circle cx="412" cy="118" r="5"/></g>
+          </svg>
+          <p>Follow the cluster's directional score over time. Constructive and cautious phases stay distinct. Scores are not expected price returns.</p><span class="welcome-chart-disclosure">Fictional values · not a forecast or backtest</span>
+        </figure>
+        <figure class="welcome-visual-card">
+          <figcaption><div><span class="welcome-kicker">PRICE HISTORY</span><h3>Compare the market response.</h3></div></figcaption>
+          <svg viewBox="0 0 460 220" role="img" aria-labelledby="pricePreviewTitle pricePreviewDesc">
+            <title id="pricePreviewTitle">Illustrative cumulative price history</title><desc id="pricePreviewDesc">A fictional price series starts at zero percent, then changes to plus 1.3, plus 0.6, minus 0.9 and plus 2.1 percent. Zero is centered between minus four and plus four percent.</desc>
+            <g stroke="currentColor" opacity=".12"><path d="M52 28h364M52 178h364"/></g><path d="M52 103h364" stroke="currentColor" opacity=".4" stroke-dasharray="3 5"/>
+            <g fill="currentColor" font-size="10" opacity=".6"><text x="12" y="32">+4%</text><text x="20" y="107">0%</text><text x="12" y="182">−4%</text><text x="52" y="207">Day 1</text><text x="140" y="207">Day 2</text><text x="228" y="207">Day 3</text><text x="316" y="207">Day 4</text><text x="395" y="207">Day 5</text></g>
+            <path d="m60 103 88-24.375 88 13.125 88 28.125 88-56.25" fill="none" stroke="var(--accent,currentColor)" stroke-width="2.5"/>
+            <g fill="var(--accent,currentColor)"><circle cx="60" cy="103" r="4"/><circle cx="148" cy="78.625" r="4"/><circle cx="236" cy="91.75" r="4"/><circle cx="324" cy="119.875" r="4"/><circle cx="412" cy="63.625" r="5"/></g>
+          </svg>
+          <p>Use price history alongside the news timeline. The real app distinguishes cumulative changes, interval returns and the latest session change.</p><span class="welcome-chart-disclosure">Fictional values · no investment performance claim</span>
+        </figure>
+      </div>
+    </section>
+
+    <section id="how" class="welcome-how" aria-labelledby="howTitle">
+      <div><p class="welcome-kicker">02 / WHAT IS A CLUSTER?</p><h2 id="howTitle">A theme, not<br>a pile of headlines.</h2><p>A cluster brings related stories together under a shared market theme. AI infrastructure, energy supply and cybersecurity are examples. One cluster can contain several separate events—and those events can point in different directions.</p><p>Clustr Market uses AI to help filter, group and assess news. You can then follow the original sources and explore the company connections yourself.</p></div>
+      <ol class="welcome-steps"><li><span>01</span><div><h3>Start with the event</h3><p>Read what happened, where it happened and which companies are actually mentioned.</p></div></li><li><span>02</span><div><h3>Understand the impact</h3><p>Explore a −10 to +10 directional score and the expected impact window. Positive, negative or unclear—not a promised return.</p></div></li><li><span>03</span><div><h3>Follow the connections</h3><p>See linked stocks, compare the news history with price changes and decide what deserves more research.</p></div></li></ol>
+    </section>
+
+    <section id="features" class="welcome-features" aria-labelledby="featuresTitle">
+      <div class="welcome-section-head"><div><p class="welcome-kicker">03 / YOUR RESEARCH WORKSPACE</p><h2 id="featuresTitle">Different views.<br>One connected story.</h2></div><p>Move between the theme, the company and the source—without losing the context.</p></div>
+      <div class="welcome-feature-grid">
+        <article><span>01 / OVERVIEW</span><h3>Find the bigger picture.</h3><p>Compare cluster impact and price history. Use watchlist scope to focus your research when your plan includes it.</p></article>
+        <article><span>02 / NEWS</span><h3>Understand the catalyst.</h3><p>Explore grouped articles, summaries, directional impact and timeframes. Open the original source to check the story.</p></article>
+        <article><span>03 / STOCKS · PRO</span><h3>Start with a company.</h3><p>See which clusters connect to a stock and how it is linked—not just whether its name appeared in a headline.</p></article>
+        <article><span>04 / NETWORK</span><h3>Follow the relationships.</h3><p>Explore clusters, stocks and stories as a connected network. Filter the view to the last one, two or three days.</p></article>
+        <article><span>05 / TRENDS &amp; HISTORY · PRO</span><h3>Watch the story develop.</h3><p>Follow changes in cluster stance and compare them with price history. Historical patterns are context, not trading guarantees.</p></article>
+        <article><span>06 / WATCHLIST · PRO</span><h3>Keep your own focus.</h3><p>Save stocks to your account and choose which relationship types matter when filtering your research.</p></article>
+      </div>
+    </section>
+
+    <section id="plans" class="welcome-plans" aria-labelledby="plansTitle">
+      <div><p class="welcome-kicker">04 / CHOOSE YOUR STARTING POINT</p><h2 id="plansTitle">Explore first.<br>Go deeper with Pro.</h2><p>Both plans require an account. You choose whether to subscribe; creating an account does not start a paid subscription.</p></div>
+      <article><span class="welcome-kicker">FREE</span><h3>Get to know Clustr.</h3><p class="welcome-price">0 kr</p><ul><li>Browse the older reports available to Free</li><li>Explore news themes and company relationships</li><li>Newest reports and Pro-only tools are locked</li></ul><a class="welcome-text-link" href="./#/signup">Create a free account ↗</a></article>
+      <article class="welcome-pro-plan"><span class="welcome-kicker">PRO</span><h3>Keep up with the story.</h3><p class="welcome-price">99 kr <small>/ month</small></p><ul><li>Newest available published reports</li><li>Stocks, Trends and interactive History</li><li>Your personal Watchlist and research filters</li></ul><a class="welcome-cta" href="./#/signup">Get started <span aria-hidden="true">↗</span></a><p class="welcome-plan-note">Subscribe from Account after signing in.</p></article>
+    </section>
+
+    <section id="faq" class="welcome-faq" aria-labelledby="faqTitle"><div><p class="welcome-kicker">05 / BEFORE YOU BEGIN</p><h2 id="faqTitle">A little more context.</h2></div><div>
+      <details><summary>Does a positive score mean I should buy?</summary><p>No. Scores describe an AI-assessed directional news impact, from −10 to +10. They are not probabilities, expected percentage returns, price targets or personal investment advice. News can already be priced in, and the assessment can be wrong.</p></details>
+      <details><summary>Are the news and prices live?</summary><p>Reports are published snapshots, not a continuous real-time news stream. Stock quotes show the latest available regular-session data and may be delayed. Session change and change since a report are different measures; check their labels and timestamps.</p></details>
+      <details><summary>What do the different stock links mean?</summary><p>“Mentioned” means the company is named in the article. Close and related links are research associations. A theme comparison basket provides sector context; it is not evidence that the company is directly affected.</p></details>
+      <details><summary>Can I place trades here?</summary><p>No. Clustr Market is a research and information app. It does not execute trades, manage your portfolio or guarantee investment results.</p></details>
+      <details><summary>Do I need to pay to create an account?</summary><p>No. Create a Free account with Google, Facebook or email. Pro is optional and costs 99 kr per month. Your Account page shows your actual access and subscription options.</p></details>
+    </div></section>
+    <section class="welcome-final"><h2>The headline is the start.<br><em>Explore what connects it.</em></h2><a class="welcome-cta" href="./#/signup">Create a free account <span aria-hidden="true">↗</span></a><a class="welcome-text-link" href="./#/login">Already have an account? Sign in</a></section>
+  </main>
+  <footer class="welcome-footer"><strong>Clustr Market · Gimse Media</strong><nav aria-label="Information"><a href="info.html#guide">Help &amp; methodology</a><a href="info.html#terms">Terms · Draft</a><a href="info.html#privacy">Privacy · Draft</a></nav><p>Research and information, not investment advice. AI-generated assessments can be wrong. Always check the source and its date.</p></footer>
+</body>
+</html>
