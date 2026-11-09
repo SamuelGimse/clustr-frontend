@@ -1242,7 +1242,7 @@
       <div class="cluster-layout">
       <div class="cluster-main">
       <div class="cluster-top">
-        <h2 class="cluster-name">${util.escapeHtml(group.name || 'Cluster')}</h2>
+        <div class="cluster-title"><h2 class="cluster-name">${util.escapeHtml(group.name || 'Cluster')}</h2>${window.ClustrWatchlist?.clusterButton(group,group.market||group.__historyScope?.market||'US')||''}</div>
         ${clusterScoreHtml(group)}
         <div class="stance-mount">${stanceHtml(group, null)}</div>
       </div>

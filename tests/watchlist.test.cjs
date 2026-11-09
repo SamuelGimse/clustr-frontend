@@ -6,12 +6,13 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '../js/watchlist.js'), 'utf8');
 
 function session(document) {
-  const storage = new Map(), cloud = new Map(), calls = [], events = [];
+  const storage = new Map(), cloud = new Map(), clusterCloud = new Map(), calls = [], events = [];
   let token = 'Alice', hook = null;
   const window = {
     document,
     ClustrConfig: { SUPABASE_URL: 'https://example.invalid', SUPABASE_ANON_KEY: 'public' },
     ClustrAuth: { accessToken: () => token },
+    ClustrTaxonomy: require('../js/cluster-taxonomy.js'),
     localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },
     CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options.detail; } },
     dispatchEvent: event => events.push(event),
@@ -19,20 +20,21 @@ function session(document) {
       calls.push({ url, ...options });
       if (hook) { const result = hook(url, options); if (result) return result; }
       const owner = options.headers.Authorization;
-      if (!cloud.has(owner)) cloud.set(owner, new Map());
-      const rows = cloud.get(owner), query = new URL(url).searchParams;
+      const isCluster=url.includes('/clustr_cluster_watchlist'),field=isCluster?'cluster_key':'symbol',database=isCluster?clusterCloud:cloud;
+      if (!database.has(owner)) database.set(owner, new Map());
+      const rows = database.get(owner), query = new URL(url).searchParams;
       if (options.method === 'POST') {
         const row = JSON.parse(options.body);
-        assert.deepEqual(Object.keys(row).sort(), ['market', 'name', 'symbol']);
-        rows.set(`${row.market}:${row.symbol}`, row);
+        assert.deepEqual(Object.keys(row).sort(), [field,'market','name'].sort());
+        rows.set(`${row.market}:${row[field]}`, row);
       }
-      if (options.method === 'DELETE') rows.delete(`${query.get('market').slice(3)}:${query.get('symbol').slice(3)}`);
+      if (options.method === 'DELETE') rows.delete(`${query.get('market').slice(3)}:${query.get(field).slice(3)}`);
       const offset = Number(query.get('offset') || 0);
       return { ok: true, status: options.method === 'GET' ? 200 : 204, json: async () => [...rows.values()].slice(offset, offset + 250) };
     }
   };
   const context = { window }; vm.createContext(context); vm.runInContext(source, context);
-  return { api: window.ClustrWatchlist, cloud, calls, events, storage, setPreview: value => { window.ClustrApp = { isAccountPreview: () => value }; }, setToken: value => { token = value; }, setHook: value => { hook = value; } };
+  return { api: window.ClustrWatchlist, cloud, clusterCloud, calls, events, storage, window, setPreview: value => { window.ClustrApp = { isAccountPreview: () => value }; }, setToken: value => { token = value; }, setHook: value => { hook = value; } };
 }
 
 test('Watchlists persist per account with authenticated add/remove and no supplied owner', async () => {
@@ -50,6 +52,85 @@ test('Watchlists persist per account with authenticated add/remove and no suppli
   await s.api.setSaved({ symbol: 'NVDA' }, 'US', false);
   assert.equal(s.api.getItems().length, 0);
   assert.equal(s.cloud.get('Bearer Alice').size, 0);
+});
+
+test('Clusters persist alongside stocks, deduplicate aliases and remain private across account switches', async()=>{
+  const s=session();await s.api.init({id:'Alice'});
+  await s.api.setSaved('MSFT','US',true);
+  await s.api.setClusterSaved('AI','US',true);
+  await s.api.setClusterSaved('Artificial Intelligence','US',true);
+  assert.equal(s.api.getClusters().length,1);assert.equal(s.api.getItems().length,1);
+  assert(s.api.includesCluster('AI'));assert(s.api.includesCluster('Artificial Intelligence'));
+  assert(!s.api.includesCluster('AI','NO'));
+  const writes=s.calls.filter(call=>call.method==='POST'&&call.url.includes('clustr_cluster_watchlist'));
+  assert.equal(writes.length,1);
+  assert.deepEqual(JSON.parse(writes[0].body),{market:'US',cluster_key:'artificial intelligence',name:'Artificial Intelligence'});
+  assert.match(s.api.clusterButton('AI'),/aria-pressed="true"/);
+  s.setToken('Bob');await s.api.init({id:'Bob'});assert.equal(s.api.getClusters().length,0);
+  s.setToken('Alice');await s.api.init({id:'Alice'});assert(s.api.includesCluster('AI'));
+  await s.api.setClusterSaved('AI','US',false);
+  assert.equal(s.api.getClusters().length,0);assert.equal(s.api.getItems().length,1);
+  assert(s.calls.at(-1).url.includes('cluster_key=eq.artificial%20intelligence'));
+});
+
+test('An explicitly watched cluster keeps its full stories and stocks across reports without changing scores',async()=>{
+  const s=session();await s.api.init({id:'Alice'});await s.api.setClusterSaved('AI','US',true);
+  await s.api.setSaved('XOM','US',true);s.api.setScope('watchlist');
+  const ai={name:'Artificial Intelligence',market:'US',fixed_stocks:[{symbol:'NVDA'},{symbol:'AMD'}],articles:[{rating:3,mentioned_companies:[{symbol:'MSFT'}]},{rating:-2}]};
+  const oil={name:'Oil & energy',fixed_stocks:[{symbol:'XOM'},{symbol:'BP'}],articles:[{rating:-3}]};
+  const input=[ai,oil,{...ai,market:'NO'},{name:'Unwatched',stocks:[{symbol:'INTC'}]}];
+  const before=JSON.stringify(input),filtered=s.api.filterGroups(input,'US');
+  assert.equal(filtered.length,2);assert.equal(filtered[0],ai);
+  assert.equal(filtered[1].fixed_stocks.length,1);assert.equal(JSON.stringify(input),before);
+  for(const type of s.api.getLinkTypes())s.api.setLinkType(type,false);
+  assert.deepEqual(Array.from(s.api.filterGroups(input,'US'),group=>group.name),['Artificial Intelligence']);
+  const next={name:'AI',stocks:[{symbol:'NEW'}],articles:[{rating:1}]};
+  assert.equal(s.api.filterGroups([next],'US')[0],next);
+  const indexStock={symbol:'NEW',links:new Map([['ai',{group:next}]])};
+  assert(s.api.allows(indexStock,'US'));assert(!s.api.allows({symbol:'OLD',links:indexStock.links},'US'));
+  s.window.ClustrApp={getAllGroups:()=>[next]};
+  assert(s.api.allows('NEW','US'));assert(!s.api.allows('NEW','NO'));
+});
+
+test('Cluster failures, preview edits and late saves cannot pretend to save or cross accounts',async()=>{
+  const s=session();await s.api.init({id:'Alice'});
+  s.setHook((url,options)=>options.method==='POST'?{ok:false,status:500}:null);
+  await assert.rejects(s.api.setClusterSaved('AI','US',true),/Could not update/);
+  assert.equal(s.api.getClusters().length,0);
+  s.setHook(null);s.setPreview(true);
+  await assert.rejects(s.api.setClusterSaved('AI','US',true),/disabled in account preview/);
+  assert.match(s.api.clusterButton('AI'),/ disabled/);s.setPreview(false);
+  let release;s.setHook((url,options)=>options.method==='POST'?new Promise(done=>{release=done;}):null);
+  const save=s.api.setClusterSaved('AI','US',true);
+  s.setToken('Bob');await s.api.init({id:'Bob'});release({ok:true,status:204});await save;
+  assert.equal(s.api.getClusters().length,0);
+  s.setHook(null);await s.api.setClusterSaved('A < B','US',true);
+  assert.match(s.api.clusterButton('A < B'),/A &lt; B/);
+  await assert.rejects(s.api.setClusterSaved('AI','NO',true),/valid cluster/);
+});
+
+test('Cluster restoration paginates independently from stock restoration',async()=>{
+  const s=session();s.clusterCloud.set('Bearer Alice',new Map(Array.from({length:251},(_,i)=>[`US:theme ${i}`,{market:'US',name:`Theme ${i}`,cluster_key:`theme ${i}`}])));
+  await s.api.init({id:'Alice'});
+  assert.equal(s.api.getClusters().length,251);assert.equal(s.api.getItems().length,0);
+  const reads=s.calls.filter(call=>call.url.includes('/clustr_cluster_watchlist'));
+  assert.equal(reads.length,2);assert(reads[1].url.includes('offset=250'));
+});
+
+test('Overview builds the watchlist network when only a cluster is saved',async()=>{
+  const s=session();await s.api.init({id:'Alice'});await s.api.setClusterSaved('AI','US',true);
+  const context={window:{}};vm.createContext(context);vm.runInContext(fs.readFileSync(path.join(__dirname,'../js/util.js'),'utf8'),context);
+  const publishes=[{id:1,market:'US',created_at:'2026-11-09T12:00:00Z'}];
+  const group={name:'AI',market:'US',mentioned_stocks:[{symbol:'NVDA'}],articles:[{title:'Example story',link:'https://example.invalid/ai',rating:3,mentioned_companies:[{symbol:'NVDA'}]}]};
+  const recap=require('../dashboard/dashboard.js').buildWatchlistRecap(publishes,new Map([['1',[group]]]),context.window.ClustrUtil,require('../atlas/atlas.js'),s.api,require('../connections/connections.js'));
+  assert.equal(recap.total,1);assert.equal(recap.stocks.length,1);assert.equal(recap.stocks[0].node.label,'NVDA');
+  assert.equal(recap.stories,1);assert.equal(recap.context.publish.id,1);
+});
+
+test('News cards and the Watchlist manager expose cluster controls without inventing ticker symbols',()=>{
+  assert.match(fs.readFileSync(path.join(__dirname,'../js/render.js'),'utf8'),/ClustrWatchlist\?\.clusterButton\(group/);
+  assert.match(source,/data-watch-saved-clusters/);assert.match(source,/data-watch-recent-clusters/);
+  assert.match(source,/Saved clusters are included in full/);
 });
 
 test('Account preview cannot change saved watchlist data or persist preview filters', async () => {
@@ -115,7 +196,7 @@ test('Restore paginates beyond 250 saved stocks', async () => {
   s.cloud.set('Bearer Alice', new Map(Array.from({ length: 251 }, (_, i) => [`US:S${i}`, { market: 'US', symbol: `S${i}`, name: `Stock ${i}` }])));
   await s.api.init({ id: 'Alice' });
   assert.equal(s.api.getItems().length, 251);
-  assert.equal(s.calls.length, 2);
+  assert.equal(s.calls.length, 3);
   assert(s.calls[1].url.includes('offset=250'));
 });
 
