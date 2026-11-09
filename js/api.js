@@ -465,6 +465,7 @@
   }
 
   window.ClustrApi = {
+    fetchTechnicalSignals: () => rest('clustr_technical_latest?select=id,symbol,market,as_of,generated_at,detector_version,bias,last_close,payload&order=symbol.asc&limit=1000'),
     fetchFreeCutoff: () => rest('rpc/clustr_free_data_before'),
     setPreviewCutoff: value => {
       if (value !== null && !Number.isFinite(Date.parse(value))) throw new Error('Invalid preview cutoff');

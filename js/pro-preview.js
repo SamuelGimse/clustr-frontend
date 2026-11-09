@@ -1,5 +1,6 @@
 (function (root) {
   const features = {
+    technicals: { label: 'Technicals', title: 'Explore independent chart signals.', description: 'Compare YOLO pattern detections with price geometry on completed daily bars.', points: ['Bullish, neutral, bearish and mixed bias', 'Individual detector evidence and timestamps', 'Experimental patterns, not calibrated price forecasts'] },
     stocks: { label: 'Stocks', title: 'Find what connects to a stock.', description: 'Search stocks from the last seven days of reports, then inspect their article mentions and wider cluster links.', points: ['Search by ticker or company', 'Switch between article mentions and all cluster links', 'Read cluster impact and source context'] },
     weekly: { label: 'Trends', title: 'Follow the week, day by day.', description: 'Compare daily article impact with cluster activity, then inspect themes that appeared on multiple days.', points: ['Daily impact and cluster activity chart', 'Recurring clusters and score changes', 'Saved daily briefs and weekly cluster summaries'] },
     atlas: { label: 'History', title: 'See how the story unfolds.', description: 'Travel through past reports and see how themes and stock connections evolve.', points: ['Cluster and stock history', 'Compare reports across time', 'Open the evidence behind a score'] },
@@ -7,6 +8,7 @@
   };
   const grid = `<g class="pp-grid">${[80, 160, 240, 320].map(y => `<path d="M35 ${y}H565"/>`).join('')}</g>`;
   function illustration(view) {
+    if (view === 'technicals') return `<text x="30" y="40">ILLUSTRATIVE TECHNICAL SIGNALS</text>${['Bullish','Neutral','Bearish'].map((label,i)=>`<rect class="pp-row" x="30" y="${70+i*90}" width="540" height="70" rx="10"/><text x="50" y="${112+i*90}">DEMO ${i+1} · ${label}</text>`).join('')}`;
     if (view === 'weekly') return `
       <text x="24" y="35">WEEKLY CLUSTERS &amp; TRENDS · 7 DAYS</text>
       <rect class="pp-pill" x="24" y="52" width="125" height="34" rx="9"/><text x="43" y="74">CLUSTERS</text>

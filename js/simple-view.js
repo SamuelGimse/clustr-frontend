@@ -1,6 +1,6 @@
 (function(root,factory){const api=factory(root);if(typeof module==='object'&&module.exports)module.exports=api;else root.ClustrSimple=api;})(typeof window==='undefined'?globalThis:window,function(win){
   let revision=0, active='', identity='', selected='', layout='grid', mobilePane='news', month='', selectedDay='', reportRows=null;
-  const nativeViews=new Set(['dashboard','stocks','atlas','connections','map','weekly','watchlist']);
+  const nativeViews=new Set(['dashboard','stocks','atlas','connections','map','weekly','watchlist','technicals']);
   let groupsRef=null,newsSort='impact',reportScope='',reportSource=null,reportError='',stockConnection='all',deskCenter='summary',deskAdvanced=false;
   try { if(win.localStorage?.getItem('clustr-simple-news-layout')==='desk')layout='desk'; } catch {}
   const esc = value => win.ClustrUtil.escapeHtml(String(value ?? ''));

@@ -86,7 +86,7 @@ let phone = true;
 const scrolls = [];
 const getDisplayAccount = () => ({ role: 'pro' });
 const navigation = { view: 'events', currentGroups: [], authState: { role: 'pro', user: {id:'user'} }, location: { hash: '', pathname: '/', search: '' }, history: { replaceState(_state, _title, url) { navigation.location.hash = url.startsWith('#') ? url : ''; } }, renderAccount() {}, closeEventSortMenu() {}, updateViewMode() {}, window: { matchMedia: () => ({ matches: phone }), scrollTo: (...args) => scrolls.push(args) } };
-for (const name of ['navWatchlist', 'watchlistView', 'navDashboard', 'navEvents', 'navStocks', 'navMap', 'navDays', 'navSignal', 'navMind', 'navWeekly', 'navAtlas', 'navAccount', 'navAdmin', 'navPolymarket', 'polymarketView', 'eventsView', 'mapView', 'daysView', 'signalView', 'mindView', 'weeklyView', 'stocksView', 'atlasView', 'dashboardView', 'accountView', 'adminView']) navigation[name] = null;
+for (const name of ['navTechnicals', 'technicalsView', 'navWatchlist', 'watchlistView', 'navDashboard', 'navEvents', 'navStocks', 'navMap', 'navDays', 'navSignal', 'navMind', 'navWeekly', 'navAtlas', 'navAccount', 'navAdmin', 'navPolymarket', 'polymarketView', 'eventsView', 'mapView', 'daysView', 'signalView', 'mindView', 'weeklyView', 'stocksView', 'atlasView', 'dashboardView', 'accountView', 'adminView']) navigation[name] = null;
 vm.createContext(navigation);
 navigation.proFeatureView = null;
 navigation.loginView = null;

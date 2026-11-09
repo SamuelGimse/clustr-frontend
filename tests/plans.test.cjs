@@ -12,13 +12,13 @@ function setup(role, signedIn = true) {
   const calls = [];
   const context = { loginView:null, authState: { role, user: signedIn ? { id: 'user' } : null }, accountPreview: '',
     document: { getElementById: id => elements[id] },
-    window: { ClustrConnections: { hide() {} }, ClustrWatchlist: { setView() {}, mount() { calls.push('watchlist'); } },
+    window: { ClustrConnections: { hide() {} }, ClustrTechnicals: { leave() {}, mount() { calls.push('technicals'); } }, ClustrWatchlist: { setView() {}, mount() { calls.push('watchlist'); } },
       ClustrAtlas: { render() { calls.push('history'); } }, ClustrStocks: { leave() {}, mount() { calls.push('stocks'); } }, matchMedia: () => ({ matches: false }) },
     renderWeekly: () => calls.push('trends'), renderAccount: () => calls.push('signin'),
     view: 'events', publishes: [], publishIndex: 0, currentGroups: [], closeEventSortMenu() {}, updateViewMode() {},
     location: { hash: '', pathname: '/', search: '' }, history: { replaceState(_state, _title, hash) { context.location.hash = hash; } },
   };
-  for (const name of ['navWatchlist', 'navDashboard', 'navEvents', 'navStocks', 'navMap', 'navDays', 'navSignal', 'navMind', 'navWeekly', 'navAtlas', 'navAccount', 'navAdmin', 'navPolymarket', 'polymarketView', 'eventsView', 'mapView', 'daysView', 'signalView', 'mindView', 'weeklyView', 'watchlistView', 'stocksView', 'atlasView', 'dashboardView', 'accountView', 'adminView']) context[name] = makeElement();
+  for (const name of ['navTechnicals', 'technicalsView', 'navWatchlist', 'navDashboard', 'navEvents', 'navStocks', 'navMap', 'navDays', 'navSignal', 'navMind', 'navWeekly', 'navAtlas', 'navAccount', 'navAdmin', 'navPolymarket', 'polymarketView', 'eventsView', 'mapView', 'daysView', 'signalView', 'mindView', 'weeklyView', 'watchlistView', 'stocksView', 'atlasView', 'dashboardView', 'accountView', 'adminView']) context[name] = makeElement();
   vm.createContext(context);
   context.proFeatureView = makeElement();
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/pro-preview.js'), 'utf8'), context);
@@ -32,7 +32,7 @@ test('Free sees the delay banner and all four locked views show feature-specific
   context.renderPlanAccess();
   assert.equal(elements.freePlanBanner.hidden, false);
   context.weeklyView.innerHTML = 'Keep the real Trends page intact';
-  for (const view of ['watchlist', 'atlas', 'stocks', 'weekly']) {
+  for (const view of ['watchlist', 'atlas', 'stocks', 'weekly', 'technicals']) {
     context.setNav(view);
     const host = context.proFeatureView;
     assert.match(host.innerHTML, /PRO FEATURE/);
@@ -50,8 +50,8 @@ test('Pro and admin have full feature access without the Free banner', () => {
     const { context, elements, calls } = setup(role);
     context.renderPlanAccess();
     assert.equal(elements.freePlanBanner.hidden, true);
-    context.setNav('watchlist'); context.setNav('atlas'); context.setNav('stocks'); context.setNav('weekly');
-    assert.deepEqual(calls, ['watchlist', 'history', 'stocks', 'trends']);
+    context.setNav('watchlist'); context.setNav('atlas'); context.setNav('stocks'); context.setNav('weekly'); context.setNav('technicals');
+    assert.deepEqual(calls, ['watchlist', 'history', 'stocks', 'trends', 'technicals']);
   }
 });
 

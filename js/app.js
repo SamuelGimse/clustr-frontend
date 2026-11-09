@@ -25,7 +25,7 @@
   let eventSort = 'impact';
   /** @type {string} */
   let view = 'events';
-  const dataViews = new Set(['dashboard', 'events', 'stocks', 'connections', 'map', 'weekly', 'atlas', 'days', 'watchlist']);
+  const dataViews = new Set(['dashboard', 'events', 'stocks', 'connections', 'map', 'weekly', 'atlas', 'days', 'watchlist', 'technicals']);
   let viewMode = 'simple';
   try { if (localStorage.getItem('clustr-view-mode') === 'advanced') viewMode = 'advanced'; } catch {}
   let newsView = 'desk';
@@ -54,7 +54,7 @@
     document.documentElement.dataset.viewMode = mode;
     document.documentElement.dataset.newsView = newsView;
     document.documentElement.dataset.activeView = view;
-    const singleLayout = ['connections', 'map', 'weekly', 'days', 'watchlist'].includes(view);
+    const singleLayout = ['connections', 'map', 'weekly', 'days', 'watchlist', 'technicals'].includes(view);
     if (viewModeBar) viewModeBar.hidden = !dataViews.has(view) || !authState.user || singleLayout;
     if (viewModeHint) viewModeHint.textContent = mode === 'simple' ? modeHints[view] || '' : 'Full report detail and controls.';
     const newsSwitch = document.getElementById('newsViewSwitch');
@@ -66,7 +66,7 @@
     });
     const more = dashboardView?.querySelector('.dash-more');
     if (more) more.open = true;
-    const allowed = authState.user && dataViews.has(view) && (!['stocks', 'weekly', 'atlas', 'watchlist'].includes(view) || hasProAccess());
+    const allowed = authState.user && dataViews.has(view) && (!['stocks', 'weekly', 'atlas', 'watchlist', 'technicals'].includes(view) || hasProAccess());
     if ((view === 'events' ? newsView === 'desk' : mode === 'simple' || singleLayout) && allowed) window.ClustrSimple?.render(view, view === 'events', mode === 'advanced');
     else window.ClustrSimple?.hide();
   }
@@ -84,6 +84,8 @@
   const weeklyView = document.getElementById('weeklyView');
   const watchlistView = document.getElementById('watchlistView');
   const navWatchlist = document.getElementById('navWatchlist');
+  const technicalsView = document.getElementById('technicalsView');
+  const navTechnicals = document.getElementById('navTechnicals');
   const stocksView = document.getElementById('stocksView');
   const proFeatureView = document.getElementById('proFeatureView');
   const atlasView = document.getElementById('atlasView');
@@ -203,7 +205,7 @@
     const R = window.ClustrRender;
     const MapApi = window.ClustrMap;
 
-    [navWatchlist, navDashboard, navEvents, navStocks, navMap, navDays, navSignal, navMind, navWeekly, navAtlas, navAccount, navAdmin, navPolymarket].forEach(b => {
+    [navTechnicals, navWatchlist, navDashboard, navEvents, navStocks, navMap, navDays, navSignal, navMind, navWeekly, navAtlas, navAccount, navAdmin, navPolymarket].forEach(b => {
       if (b) {
         b.classList.remove('is-active');
         b.setAttribute('aria-current', 'false');
@@ -218,6 +220,8 @@
     if (mindView) mindView.classList.add('hidden');
     if (weeklyView) weeklyView.classList.add('hidden');
     if (watchlistView) watchlistView.classList.add('hidden');
+    if (technicalsView) technicalsView.classList.add('hidden');
+    if (which !== 'technicals') window.ClustrTechnicals?.leave();
     if (stocksView) stocksView.classList.add('hidden');
     if (atlasView) atlasView.classList.add('hidden');
     if (dashboardView) dashboardView.classList.add('hidden');
@@ -227,15 +231,21 @@
     if (proFeatureView) proFeatureView.classList.add('hidden');
     if (which !== 'stocks') window.ClustrStocks?.leave();
 
-    if (which !== 'watchlist' && which !== 'polymarket' && which !== 'atlas' && which !== 'dashboard' && which !== 'connections' && ['#/watchlist', '#/polymarket', '#/atlas', '#/dashboard', '#/connections'].includes(location.hash)) history.replaceState(null, '', location.pathname + location.search);
-    if (['watchlist', 'atlas', 'stocks', 'weekly'].includes(which) && !hasProAccess()) {
+    if (which !== 'technicals' && which !== 'watchlist' && which !== 'polymarket' && which !== 'atlas' && which !== 'dashboard' && which !== 'connections' && ['#/technicals', '#/watchlist', '#/polymarket', '#/atlas', '#/dashboard', '#/connections'].includes(location.hash)) history.replaceState(null, '', location.pathname + location.search);
+    if (['watchlist', 'atlas', 'stocks', 'weekly', 'technicals'].includes(which) && !hasProAccess()) {
       const host = proFeatureView;
-      const nav = { watchlist: navWatchlist, atlas: navAtlas, stocks: navStocks, weekly: navWeekly }[which];
+      const nav = { technicals: navTechnicals, watchlist: navWatchlist, atlas: navAtlas, stocks: navStocks, weekly: navWeekly }[which];
       nav?.classList.add('is-active');
       nav?.setAttribute('aria-current', 'page');
       host?.classList.remove('hidden');
       if (host) host.innerHTML = window.ClustrProPreview.render(which, !!authState.user);
       if (which === 'watchlist' || which === 'atlas') history.replaceState(null, '', `#/${which}`);
+    } else if (which === 'technicals') {
+      history.replaceState(null, '', '#/technicals');
+      navTechnicals?.classList.add('is-active');
+      navTechnicals?.setAttribute('aria-current', 'page');
+      technicalsView?.classList.remove('hidden');
+      window.ClustrTechnicals?.mount(technicalsView);
     } else if (which === 'connections') {
       history.replaceState(null, '', '#/connections');
       if (context?.publish) {
@@ -676,7 +686,7 @@
     const free = !!authState.user && !hasProAccess();
     const banner = document.getElementById('freePlanBanner');
     if (banner) banner.hidden = !free;
-    for (const id of ['navWatchlist', 'navAtlas', 'navStocks', 'navWeekly']) {
+    for (const id of ['navWatchlist', 'navAtlas', 'navStocks', 'navWeekly', 'navTechnicals']) {
       const button = document.getElementById(id);
       if (!button) continue;
       button.classList.toggle('is-pro-locked', !hasProAccess());
@@ -1058,6 +1068,7 @@
       }
       if (location.hash === '#/polymarket') setNav('polymarket');
       if (!publishes.length) {
+        if (location.hash === '#/technicals') setNav('technicals');
         if (location.hash === '#/connections') setNav('connections');
         if (location.hash === '#/watchlist') setNav('watchlist');
         if (location.hash === '#/atlas') setNav('atlas');
@@ -1072,6 +1083,7 @@
       else if (location.hash === '#/admin' && authState.role === 'admin') setNav('admin');
       else if (location.hash === '#/watchlist') setNav('watchlist');
       else if (location.hash === '#/atlas') setNav('atlas');
+      else if (location.hash === '#/technicals') setNav('technicals');
       else if (location.hash === '#/dashboard') setNav('dashboard');
       else if (location.hash === '#/connections') setNav('connections');
       else if (location.hash === '#/account' || new URLSearchParams(location.search).has('checkout')) setNav('account');
@@ -1135,6 +1147,7 @@
   }));
   if (navEvents) navEvents.addEventListener('click', () => setNav('events'));
   navWatchlist?.addEventListener('click', () => setNav('watchlist'));
+  if (navTechnicals) navTechnicals.addEventListener('click', () => setNav('technicals'));
   if (navStocks) navStocks.addEventListener('click', () => setNav('stocks'));
   async function changeEventSort(value) {
     if (!['size', 'positive', 'negative', 'impact'].includes(value)) return;
@@ -1333,6 +1346,7 @@
   }
 
   window.addEventListener('clustr:watchlist-change', event => {
+    if (view === 'technicals') { window.ClustrTechnicals?.refreshScope(); return; }
     if (viewMode === 'simple' || view === 'events') updateViewMode();
     if (!publishes.length || (!event.detail.scopeChanged && !window.ClustrWatchlist?.isFiltered())) return;
     if (view === 'stocks') { window.ClustrStocks?.refreshScope(); return; }

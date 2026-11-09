@@ -31,6 +31,7 @@
   <link rel="stylesheet" href="vendor/gridstack-14.1.0/gridstack.min.css" />
   <link rel="stylesheet" href="dashboard/dashboard.css?v=packed-workspace-2" />
   <link rel="stylesheet" href="world.css?v=globe-1" />
+  <link rel="stylesheet" href="technicals.css?v=technicals-1" />
   <link rel="stylesheet" href="mobile.css?v=mobile-simplify-1" />
   <link rel="stylesheet" href="view-mode.css?v=default-layouts-4" />
   <link rel="stylesheet" href="simple-selected.css?v=news-detail-9" />
@@ -112,6 +113,7 @@
         </button>
         <button type="button" id="navConnections" class="nav-rail-btn" title="Explore cluster and stock network" aria-label="Network"><svg class="nav-signal-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m4 5 8 6 8-7M12 11l8 9M12 11l-9 8"/><path d="m4 5-1 14 17 1V4" opacity=".65"/><g fill="currentColor" stroke="none"><circle cx="4" cy="5" r="2.1"/><circle cx="20" cy="4" r="1.8"/><circle cx="3" cy="19" r="1.8"/><circle cx="20" cy="20" r="2.1"/><circle cx="12" cy="11" r="2.6"/></g></svg><span class="nav-rail-label">Network</span></button>
         <button type="button" id="navMap" class="nav-rail-btn" title="News around the world" aria-label="World news globe"><svg class="nav-signal-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 4 6 4 9s-1 6-4 9M12 3c-3 3-4 6-4 9s1 6 4 9"/><g fill="currentColor" stroke="none"><circle cx="17" cy="7" r="1.4"/></g></svg><span class="nav-rail-label">World</span></button>
+        <button type="button" id="navTechnicals" class="nav-rail-btn" title="Independent technical signals" aria-label="Technicals"><svg class="nav-signal-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 3v18m7-16v13m7-16v18M3 8h4v7H3zm7 1h4v5h-4zm7-4h4v9h-4z"/><g fill="currentColor" stroke="none"><circle cx="5" cy="3" r="1.2"/><circle cx="19" cy="20" r="1.2"/></g></svg><span class="nav-rail-label">Technicals</span></button>
         <button type="button" id="navWeekly" class="nav-rail-btn" title="Weekly cluster trends" aria-label="Weekly cluster trends">
           <svg class="nav-signal-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 18 5-6 5 3 7-11"/><g fill="currentColor" stroke="none"><circle cx="3" cy="18" r="1.7"/><circle cx="8" cy="12" r="1.7"/><circle cx="13" cy="15" r="1.7"/><circle cx="20" cy="4" r="2.1"/></g></svg>
           <span class="nav-rail-label">Trends</span>
@@ -270,6 +272,7 @@
       </section>
       <section id="atlasView" class="hidden atlas-page" aria-label="Cluster Atlas"></section>
       <section id="dashboardView" class="hidden dashboard-page" aria-label="Dashboard"></section>
+      <section id="technicalsView" class="hidden" aria-label="Independent technical signals"></section>
       <section id="connectionsView" class="hidden" aria-label="Connected market explorer"></section>
       <section id="watchlistView" class="hidden watchlist-page" aria-label="My watchlist"></section>
       <section id="stocksView" class="hidden stocks-page" aria-label="Stocks and linked clusters"></section>
@@ -330,7 +333,7 @@
   <script src="js/auth.js?v=account-lock-1"></script>
   <script src="js/push.js?v=publish-push-1"></script>
   <script src="js/cluster-taxonomy.js?v=curated-baskets-1"></script>
-  <script src="js/api.js?v=curated-baskets-1"></script>
+  <script src="js/api.js?v=technicals-1"></script>
   <script src="js/watchlist.js?v=cluster-watchlist-1"></script>
   <script src="atlas/atlas.js?v=menu-history-5"></script>
   <script src="dashboard/regression.js?v=projection-2"></script>
@@ -346,9 +349,10 @@
   <script src="js/stocks.js?v=stocks-simple-7"></script>
   <script src="connections/canvas.js?v=calm-clickable-4"></script>
   <script src="connections/connections.js?v=default-layouts-4"></script>
-  <script src="js/pro-preview.js?v=2"></script>
+  <script src="js/pro-preview.js?v=technicals-1"></script>
   <script src="js/mobile-ui.js?v=mobile-simplify-1"></script>
-  <script src="js/simple-view.js?v=news-detail-9"></script>
-  <script src="js/app.js?v=news-detail-9"></script>
+  <script src="js/simple-view.js?v=technicals-1"></script>
+  <script src="js/technicals.js?v=technicals-1"></script>
+  <script src="js/app.js?v=technicals-1"></script>
 </body>
 </html>
