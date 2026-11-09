@@ -20,6 +20,12 @@ test('Simple and Advanced follow data pages, preserve mode, and leave account pa
   assert.equal(document.documentElement.dataset.viewMode, 'simple');
   assert.equal(more.open, true);
   assert.match(hint.textContent, /week/);
+  assert.equal(bar.hidden, true);
+  const rendered=[];context.window.ClustrSimple={render:view=>rendered.push(view),hide(){}};
+  for(const view of ['connections','map','weekly','days','watchlist']) {
+    context.view=view;vm.runInContext("viewMode = 'advanced'; updateViewMode()",context);assert.equal(bar.hidden,true);
+  }
+  assert.deepEqual(rendered,['connections','map','weekly','days','watchlist']);
   vm.runInContext("view = 'account'; updateViewMode()", context);
   assert.equal(bar.hidden, true);
 });

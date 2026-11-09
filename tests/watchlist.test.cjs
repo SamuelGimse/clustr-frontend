@@ -255,3 +255,15 @@ test('Compact scope toggle, hidden link menu and keyboard dismissal keep filter 
   menu.open=true;s.api.setScope('all');assert.equal(menu.open,false);assert.equal(menu.hidden,true);
   assert(!attributes.has('data-watchlist-filtered'));assert.equal(indicator.hidden,true);
 });
+
+
+test('Unfiltered report calendar remains available when history summaries fail', async()=>{
+  const publishes=[{id:7,market:'US',created_at:'2026-11-01T12:00:00Z'}];
+  const delivered=[];
+  const context={reportRevision:0,publishes,publishIndex:0,groupsCache:{},daysView:{},window:{ClustrWatchlist:{isFiltered:()=>false},ClustrApi:{fetchHistorySummaries:async()=>{throw Error('RPC unavailable')}},ClustrSimple:{setReports:rows=>delivered.push(rows)},ClustrRender:{renderDaysList(){}}},scopedGroups:groups=>groups};
+  vm.createContext(context);
+  const app=fs.readFileSync(path.join(__dirname,'../js/app.js'),'utf8');
+  vm.runInContext(app.slice(app.indexOf('  async function renderReportDays()'),app.indexOf("  window.addEventListener('clustr:watchlist-change'")),context);
+  await vm.runInContext('renderReportDays()',context);
+  assert.equal(delivered[0][0].publish.id,7);assert.equal(delivered.at(-1)[0].publish.__clusterCount,null);
+});

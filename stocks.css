@@ -107,3 +107,19 @@ html[data-theme="apple"] :is(.stocks-cluster, .stocks-browser) { background: var
   .stocks-link-filter label > span { flex-wrap: wrap; font-size: 11px; text-align: center; }
   .main:has(> #stocksView:not(.hidden)) .stocks-dock-label { display: block; flex: 1; text-align: center; font-size: 12px; color: var(--text-meta); padding-right: 44px; }
 }
+
+#stocksView [hidden]{display:none!important}
+.stocks-research{margin:16px 0 24px;min-width:0}
+.stocks-research-tabs{display:flex;gap:20px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.stocks-research-tabs button{border:0;border-bottom:2px solid transparent;background:none;color:var(--text-meta);padding:12px 0;font:inherit;font-size:13px;cursor:pointer}
+.stocks-research-tabs button[aria-selected=true]{border-color:var(--accent);color:var(--text)}
+.stocks-research-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px 12px}
+.stocks-research-metrics span{display:block;color:var(--text-meta);font-size:11px;margin-bottom:6px}
+.stocks-research-metrics strong{font-size:17px;font-variant-numeric:tabular-nums}
+.stocks-research-note{font-size:11px;line-height:1.6;color:var(--text-meta);margin:16px 0}
+#stockResearchChart iframe{display:block;border:0;width:100%;height:500px}
+.stocks-other-signals{font-size:12px;margin:14px 0}
+.stocks-other-signals summary{cursor:pointer;padding:10px 0}
+.stocks-other-signals dl>div{display:flex;justify-content:space-between;gap:16px;border-bottom:1px solid var(--border);padding:9px 0;overflow-wrap:anywhere}
+.stocks-other-signals dd{margin:0}
+@media(max-width:768px){.stocks-research-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}#stockResearchChart iframe{height:390px}}

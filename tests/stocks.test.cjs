@@ -7,8 +7,8 @@ const read = file => process.argv.includes('--staged') ? cp.execFileSync('git', 
 const context = { window: { addEventListener() {} }, URL, URLSearchParams, console, Date };
 vm.createContext(context);
 vm.runInContext(read('js/util.js'), context);
-vm.runInContext(read('js/stocks.js').replace('  window.ClustrStocks = {', '  window.audit = { buildStockIndex, buildScopedIndex, linksFor, loadWeek, safeLink, clusterHtml, usableStock, quoteHtml };\n  window.ClustrStocks = {'), context);
-const { buildStockIndex, buildScopedIndex, linksFor, loadWeek, safeLink, clusterHtml, usableStock, quoteHtml } = context.window.audit;
+vm.runInContext(read('js/stocks.js').replace('  window.ClustrStocks = {', '  window.audit = { buildStockIndex, buildScopedIndex, linksFor, loadWeek, safeLink, clusterHtml, usableStock, quoteHtml, researchHtml };\n  window.ClustrStocks = {'), context);
+const { buildStockIndex, buildScopedIndex, linksFor, loadWeek, safeLink, clusterHtml, usableStock, quoteHtml, researchHtml } = context.window.audit;
 const stock = { symbol: 'INTC', name: 'Intel' };
 const article = { title: '<Intel update>', link: 'https://example.com/intel', mentioned_companies: [stock] };
 const old = { publish: { id: 1, market: 'US', created_at: '2026-11-04T12:00:00Z' }, groups: [{ name: 'Semiconductors', articles: [{ ...article, rating: -4 }], mentioned_stocks: [stock], stocks: [stock], fixed_stocks: [stock] }] };
@@ -78,3 +78,11 @@ assert.match(quoteHtml(null, true), /Loading price/);
   assert.deepEqual(painted, [2, 2], 'A late Pro request must not restore history after access is revoked');
   console.log('Stocks audit: market isolation, all relationship layers, deduplication, latest matching publish, URL escaping, 101-publish pagination, authenticated requests and partial failures passed.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
+
+
+const dated=buildStockIndex([{publish:{id:10,market:'US',created_at:'2026-11-09T12:00:00Z'},groups:[{name:'Chips',fixed_stocks:[{symbol:'NVDA',priceAtPublish:100,technical_signals:{asOf:'2026-11-08',momentum5dPct:2.5,relativeVolume20d:1.1}}]}]}])[0];
+assert.equal(dated.snapshot.price,100);assert.equal(dated.technical.momentum5dPct,2.5);
+assert.match(researchHtml(dated,{price:110,asOf:'2026-11-09T13:00:00Z'}),/\+10.00%/);
+assert.doesNotMatch(researchHtml(dated,{price:110,asOf:'2026-11-08T13:00:00Z'}),/\+10.00%/);
+assert.match(researchHtml(dated,null),/Momentum 5d/);
+assert.match(researchHtml(dated,null),/Unavailable/);

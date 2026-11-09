@@ -215,9 +215,8 @@
   }
 
   function stockRow(stock) {
-    const simple=root.document?.documentElement?.dataset?.viewMode==='simple';
-    const groups=simple?(root.ClustrApp?.getGroups?.()||[]).filter(group=>groupStocks(group,stock.market).some(item=>item.key===stock.key)):[];
-    return `<div class="watchlist-stock"><div>${simple?`<button type="button" class="watchlist-company-open" data-watch-stock-open="${esc(stock.symbol)}">${esc(stock.symbol)}</button>`:`<strong>${esc(stock.symbol)}</strong>`}<small>${esc(stock.name)} · ${stock.market}</small></div>${button(stock, stock.market)}${simple?`<div class="watchlist-card-price" data-watch-card-price="${esc(stock.symbol)}">Loading quote…</div><div class="watchlist-card-themes">${groups.slice(0,2).map(group=>`<span>${esc(group.name)}</span>`).join('')||'<small>No linked themes in this report</small>'}</div>`:''}</div>`;
+    const groups=(root.ClustrApp?.getGroups?.()||[]).filter(group=>groupStocks(group,stock.market).some(item=>item.key===stock.key));
+    return `<div class="watchlist-stock"><div><button type="button" class="watchlist-company-open" data-watch-stock-open="${esc(stock.symbol)}">${esc(stock.symbol)}</button><small>${esc(stock.name)} · ${stock.market}</small></div>${button(stock, stock.market)}<div class="watchlist-card-price" data-watch-card-price="${esc(stock.symbol)}">Loading quote…</div><div class="watchlist-card-themes">${groups.slice(0,2).map(group=>`<span>${esc(group.name)}</span>`).join('')||'<small>No linked themes in this report</small>'}</div></div>`;
   }
 
   function paintManager() {
@@ -231,7 +230,7 @@
     manager.querySelector('[data-watch-results]').textContent = `Matches: ${matches.length}`;
     manager.querySelector('[data-watch-more]').hidden = matches.length <= limit;
     manager.querySelector('[data-watch-add]').disabled = !ready || pending.size > 0;
-    if(root.document?.documentElement?.dataset?.viewMode==='simple'&&root.ClustrQuotes){
+    if(root.ClustrQuotes){
       const current=epoch,host=manager;
       root.ClustrQuotes.getLatestQuotes(rows.map(stock=>stock.symbol),'US').then(quotes=>{
         if(current!==epoch||host!==manager||view!=='watchlist')return;

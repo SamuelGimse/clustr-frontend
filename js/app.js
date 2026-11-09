@@ -45,13 +45,14 @@
   function updateViewMode() {
     document.documentElement.dataset.viewMode = viewMode;
     document.documentElement.dataset.activeView = view;
-    if (viewModeBar) viewModeBar.hidden = !dataViews.has(view) || !authState.user;
+    const singleLayout = ['connections', 'map', 'weekly', 'days', 'watchlist'].includes(view);
+    if (viewModeBar) viewModeBar.hidden = !dataViews.has(view) || !authState.user || singleLayout;
     if (viewModeHint) viewModeHint.textContent = viewMode === 'simple' ? modeHints[view] || '' : 'Full report detail and controls.';
     document.querySelectorAll('[data-view-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.viewMode === viewMode)));
     const more = dashboardView?.querySelector('.dash-more');
     if (more) more.open = true;
     const allowed = authState.user && dataViews.has(view) && (!['stocks', 'weekly', 'atlas', 'watchlist'].includes(view) || hasProAccess());
-    if (viewMode === 'simple' && allowed) window.ClustrSimple?.render(view);
+    if ((viewMode === 'simple' || singleLayout) && allowed) window.ClustrSimple?.render(view);
     else window.ClustrSimple?.hide();
   }
 
@@ -510,24 +511,9 @@
     }
     const orderedDays = [...days.values()].map(point => ({ ...point, scores: [...point.ratings.values()] })).sort((a,b)=>a.day.localeCompare(b.day));
     weeklyTrendDays = orderedDays;
-    const uniqueStories = [...new Set(clusters.flatMap(cluster => [...cluster.stories.keys()]))].length;
-    const averageScore = window.ClustrUtil.exponentialMeanRating(clusters.map(cluster => cluster.score));
-    const repeatedClusters = clusters.filter(cluster => cluster.days.size > 1).length;
-    summary.innerHTML = `<div><b>${clusters.length}</b><span>active clusters</span></div><div><b>${uniqueStories}</b><span>unique stories</span></div><div><b>${repeatedClusters}</b><span>multi-day clusters</span></div><div><b>${averageScore == null ? '—' : `${averageScore > 0 ? '+' : ''}${averageScore.toFixed(1)}`}</b><span>average impact</span></div>`;
-    if (weeklyMode === 'trends' && viewMode !== 'simple') {
-      chart.innerHTML = weeklyTrendChart(orderedDays);
-      const changes = clusters.filter(c => c.days.size > 1).map(c => {
-        const rows = [...c.items].sort((a,b)=>a.day.localeCompare(b.day));
-        const firstDay = rows[0].day, lastDay = rows[rows.length - 1].day;
-        const mean = entries => window.ClustrUtil.exponentialMeanRating(entries.map(row => weeklyScore(row.group)));
-        const first = mean(rows.filter(row => row.day === firstDay)), last = mean(rows.filter(row => row.day === lastDay));
-        return { ...c, change: first == null || last == null ? null : last-first };
-      }).filter(c=>c.change!=null).sort((a,b)=>Math.abs(b.change)-Math.abs(a.change)).slice(0,12);
-      list.innerHTML = changes.length ? changes.map(c=>weeklyClusterCard(c,true)).join('') : '<div class="weekly-empty">No repeated rated clusters to compare this week.</div>';
-    } else {
-      chart.innerHTML = viewMode === 'simple' ? weeklyTrendChart(orderedDays) : '';
-      list.innerHTML = clusters.length ? clusters.map(c=>weeklyClusterCard(c,false)).join('') : '<div class="weekly-empty">No clusters found in the last seven days.</div>';
-    }
+    summary.innerHTML = '';
+    chart.innerHTML = weeklyTrendChart(orderedDays);
+    list.innerHTML = clusters.length ? clusters.map(c=>weeklyClusterCard(c,false)).join('') : '<div class="weekly-empty">No clusters found in the last seven days.</div>';
     bindWeeklyClusterCharts(list, clusters);
     window.ClustrSimple?.prepareWeekly(orderedDays, clusters);
   }
@@ -1117,6 +1103,7 @@
     updateViewMode();
     if (view === 'weekly') renderWeekly();
     if (view === 'watchlist' && hasProAccess()) window.ClustrWatchlist?.mount(watchlistView);
+    if (view === 'stocks') window.ClustrStocks?.refreshDetail();
   }));
   if (navEvents) navEvents.addEventListener('click', () => setNav('events'));
   navWatchlist?.addEventListener('click', () => setNav('watchlist'));
@@ -1257,7 +1244,7 @@
   });
 
   window.addEventListener('resize', () => {
-    if (view === 'weekly' && weeklyMode === 'trends' && weeklyTrendDays.length) {
+    if (view === 'weekly' && weeklyTrendDays.length) {
       const chart = document.getElementById('weeklyChart');
       if (chart) chart.innerHTML = weeklyTrendChart(weeklyTrendDays);
     }
@@ -1285,10 +1272,15 @@
     const revision = ++reportRevision;
     if (!daysView) return;
     daysView.textContent = 'Loading reports…';
+    const filtered = window.ClustrWatchlist?.isFiltered();
+    if (!filtered) window.ClustrSimple?.setReports?.(publishes.map((publish, index) => ({ publish, index })));
+    else window.ClustrSimple?.setReportError?.('Loading reports for your watchlist…');
     try {
       let snapshots = null;
       if (window.ClustrApi.fetchHistorySummaries) {
-        snapshots = new Map((await window.ClustrApi.fetchHistorySummaries()).map(publish => [String(publish.id), publish.groups_json || []]));
+        try {
+          snapshots = new Map((await window.ClustrApi.fetchHistorySummaries()).map(publish => [String(publish.id), publish.groups_json || []]));
+        } catch {}
       }
       if (window.ClustrWatchlist?.isFiltered() && !snapshots) {
         const pending = publishes.filter(publish => !groupsCache[publish.id]);
@@ -1301,8 +1293,8 @@
       }
       if (revision !== reportRevision) return;
       const rows = publishes.map((publish, index) => {
-        const groups = snapshots?.get(String(publish.id)) || groupsCache[publish.id] || [];
-        return { publish: { ...publish, __clusterCount: scopedGroups(groups, publish.market).length }, index };
+        const groups = snapshots?.get(String(publish.id)) || groupsCache[publish.id];
+        return { publish: { ...publish, __clusterCount: groups ? scopedGroups(groups, publish.market).length : null }, index };
       }).filter(row => !window.ClustrWatchlist?.isFiltered() || row.publish.__clusterCount);
       window.ClustrSimple?.setReports?.(rows);
       if (!rows.length) { daysView.textContent = 'No reports match your watchlist. Add stocks or choose All stocks.'; return; }

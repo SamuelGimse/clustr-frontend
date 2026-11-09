@@ -208,3 +208,13 @@
 }
 
 .dash-selected-stock-metrics { margin-bottom:12px; }
+
+.dash-overall-trend{margin-bottom:14px}
+.dash-overall-trend svg{display:block;width:100%;max-height:190px}
+.dash-overall-trend svg path{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round}
+.dash-overall-trend svg circle{fill:var(--accent)}
+.dash-overall-trend svg text{fill:var(--text-meta);font-size:12px}
+.dash-overall-readout{text-align:right;font-variant-numeric:tabular-nums}
+.dash-overall-readout strong{display:block;font-size:24px}
+.dash-overall-readout small{color:var(--text-meta);font-size:11px}
+@media(max-width:600px){.dash-overall-trend svg{min-height:110px}.dash-overall-readout small{max-width:120px;display:block}.dash-overall-trend .dash-panel-head{gap:8px}.dash-overall-trend h2{font-size:17px}}

@@ -16,6 +16,8 @@
   let generation = 0, active = false, listScroll = 0;
   let reportData=[];
   let requestedSymbol = '';
+  let detailTab = 'data';
+  const number = value => value == null || typeof value === 'boolean' || String(value).trim() === '' || !Number.isFinite(Number(value)) ? null : Number(value);
 
   function usableStock(raw) {
     const stock = typeof raw === 'string' ? { symbol: raw } : raw;
@@ -42,6 +44,11 @@
           const key = `${exchange}:${stock.symbol}`;
           if (!index.has(key)) index.set(key, { ...stock, key, market: exchange, redditBuzz: U().redditBuzzForStock(groups, stock.symbol, exchange, publish.created_at), links: new Map(), articles: new Map(), publishes: new Set() });
           const item = index.get(key);
+          if (raw && typeof raw === 'object') {
+            const price = number(raw.priceAtPublish ?? raw.price_at_publish ?? raw.price);
+            if (!item.snapshot && price > 0) item.snapshot = { price, asOf: publish.created_at, publishId: publish.id };
+            if (!item.technical && raw.technical_signals && typeof raw.technical_signals === 'object' && (!raw.technical_signals.asOf || Date.parse(raw.technical_signals.asOf) <= Date.parse(publish.created_at))) item.technical = { ...raw.technical_signals, publishAt: publish.created_at };
+          }
           if (item.name === item.symbol && stock.name !== stock.symbol) item.name = stock.name;
           if (!item.links.has(clusterKey)) item.links.set(clusterKey, { key: clusterKey, name: clusterName, market: exchange, group, publish, layers: new Set(), articles: new Map(), publishes: new Set(), articlePublishes: new Set() });
           const link = item.links.get(clusterKey);
@@ -138,6 +145,30 @@
     return `<span class="stocks-quote" title="${U().escapeHtml(asOf ? asOf + ' · may be delayed' : 'No latest quote available')}"><span>Last available price</span><strong>${U().escapeHtml(price)}</strong>${change ? `<small class="${U().toneClass(quote.changePercent)}">${change} session</small>` : ''}${asOf ? `<small>${U().escapeHtml(asOf)}${detail ? ' · may be delayed' : ''}</small>` : ''}</span>`;
   }
 
+  function researchHtml(stock, quote) {
+    const esc=U().escapeHtml, signals=stock.technical || {}, signed=value=>number(value)==null?'—':U().formatPct(Number(value));
+    const metric=(label,value)=>`<div><span>${label}</span><strong>${value}</strong></div>`;
+    const since=stock.snapshot&&number(quote?.price)>0&&Date.parse(quote?.asOf)>=Date.parse(stock.snapshot.asOf)?U().deltaSincePublish(stock.snapshot.price,quote.price):null;
+    const known=new Set(['momentum5dPct','momentum20dPct','annualizedVolatility20dPct','avgDailyTurnover20d','relativeVolume20d','status','asOf','currency','publishAt']);
+    const extra=Object.entries(signals).filter(([key,value])=>!known.has(key)&&['string','number','boolean'].includes(typeof value)&&value!==''&&value!=null);
+    return `<div class="stocks-research-metrics">${metric('At latest priced publish',stock.snapshot?`USD ${esc(U().formatMoney(stock.snapshot.price))}`:'—')}${metric('Since that publish',signed(since))}${metric('Momentum 5d',signed(signals.momentum5dPct))}${metric('Momentum 20d',signed(signals.momentum20dPct))}${metric('Volatility 20d annualized',number(signals.annualizedVolatility20dPct)==null?'—':`${Number(signals.annualizedVolatility20dPct).toFixed(1)}%`)}${metric('Avg traded value/day 20d',number(signals.avgDailyTurnover20d)==null?'—':`${esc(signals.currency||'USD')} ${esc(new Intl.NumberFormat('en',{notation:'compact',maximumFractionDigits:1}).format(Number(signals.avgDailyTurnover20d)))}`)}${metric('Volume / prior 20d average',number(signals.relativeVolume20d)==null?'—':`${Number(signals.relativeVolume20d).toFixed(2)}×`)}${metric('Reddit attention score',stock.redditBuzz?`${stock.redditBuzz.score}/100`:'Unavailable')}</div><p class="stocks-research-note">${signals.asOf?`Saved daily-bar signals through ${esc(signals.asOf)}.`:'No dated technical snapshot saved for this stock.'}${stock.snapshot?` Price baseline: ${esc(quoteTime.format(new Date(stock.snapshot.asOf)))}.`:''} Since-publish return requires a quote at or after that publish. Momentum and volatility are saved observations, not live estimates.</p>${U().redditBuzzHtml(stock.redditBuzz,true)}${extra.length?`<details class="stocks-other-signals"><summary>Other saved stock data</summary><dl>${extra.map(([key,value])=>`<div><dt>${esc(key.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/_/g,' '))}</dt><dd>${esc(String(value))}</dd></div>`).join('')}</dl></details>`:''}`;
+  }
+
+  function advancedMode() { return window.document?.documentElement?.dataset?.viewMode === 'advanced'; }
+  function showResearchTab(tab) {
+    const detail=root?.querySelector('#stocksDetail'),stock=items.find(item=>item.key===selected);
+    if(!detail||!stock||!advancedMode())return;
+    detailTab=tab==='chart'?'chart':'data';
+    detail.querySelectorAll('[data-stock-research-tab]').forEach(button=>{const current=button.dataset.stockResearchTab===detailTab;button.setAttribute('aria-selected',String(current));button.tabIndex=current?0:-1;});
+    const data=detail.querySelector('#stockResearchData'),chart=detail.querySelector('#stockResearchChart');
+    data.hidden=detailTab!=='data';chart.hidden=detailTab!=='chart';
+    if(detailTab==='chart'&&!chart.querySelector('iframe')){
+      const frame=window.document.createElement('iframe');
+      frame.title=`TradingView chart for ${stock.symbol}`;frame.src=U().tradingViewUrl(stock.symbol);frame.loading='lazy';frame.referrerPolicy='strict-origin-when-cross-origin';frame.setAttribute('allowfullscreen','');
+      chart.append(frame);
+    }
+  }
+
   function renderGrid() {
     const results = filteredItems(), esc = U().escapeHtml;
     root.querySelector('#stocksResultCount').textContent = `${results.length} of ${items.length} stocks`;
@@ -146,12 +177,20 @@
 
   function renderDetail() {
     const stock = items.find(item => item.key === selected && (window.ClustrWatchlist?.allows(item, item.market) ?? true)), detail = root.querySelector('#stocksDetail');
-    if (!stock) { detail.innerHTML = '<div class="stocks-detail-empty"><h2>Select a stock</h2><p>Explore how its news and cluster relationships connect across the last seven days.</p></div>'; return; }
+    if (!stock) { detail.dataset.stockKey='';detail.innerHTML = '<div class="stocks-detail-empty"><h2>Select a stock</h2><p>Explore how its news and cluster relationships connect across the last seven days.</p></div>'; return; }
     const esc = U().escapeHtml, links = linksFor(stock, mode), articleLinks = linksFor(stock, 'articles');
-    detail.innerHTML = `<button type="button" class="stocks-back" data-stock-back><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>Back to stocks</button>
+    if(detail.dataset.stockKey!==stock.key||!detail.querySelector('[data-stock-snapshot]')){
+      detailTab='data';detail.dataset.stockKey=stock.key;
+      detail.innerHTML='<div data-stock-snapshot></div><section class="stocks-research" hidden><div class="stocks-research-tabs" role="tablist" aria-label="Stock research"><button type="button" role="tab" id="stockDataTab" data-stock-research-tab="data" aria-controls="stockResearchData" aria-selected="true">Stock data</button><button type="button" role="tab" id="stockChartTab" data-stock-research-tab="chart" aria-controls="stockResearchChart" aria-selected="false" tabindex="-1">TradingView</button></div><div id="stockResearchData" role="tabpanel" aria-labelledby="stockDataTab"></div><div id="stockResearchChart" role="tabpanel" aria-labelledby="stockChartTab" hidden><p class="stocks-research-note">TradingView loads when this tab is opened. Switching companies returns to Stock data.</p></div></section><div data-stock-connections></div>';
+    }
+    detail.querySelector('[data-stock-snapshot]').innerHTML = `<button type="button" class="stocks-back" data-stock-back><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>Back to stocks</button>
       <div class="stocks-selection"><div><span class="stocks-eyebrow">${esc(stock.market)} · STOCK CONNECTIONS</span><h2 id="stocksSelectedHeading" tabindex="-1">${esc(stock.symbol)}</h2><p>${esc(stock.name)}</p>${quoteHtml(quotes?.[stock.symbol], quotes === null, true)}</div><span class="stocks-selection-count">${stock.links.size}<small>linked clusters</small></span></div>
-      ${U().redditBuzzHtml(stock.redditBuzz, true)}
-      <fieldset class="stocks-link-filter"><legend>Show connections</legend><label><input type="radio" name="stock-links" value="articles" ${mode === 'articles' ? 'checked' : ''}><span>Article mentions <b>${articleLinks.length}</b></span></label><label><input type="radio" name="stock-links" value="clusters" ${mode === 'clusters' ? 'checked' : ''}><span>All links <b>${stock.links.size}</b></span></label></fieldset>
+      `;
+    const advanced=advancedMode();detail.querySelector('.stocks-research').hidden=!advanced;
+    detail.querySelector('#stockResearchData').innerHTML=advanced?researchHtml(stock,quotes?.[stock.symbol]):'';
+    if(!advanced){detailTab='data';detail.querySelector('#stockResearchChart iframe')?.remove();}
+    else showResearchTab(detailTab);
+    detail.querySelector('[data-stock-connections]').innerHTML=`<fieldset class="stocks-link-filter"><legend>Show connections</legend><label><input type="radio" name="stock-links" value="articles" ${mode === 'articles' ? 'checked' : ''}><span>Article mentions <b>${articleLinks.length}</b></span></label><label><input type="radio" name="stock-links" value="clusters" ${mode === 'clusters' ? 'checked' : ''}><span>All links <b>${stock.links.size}</b></span></label></fieldset>
       <p class="stocks-filter-note">${mode === 'articles' ? 'Explicit mentions recorded in source articles.' : 'All links: article mentions, close links, related stocks and theme comparison baskets.'} Impact scores describe clusters, not stock returns.</p>
       <p class="stocks-link-count" role="status">${links.length} linked cluster${links.length === 1 ? '' : 's'}</p>
       <div class="stocks-clusters">${links.length ? links.map(clusterHtml).join('') : '<p class="stocks-empty">No explicit article mentions for this stock in the last seven days. Choose “All links” to see its other links.</p>'}</div>`;
@@ -207,12 +246,16 @@
     }
   }
   function handleClick(event) {
+    const research=event.target.closest('[data-stock-research-tab]');
+    if(research){showResearchTab(research.dataset.stockResearchTab);return;}
     const tile = event.target.closest('[data-stock-key]');
     if (tile) showStock(tile.dataset.stockKey);
     if (event.target.closest('[data-stock-back]')) backToStocks();
     if (event.target.closest('[data-stock-refresh]')) load();
   }
   function handleKey(event) {
+    const research=event.target.closest('[data-stock-research-tab]');
+    if(research&&['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();const tab=event.key==='Home'||event.key==='ArrowLeft'?'data':'chart';showResearchTab(tab);root.querySelector(`[data-stock-research-tab="${tab}"]`)?.focus();return;}
     if (event.key === 'Escape' && compact() && root.dataset.detailOpen === 'true') { event.preventDefault(); backToStocks(); }
   }
 
@@ -279,6 +322,7 @@
 
   function leave() {
     active = false; ++generation;
+    root?.querySelector('#stockResearchChart iframe')?.remove();detailTab='data';
     if (window.history.state?.clustrStockDetail) window.history.back();
   }
   function refreshScope() {
@@ -295,5 +339,6 @@
     const item = items.find(item => item.symbol === requestedSymbol);
     if (active && item) showStock(item.key);
   }
-  window.ClustrStocks = { mount, leave, refreshScope, selectSymbol };
+  function refreshDetail(){if(active&&root?.querySelector('#stocksDetail'))renderDetail();}
+  window.ClustrStocks = { mount, leave, refreshScope, selectSymbol, refreshDetail };
 })();

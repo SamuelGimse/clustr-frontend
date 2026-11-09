@@ -16,6 +16,8 @@ test('Dashboard keeps panels mounted for the selected Simple grid and Advanced a
   try {
     invalidate(); await render(root, () => {});
     assert.match(root.innerHTML, /<details class="dash-more dash-panel--wide" open><summary>/);
+    assert.match(root.innerHTML,/Overall news trend/);
+    assert.doesNotMatch(root.innerHTML,/class="dash-metrics"/);
     document.documentElement.dataset.viewMode = 'advanced';
     await render(root, () => {});
     assert.match(root.innerHTML, /<details class="dash-more dash-panel--wide" open><summary>/);
@@ -42,6 +44,7 @@ test('Dashboard uses the latest report per day and keeps markets separate', () =
   assert.equal(us.latest.id, 3);
   assert.equal(us.reports, 3);
   assert.deepEqual(us.days.map(day => [day.positive, day.negative]), [[0, 1], [2, 0]]);
+  assert.deepEqual(us.days.map(day=>day.score),[-2,4]);
   assert.equal(us.stories, 2);
   assert.equal(us.rated, 2);
   assert.equal(us.sourceCount, 2);
