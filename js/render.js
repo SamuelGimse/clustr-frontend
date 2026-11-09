@@ -1334,7 +1334,7 @@
               ${
                 a.primary_country
                   ? `<span class="country-pill">${util.escapeHtml(
-                      a.primary_country
+                      util.articleLocation(a)
                     )}</span>`
                   : ''
               }

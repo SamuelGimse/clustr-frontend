@@ -17,6 +17,15 @@ function isQuoteSymbol(symbol) {
   return /^[A-Z0-9^][A-Z0-9.^:=/\-]{0,31}$/.test(normalizeSymbol(symbol));
 }
 
+function articleLocation(article) {
+  const country = String(article.primary_country || '').trim();
+  const region = String(article.region || '').trim();
+  const states = 'Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming|District of Columbia'.split('|');
+  const state = /^(us|usa|united states(?: of america)?)$/i.test(country.replace(/\./g, ''))
+    ? states.find(name => name.toLowerCase() === region.toLowerCase()) : '';
+  return state ? `${country} · ${state}` : country;
+}
+
 function formatPct(value, digits = 2) {
   if (value == null || Number.isNaN(Number(value))) return '';
   const n = Number(value);
@@ -160,6 +169,7 @@ function redditBuzzHtml(signal, detail = false) {
 }
 
 window.ClustrUtil = {
+  articleLocation,
   redditBuzzForStock,
   redditBuzzHtml,
   sleep,
