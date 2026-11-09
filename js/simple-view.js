@@ -1,7 +1,7 @@
 (function(root,factory){const api=factory(root);if(typeof module==='object'&&module.exports)module.exports=api;else root.ClustrSimple=api;})(typeof window==='undefined'?globalThis:window,function(win){
   let revision=0, active='', identity='', selected='', layout='grid', mobilePane='news', month='', selectedDay='', reportRows=null;
   const nativeViews=new Set(['dashboard','stocks','atlas','connections','map','weekly','watchlist']);
-  let groupsRef=null,newsSort='impact',reportScope='',reportSource=null;
+  let groupsRef=null,newsSort='impact',reportScope='',reportSource=null,reportError='';
   try { if(win.localStorage?.getItem('clustr-simple-news-layout')==='desk')layout='desk'; } catch {}
   const esc = value => win.ClustrUtil.escapeHtml(String(value ?? ''));
   const score = group => win.ClustrUtil.articleImpactScore(group.articles || []) ?? win.ClustrUtil.numericStance(group.stance_score ?? group.cluster_score);
@@ -65,11 +65,12 @@
   function percent(value){return value==null||!Number.isFinite(Number(value))?'—':`${Number(value)>0?'+':''}${Number(value).toFixed(2)}%`;}
   function stockKinds(group,symbol){
     const labels=[];
-    for(const [fields,label]of [[['mentioned_stocks'],'Mentioned'],[['close_stocks','direct_stocks'],'Close link'],[['related_stocks','original_stocks'],'Related'],[['fixed_stocks','default_stocks'],'Comparison basket']])if(fields.some(field=>(group[field]||[]).some(s=>String(s?.symbol||s).toUpperCase()===symbol)))labels.push(label);
+    for(const [fields,label]of [[['mentioned_stocks'],'Mentioned'],[['close_stocks','direct_stocks'],'Close link'],[['related_stocks','original_stocks'],'Related'],[['fixed_stocks','default_stocks'],'Comparison basket']])if(fields.some(field=>(Array.isArray(group[field])?group[field]:[]).some(s=>String(s?.symbol||s).toUpperCase()===symbol)))labels.push(label);
     return labels.join(' · ')||'Cluster link';
   }
   function drawNews(host) {
     const groups=reportGroups(),choose=host.querySelector('[data-simple-cluster]');
+    host.querySelector('[data-simple-sort]').value=newsSort;
     const names=groups.map(group=>group.name);
     if(!names.includes(selected))selected=layout==='desk'?names[0]||'':'';
     if(choose.dataset.names!==JSON.stringify(names)){choose.innerHTML='<option value="">Choose a cluster</option>'+names.map(name=>`<option value="${esc(name)}">${esc(name)}</option>`).join('');choose.dataset.names=JSON.stringify(names);}
@@ -82,6 +83,7 @@
     if(!desk.hidden)newsDesk(host).catch(error=>{if(active==='events')desk.innerHTML=`<p role="alert">${esc(error.message)}</p>`;});
   }
   function drawCalendar(host) {
+    if(reportError){host.querySelector('[data-simple-day-reports]').textContent=reportError;return;}
     if(reportRows===null&&win.ClustrWatchlist?.isFiltered?.()){host.querySelector('[data-simple-day-reports]').textContent='Loading reports for your watchlist…';return;}
     const reports=win.ClustrApp.getPublishes(), rows=(reportRows||reports.map((publish,index)=>({publish,index}))).map(row=>({...row.publish,index:row.index,day:etDay(row.publish.created_at)}));
     const months=[...new Set(rows.map(p=>p.day.slice(0,7)))].sort().reverse();
@@ -146,6 +148,7 @@
     if(view==='events'){if(changed||dataChanged)drawNews(host);}else drawCalendar(host);
   }
   function hide(){revision++;active='';identity='';const host=win.document.getElementById('simpleView');if(host)host.hidden=true;restoreWorld();}
-  function setReports(rows){reportRows=rows;reportSource=win.ClustrApp?.getPublishes();reportScope=win.ClustrWatchlist?.scopeKey?.()||'';if(active==='days'){const host=win.document.getElementById('simpleView');if(host&&!host.hidden)drawCalendar(host);}}
-  return {render,hide,prepareWeekly,setReports,historyPoints,chart,calendarDays,etDay,basketInterval};
+  function setReports(rows){reportError='';reportRows=rows;reportSource=win.ClustrApp?.getPublishes();reportScope=win.ClustrWatchlist?.scopeKey?.()||'';if(active==='days'){const host=win.document.getElementById('simpleView');if(host&&!host.hidden)drawCalendar(host);}}
+  function setReportError(message){reportError=message;const host=win.document.getElementById('simpleView');if(active==='days'&&host&&!host.hidden)drawCalendar(host);}
+  return {render,hide,prepareWeekly,setReports,setReportError,historyPoints,chart,calendarDays,etDay,basketInterval};
 });

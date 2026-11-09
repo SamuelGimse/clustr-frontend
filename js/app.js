@@ -1309,7 +1309,7 @@
       window.ClustrRender.renderDaysList(rows.map(row => row.publish), rows.findIndex(row => row.index === publishIndex), index => {
         publishIndex = rows[index].index; paintCurrent(); setNav('events');
       });
-    } catch { if (revision === reportRevision) daysView.innerHTML = '<p role="alert">Could not load reports. Reopen Reports to retry.</p>'; }
+    } catch { if (revision === reportRevision) { daysView.innerHTML = '<p role="alert">Could not load reports. Reopen Reports to retry.</p>'; window.ClustrSimple?.setReportError?.('Could not load reports. Reopen Reports to retry.'); } }
   }
 
   window.addEventListener('clustr:watchlist-change', event => {
