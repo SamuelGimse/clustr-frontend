@@ -31,6 +31,13 @@
 .stocks-tile-top strong { font-size: 15px; overflow-wrap: anywhere; }
 .stocks-tile-top small { font-size: 9px; color: var(--text-meta); }
 .stocks-company { font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
+.stocks-quote { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-variant-numeric: tabular-nums; }
+.stocks-quote > span, .stocks-quote small { color: var(--text-meta); font-size: 10px; line-height: 1.4; }
+.stocks-quote strong { font-size: 15px; line-height: 1.25; overflow-wrap: anywhere; }
+.stocks-quote small.tone-up { color: var(--up); }
+.stocks-quote small.tone-down { color: var(--down); }
+.stocks-selection .stocks-quote { margin-top: 14px; }
+.stocks-selection .stocks-quote strong { font-size: 20px; }
 .stocks-tile-meta { margin-top: auto; font-size: 10px; line-height: 1.5; }
 .stocks-selection { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 3px 0 18px; }
 .stocks-selection h2 { font-size: 30px; margin: 4px 0 0; letter-spacing: -.03em; overflow-wrap: anywhere; }
