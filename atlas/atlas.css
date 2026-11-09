@@ -117,3 +117,12 @@
 
 .atlas-detail-panel h3 { flex-wrap:wrap; align-items:center; min-height:24px; }
 @media (max-width:560px) { .atlas-axis { font-size:12px; } }
+
+.atlas-article-evidence article{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);font-size:13px}
+.atlas-article-evidence a{color:inherit;text-underline-offset:3px}
+.atlas-article-evidence small{display:block;color:var(--text-meta);font-size:11px;margin-top:5px}
+.atlas-article-evidence p{color:var(--text-meta);line-height:1.5;margin:7px 0;font-size:12px}
+html[data-view-mode=simple] .atlas-stats{display:none}
+html[data-view-mode=simple] .atlas-toolbar label{margin-left:0;width:100%}
+html[data-view-mode=simple] .atlas-cell{height:44px;min-height:44px}
+html[data-view-mode=simple] .atlas-table td{height:54px}
