@@ -9,12 +9,10 @@
 .technology-credits { margin-top:14px; gap:12px 20px; }
 .technology-credits > span { font-size:10px; letter-spacing:.06em; text-transform:uppercase; }
 .technology-credits a { display:inline-flex; align-items:center; gap:6px; min-height:32px; }
-.technology-logo { display:flex; align-items:center; justify-content:center; min-height:24px; padding:4px 6px; background:#fff; border-radius:3px; }
-.technology-logo img { display:block; width:auto; height:14px; }
-.technology-logo--openai { padding:0; }
-.technology-logo--openai img { height:32px; }
-.technology-logo--js { padding:0; min-height:24px; background:transparent; }
-.technology-logo--js img { width:24px; height:24px; }
+.technology-logo { display:inline-block; width:24px; height:24px; flex:0 0 24px; background-color:currentColor; -webkit-mask:var(--technology-mark) center/contain no-repeat; mask:var(--technology-mark) center/contain no-repeat; }
+.technology-logo--deepseek { --technology-mark:url('icons/technology/deepseek-mark.svg'); width:30px; flex-basis:30px; }
+.technology-logo--openai { --technology-mark:url('icons/technology/openai-mark.svg'); -webkit-mask-size:150%; mask-size:150%; }
+.technology-logo--js { --technology-mark:url('icons/technology/javascript-mark.svg'); }
 .app-footer-note { margin:10px 0 0; font-size:10px; }
 .account-policy-links { color:var(--text-meta); font-size:11px; line-height:1.8; }
 .account-policy-links a { text-decoration:underline; }
