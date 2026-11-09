@@ -1,0 +1,32 @@
+.view-mode-bar:not([hidden]) { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:14px 0 18px; padding:10px 14px; border-block:1px solid var(--border); }
+.view-mode-hint { margin:0; color:var(--text-meta); font-size:12px; line-height:1.45; }
+.view-mode-switch { display:flex; flex:none; gap:3px; padding:3px; border:1px solid var(--border); border-radius:10px; }
+.view-mode-switch button { padding:7px 12px; border:0; border-radius:7px; background:transparent; color:var(--text-meta); font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
+.view-mode-switch button[aria-pressed="true"] { background:var(--accent); color:var(--md-sys-color-on-primary); }
+.view-mode-switch button:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+
+html[data-view-mode="simple"] #dashboardView .dash-trend-layout { grid-template-columns:minmax(0,1fr); }
+html[data-view-mode="simple"] #dashboardView .dash-trend-readout,
+html[data-view-mode="simple"] #dashboardView .dash-model-comparison,
+html[data-view-mode="simple"] #dashboardView .dash-show-fits,
+html[data-view-mode="simple"] #eventsView .cluster-stance-preview,
+html[data-view-mode="simple"] #eventsView .cluster-context,
+html[data-view-mode="simple"] #eventsView .chart-folder,
+html[data-view-mode="simple"] #stocksView .stocks-link-filter,
+html[data-view-mode="simple"] #stocksView .stocks-link-tags,
+html[data-view-mode="simple"] #connectionsView .cx-map,
+html[data-view-mode="simple"] #connectionsView .cx-tools,
+html[data-view-mode="simple"] #atlasView .atlas-legend,
+html[data-view-mode="simple"] #watchlistView .watchlist-panel:last-child { display:none; }
+html[data-view-mode="simple"] #connectionsView .cx-workspace { display:block; }
+html[data-view-mode="simple"] #connectionsView .cx-inspector { width:100%; box-sizing:border-box; border-left:0; }
+html[data-view-mode="simple"] #weeklyView .weekly-cluster:nth-child(n+7),
+html[data-view-mode="simple"] #daysView .day-item:nth-of-type(n+13):not(.is-active),
+html[data-view-mode="simple"] #mapView .country-card:nth-child(n+7) { display:none; }
+html[data-view-mode="simple"] #atlasView .atlas-table tr > :nth-child(n+2):not(:nth-last-child(-n+3)) { display:none; }
+@media (max-width:760px) {
+  .view-mode-bar:not([hidden]) { align-items:flex-start; flex-direction:column; gap:8px; margin:8px 0 14px; }
+  .view-mode-switch { width:100%; }
+  .view-mode-switch button { flex:1; }
+  .dash-metrics { gap:0; }
+}

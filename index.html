@@ -28,9 +28,10 @@
   <link rel="stylesheet" href="stance-history.css?v=1" />
   <link rel="stylesheet" href="stocks.css?v=stock-prices-1" />
   <link rel="stylesheet" href="atlas/atlas.css?v=price-impact-1" />
-  <link rel="stylesheet" href="dashboard/dashboard.css?v=stock-news-network-layout-1" />
+  <link rel="stylesheet" href="dashboard/dashboard.css?v=view-modes-1" />
   <link rel="stylesheet" href="world.css?v=globe-1" />
   <link rel="stylesheet" href="mobile.css?v=mobile-simplify-1" />
+  <link rel="stylesheet" href="view-mode.css?v=1" />
 </head>
 <body class="auth-locked">
   <div class="app-halos" aria-hidden="true">
@@ -194,6 +195,10 @@
       </header>
 
       <div id="status" class="status" role="status"></div>
+      <div id="viewModeBar" class="view-mode-bar" hidden>
+        <p id="viewModeHint" class="view-mode-hint"></p>
+        <div class="view-mode-switch" role="group" aria-label="Page detail level"><button type="button" data-view-mode="simple" aria-pressed="true">Simple</button><button type="button" data-view-mode="advanced" aria-pressed="false">Advanced</button></div>
+      </div>
 
       <!-- Events -->
       <div id="eventsView">
@@ -325,7 +330,7 @@
   <script src="js/watchlist.js?v=mobile-simplify-1"></script>
   <script src="atlas/atlas.js?v=mobile-simplify-1"></script>
   <script src="dashboard/regression.js?v=projection-2"></script>
-  <script src="dashboard/dashboard.js?v=mobile-simplify-1"></script>
+  <script src="dashboard/dashboard.js?v=view-modes-1"></script>
   <script src="js/themes.js?v=login-system-1"></script>
   <script src="js/map.js?v=globe-1"></script>
   <script src="js/mindmap.js?v=mobile-audit-1"></script>
@@ -337,6 +342,6 @@
   <script src="connections/connections.js?v=mobile-simplify-1"></script>
   <script src="js/pro-preview.js?v=2"></script>
   <script src="js/mobile-ui.js?v=mobile-simplify-1"></script>
-  <script src="js/app.js?v=public-welcome-1"></script>
+  <script src="js/app.js?v=view-modes-1"></script>
 </body>
 </html>

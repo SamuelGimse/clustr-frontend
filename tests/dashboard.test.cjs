@@ -7,6 +7,21 @@ global.window = {};
 require('../js/util.js');
 const util = window.ClustrUtil;
 
+test('Advanced opens the full dashboard analysis while Simple keeps it collapsed', async () => {
+  const publish = { id: 99, market: 'US', created_at: '2026-11-09T12:00:00Z' };
+  window.ClustrApi = { fetchAllPublishes: async () => [publish], loadGroupsForPublish: async () => [{ name: 'Energy', stance_score: 5 }] };
+  window.ClustrAtlas = atlas;
+  const root = { innerHTML: '', querySelector: () => null };
+  global.document = { documentElement: { dataset: { viewMode: 'simple' } } };
+  try {
+    invalidate(); await render(root, () => {});
+    assert.match(root.innerHTML, /<details class="dash-more dash-panel--wide"><summary>/);
+    document.documentElement.dataset.viewMode = 'advanced';
+    await render(root, () => {});
+    assert.match(root.innerHTML, /<details class="dash-more dash-panel--wide" open><summary>/);
+  } finally { delete global.document; }
+});
+
 test('Dashboard uses the latest report per day and keeps markets separate', () => {
   const publishes = [
     { id: 1, market: 'US', created_at: '2026-11-05T09:00:00Z' },

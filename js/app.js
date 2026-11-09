@@ -25,6 +25,32 @@
   let eventSort = 'impact';
   /** @type {string} */
   let view = 'events';
+  const dataViews = new Set(['dashboard', 'events', 'stocks', 'connections', 'map', 'weekly', 'atlas', 'days', 'watchlist']);
+  let viewMode = 'simple';
+  try { if (localStorage.getItem('clustr-view-mode') === 'advanced') viewMode = 'advanced'; } catch {}
+  document.documentElement.dataset.viewMode = viewMode;
+  const viewModeBar = document.getElementById('viewModeBar');
+  const viewModeHint = document.getElementById('viewModeHint');
+  const modeHints = {
+    dashboard: 'A quick read of this report. Advanced adds the full analysis.',
+    events: 'Cluster scores, key stories and linked stocks. Advanced adds charts and context.',
+    stocks: 'Prices and linked clusters. Advanced adds connection filters and context.',
+    connections: 'Browse linked clusters, stocks and stories. Advanced adds the full graph.',
+    map: 'Explore the six busiest locations and their stories. Advanced shows every location.',
+    weekly: 'The week’s main trends. Advanced shows every cluster.',
+    atlas: 'Follow scores and prices across the latest three reports. Advanced shows the full history.',
+    days: 'Browse the latest 12 reports. Advanced shows the complete archive.',
+    watchlist: 'Your saved stocks and a quick add. Advanced helps discover more.'
+  };
+  function updateViewMode() {
+    document.documentElement.dataset.viewMode = viewMode;
+    document.documentElement.dataset.activeView = view;
+    if (viewModeBar) viewModeBar.hidden = !dataViews.has(view) || !authState.user;
+    if (viewModeHint) viewModeHint.textContent = viewMode === 'simple' ? modeHints[view] || '' : 'Full report detail and controls.';
+    document.querySelectorAll('[data-view-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.viewMode === viewMode)));
+    const more = dashboardView?.querySelector('.dash-more');
+    if (more) more.open = viewMode === 'advanced';
+  }
 
   const meta = document.getElementById('meta');
   const status = document.getElementById('status');
@@ -153,6 +179,7 @@
     closeEventSortMenu();
     const changed = which !== view;
     view = which;
+    updateViewMode();
     window.ClustrWatchlist?.setView(which);
     const R = window.ClustrRender;
     const MapApi = window.ClustrMap;
@@ -1079,6 +1106,11 @@
   }
 
   if (navPolymarket) navPolymarket.addEventListener('click', () => setNav('polymarket'));
+  document.querySelectorAll('[data-view-mode]').forEach(button => button.addEventListener('click', () => {
+    viewMode = button.dataset.viewMode;
+    try { localStorage.setItem('clustr-view-mode', viewMode); } catch {}
+    updateViewMode();
+  }));
   if (navEvents) navEvents.addEventListener('click', () => setNav('events'));
   navWatchlist?.addEventListener('click', () => setNav('watchlist'));
   if (navStocks) navStocks.addEventListener('click', () => setNav('stocks'));

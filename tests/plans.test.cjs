@@ -15,7 +15,7 @@ function setup(role, signedIn = true) {
     window: { ClustrConnections: { hide() {} }, ClustrWatchlist: { setView() {}, mount() { calls.push('watchlist'); } },
       ClustrAtlas: { render() { calls.push('history'); } }, ClustrStocks: { leave() {}, mount() { calls.push('stocks'); } }, matchMedia: () => ({ matches: false }) },
     renderWeekly: () => calls.push('trends'), renderAccount: () => calls.push('signin'),
-    view: 'events', publishes: [], publishIndex: 0, currentGroups: [], closeEventSortMenu() {},
+    view: 'events', publishes: [], publishIndex: 0, currentGroups: [], closeEventSortMenu() {}, updateViewMode() {},
     location: { hash: '', pathname: '/', search: '' }, history: { replaceState(_state, _title, hash) { context.location.hash = hash; } },
   };
   for (const name of ['navWatchlist', 'navDashboard', 'navEvents', 'navStocks', 'navMap', 'navDays', 'navSignal', 'navMind', 'navWeekly', 'navAtlas', 'navAccount', 'navAdmin', 'navPolymarket', 'polymarketView', 'eventsView', 'mapView', 'daysView', 'signalView', 'mindView', 'weeklyView', 'watchlistView', 'stocksView', 'atlasView', 'dashboardView', 'accountView', 'adminView']) context[name] = makeElement();
