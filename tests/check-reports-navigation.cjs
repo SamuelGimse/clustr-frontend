@@ -37,11 +37,29 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
     assert.deepEqual(await evaluate(`[...document.querySelectorAll('button[data-view-mode]')].map(button=>button.textContent)`),['Simple','Advanced']);
     assert.equal(await evaluate(`document.querySelector('.simple-layout-switch').hidden&&document.querySelector('[data-simple-grid]').hidden`),true);
     await evaluate(`document.querySelector('button[data-view-mode="advanced"]').click()`);
+    assert.deepEqual(await evaluate(`[...document.querySelectorAll('[data-simple-center]')].map(button=>button.textContent)`),['Summary','Impact chart','Context','Market data','Stock data','Charts','Sources']);
+    assert.equal(await evaluate(`!document.querySelector('.desk-advanced-analysis')&&!document.querySelector('[data-desk-analysis] .cluster-card')&&!!document.querySelector('.simple-desk-cluster [data-desk-analysis]')`),true);
+    await evaluate(`document.querySelector('[data-simple-center="stocks"]').click()`);
     await wait(`document.querySelector('[data-desk-analysis] .technical-metrics')&&document.querySelector('[data-desk-analysis] .stance-history-canvas')`);
     assert.equal(await evaluate(`!document.getElementById('simpleView').hidden&&document.querySelector('[data-desk-analysis] .cluster-market-signals').textContent.includes('FRED')`),true);
     assert.equal(await evaluate(`document.querySelectorAll('[data-desk-analysis] iframe').length`),0);
+    await evaluate(`window.deskCard=document.querySelector('[data-desk-analysis] .cluster-card');window.deskCanvas=deskCard.querySelector('.stance-history-canvas');window.deskNews=document.querySelector('.simple-desk-news');window.deskStocks=document.querySelector('.simple-desk-stocks')`);
+    for(const [tab,shown,hidden]of [['context','.cluster-context','.cluster-market-signals'],['market','.cluster-market-signals','.stock-sidebar'],['sources','.articles-panel','.chart-folder'],['charts','.chart-folder','.stock-sidebar']]){
+      await evaluate(`document.querySelector('[data-simple-center="${tab}"]').click()`);
+      assert.equal(await evaluate(`getComputedStyle(deskCard.querySelector('${shown}')).display!=='none'&&getComputedStyle(deskCard.querySelector('${hidden}')).display==='none'`),true,tab+' content visibility');
+      assert.equal(await evaluate(`document.querySelector('[data-desk-analysis] .cluster-card')===deskCard&&document.querySelector('.simple-desk-news')===deskNews&&document.querySelector('.simple-desk-stocks')===deskStocks`),true,'tabs must retain mounted components');
+    }
+    await evaluate(`document.querySelector('[data-desk-analysis] [data-chart-mode="impact"]').click()`);
+    assert.equal(await evaluate(`!document.querySelector('[data-desk-analysis] .chart-mode-impact').classList.contains('is-hidden')`),true);
+    await evaluate(`document.querySelector('[data-simple-center="summary"]').click();document.querySelector('[data-simple-center="charts"]').click()`);
+    assert.equal(await evaluate(`deskCard.querySelector('.stance-history-canvas')===deskCanvas&&!deskCard.querySelector('.chart-mode-impact').classList.contains('is-hidden')`),true);
+    await evaluate(`document.querySelector('[data-desk-analysis] [data-chart-mode="stance"]').click()`);
+    await wait(`deskCanvas._clustrChart?.width>0`);
+    const chartShot=await call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(process.env.TEMP+'/clustr-news-center-charts.png',Buffer.from(chartShot.data,'base64'));
+    await evaluate(`document.querySelector('[data-simple-center="charts"]').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}))`);
+    assert.equal(await evaluate(`document.activeElement.dataset.simpleCenter`),'sources');
     assert.equal(await evaluate(`(()=>{const ids=[...document.querySelectorAll('[id]')].map(node=>node.id);return new Set(ids).size===ids.length})()`),true);
-    await evaluate(`document.querySelector('.desk-advanced-analysis').scrollIntoView()`);
+    await evaluate(`document.querySelector('[data-simple-center="stocks"]').click();document.querySelector('.simple-desk-columns').scrollIntoView()`);
     const deskShot=await call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(process.env.TEMP+'/clustr-news-desk-advanced.png',Buffer.from(deskShot.data,'base64'));
     await evaluate(`ClustrApp.jumpToCluster('Shipping')`);
     assert.equal(await evaluate(`document.querySelector('.simple-desk-top h2').textContent`),'Shipping');
@@ -62,9 +80,21 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
     assert.equal(await evaluate(`document.querySelector('button[data-view-mode="simple"]').getAttribute('aria-pressed')`),'true');
     assert.deepEqual(await evaluate(`JSON.parse(localStorage.getItem('clustr-news-modes'))`),{desk:'simple',feed:'simple'});
     await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+    await new Promise(resolve=>setTimeout(resolve,250));
     for(const news of ['desk','feed'])for(const detail of ['simple','advanced']){
       await evaluate(`document.querySelector('[data-news-view="${news}"]').click();document.querySelector('[data-view-mode="${detail}"]').click()`);
       assert.equal(await evaluate(`document.documentElement.scrollWidth<=innerWidth`),true,news+' '+detail+' overflows on phone');
+      if(news==='desk'&&detail==='advanced'){
+        await evaluate(`document.querySelector('[data-simple-pane="cluster"]').click()`);
+        for(const tab of ['context','market','stocks','charts','sources']){
+          await evaluate(`document.querySelector('[data-simple-center="${tab}"]').click()`);
+          assert.equal(await evaluate(`(()=>{const box=document.querySelector('[data-desk-analysis]').getBoundingClientRect();return document.documentElement.scrollWidth<=innerWidth&&box.width>0&&box.left>=0&&box.right<=innerWidth})()`),true,'phone centre '+tab);
+        }
+        await evaluate(`document.querySelector('.simple-desk-cluster').scrollIntoView({block:'start'});scrollTo(0,scrollY)`);
+        const phoneShot=await call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(process.env.TEMP+'/clustr-news-center-phone.png',Buffer.from(phoneShot.data,'base64'));
+        await evaluate(`document.querySelector('button[data-view-mode="simple"]').click()`);
+        assert.equal(await evaluate(`document.querySelector('[data-simple-center="summary"]').getAttribute('aria-selected')`),'true');
+      }
     }
     await call('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
     await evaluate(`document.getElementById('navStocks').click()`);
@@ -79,6 +109,6 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
     await evaluate(`document.querySelector('[data-simple-report]').click()`);
     await wait(`document.documentElement.dataset.activeView==='events'&&ClustrApp.getPublishIndex()===1`);
     assert.deepEqual(await evaluate('window.errors'),[]);
-    console.log('Real app navigation: four independent News modes, shared Advanced analysis, Simple feed cleanup, mobile widths, retained detail preferences, Reports calendar and correct publish selection passed.');
+    console.log('Real app navigation: centre analysis tabs, retained stock/chart state, keyboard navigation, lazy TradingView, four News modes, mobile tabs, Simple cleanup and Reports selection passed.');
   }finally{await call('Browser.close');ws.close();}
 })().catch(error=>{console.error(error);process.exit(1)});

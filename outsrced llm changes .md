@@ -36,3 +36,9 @@
 - Connection desk Advanced reuses the native cluster-analysis renderer below the three-column desk: drivers, saved market observations, stock buckets, technical/Reddit signals, prices, related clusters, history, impact timeline, lazy TradingView and article categories. The centre summary links directly to the analysis workspace.
 - Cleans up mounted chart instances when changing clusters/modes and routes related-cluster navigation back to the desk. Quote refresh follows the visible workspace.
 - Verified all four modes, independent saved preferences, real component rendering, unique element IDs, lazy TradingView, cleanup, Reports navigation and 390px layout with mocked data; no production account or paid API was used.
+
+## 2026-11-09 — Advanced Connection desk centre tabs
+- Moved the full analysis workspace into the centre column: Context, Market data, Stock data, Charts and Sources beside Summary and Impact chart. Removed the separate analysis section below the desk.
+- Analysis mounts when first opened and stays mounted across tab changes, retaining stock selection, chart mode and source filters. TradingView still loads only when selected.
+- Centre tabs support arrow/Home/End keys and independent scrolling; phone Cluster mode keeps all analysis within the viewport. Simple and Full feed behavior is preserved.
+- Verified 167 automated tests and actual browser navigation with sample data, including centre visibility, retained components/chart state, keyboard controls, chart resizing, phone widths and Reports navigation. Production sign-in was not exercised.

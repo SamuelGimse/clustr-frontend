@@ -1492,6 +1492,7 @@
         }
       };
       el.addEventListener('click', event => {
+        if (el.closest('[data-desk-analysis]') && !event.target.closest('.cluster-expand')) return;
         if (!event.target.closest('.cluster-top, .cluster-overview') || event.target.closest('.cluster-context')) return;
         if (event.target.closest('button, a, input, select, textarea, summary') &&
             !event.target.closest('.cluster-expand')) return;
