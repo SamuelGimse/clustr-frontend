@@ -1,5 +1,7 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.ClustrDashboardWorkspace=api;})(typeof globalThis==='undefined'?this:globalThis,function(){
-  const KEY='clustr-overview-card-order-v1';
+  const KEY='clustr-overview-card-order-v1',LAYOUT_KEY='clustr-overview-grid-v3';
+  let dispose=null,editing=false,draft=null;
+  function destroy(){dispose?.();dispose=null;}
   const finite=value=>typeof value==='number'&&Number.isFinite(value);
   function marketDay(value){
     if(/^\d{4}-\d{2}-\d{2}$/.test(value))return value;
@@ -9,7 +11,7 @@
   }
   function ordered(ids,saved){
     const allowed=new Set(ids),seen=new Set();
-    return [...(Array.isArray(saved)?saved:[]),...ids].filter(id=>typeof id==='string'&&allowed.has(id)&&!seen.has(id)&&seen.add(id));
+    return [...(Array.isArray(saved)?saved:[]).map(id=>allowed.has('watch-workspace')&&['watch-news','dash-network-panel'].includes(id)?'watch-workspace':id),...ids].filter(id=>typeof id==='string'&&allowed.has(id)&&!seen.has(id)&&seen.add(id));
   }
   function loadOrder(storage,ids){try{return ordered(ids,JSON.parse(storage?.getItem(KEY)||'null'));}catch{return [...ids];}}
   function saveOrder(storage,ids){try{if(!storage)return false;storage.setItem(KEY,JSON.stringify(ids));return true;}catch{return false;}}
@@ -57,31 +59,74 @@
 card('watch-exposure','Your watchlist connections',bars(stocks.map(s=>[s.node.label,s.clusters.length]),esc),'Linked clusters in the selected 24-hour report window.');card('watch-price','Watchlist saved price changes',bars(stocks.filter(s=>finite(s.priceChange)).map(s=>[s.node.label,s.priceChange]),esc,true,'%'),'Saved report price versus prior saved appearance; not live session changes. Missing comparisons are omitted.');}
     return cards;
   }
+  function cleanLayout(value,ids){
+    const allowed=new Set(ids),seen=new Set();
+    return (Array.isArray(value)?value:[]).filter(n=>n&&typeof n.id==='string'&&allowed.has(n.id)&&!seen.has(n.id)&&Number.isInteger(n.w)&&n.w>=1&&n.w<=12&&Number.isInteger(n.x)&&n.x>=0&&n.x+n.w<=12&&Number.isInteger(n.y)&&n.y>=0&&n.y<100000&&Number.isInteger(n.h)&&n.h>0&&n.h<10000&&seen.add(n.id)).map(({id,x,y,w,h,sizeToContent})=>({id,x,y,w,h,...(sizeToContent===false?{sizeToContent:false}:{})}));
+  }
+  function loadLayout(storage,ids){try{return cleanLayout(JSON.parse(storage?.getItem(LAYOUT_KEY)||'null'),ids);}catch{return [];}}
+  function saveLayout(storage,layout){try{if(!storage)return false;storage.setItem(LAYOUT_KEY,JSON.stringify(cleanLayout(layout,layout.map(n=>n.id))));return true;}catch{return false;}}
   function mount(root,summary){
+    destroy();
     if(typeof document==='undefined'||document.documentElement.dataset.viewMode!=='advanced'||!root.querySelectorAll)return;
     const shell=root.querySelector('.dash-shell');if(!shell)return;
     const esc=window.ClustrUtil.escapeHtml,panels=[...root.querySelectorAll('.dash-panel')],cards=[];
-    for(const panel of panels){const title=panel.querySelector('h2')?.textContent||'Watchlist';const known=['dash-overall-trend','dash-trend-panel','dash-simple-balance','dash-strongest','dash-stock-links','dash-shift-panel','dash-network-panel','dash-watch-empty'].find(c=>panel.classList.contains(c));let id=known||title.toLowerCase().replace(/[^a-z0-9]+/g,'-');if(title.startsWith('What happened'))id='watch-news';let unique=id,n=2;while(cards.some(c=>c.id===unique))unique=id+'-'+n++;cards.push({id:unique,title,panel,wide:panel.classList.contains('dash-trend-panel'),two:id==='watch-news'||panel.classList.contains('dash-overall-trend')});}
+    for(const panel of panels){const title=panel.querySelector('h2')?.textContent||'Watchlist';const known=['dash-overall-trend','dash-trend-panel','dash-simple-balance','dash-strongest','dash-stock-links','dash-shift-panel','dash-network-panel','dash-watch-empty'].find(c=>panel.classList.contains(c));let id=known||title.toLowerCase().replace(/[^a-z0-9]+/g,'-');if(title.startsWith('What happened'))id='watch-news';let unique=id,n=2;while(cards.some(c=>c.id===unique))unique=id+'-'+n++;cards.push({id:unique,title,panel,wide:panel.classList.contains('dash-trend-panel')});}
+    const news=cards.find(c=>c.id==='watch-news'),network=cards.find(c=>c.id==='dash-network-panel');
+    if(news&&network){
+      const panel=document.createElement('section');panel.className='dash-panel dw-watch-combined';
+      const layout=document.createElement('div');layout.className='dw-watch-layout';layout.append(network.panel,news.panel);panel.append(layout);
+      cards.splice(cards.indexOf(network),1);cards.splice(cards.indexOf(news),1,{id:'watch-workspace',title:'Your watchlist · network, price and news',panel,wide:true});
+    }
     for(const node of [...shell.children])if(!node.classList.contains('dash-header'))node.remove();
-    const toolbar=document.createElement('div');toolbar.className='dw-toolbar';toolbar.innerHTML='<div><strong>Your advanced workspace</strong><p>Drag a card handle to rearrange. Focus a handle and use arrow keys, or use its move buttons.</p></div><button type="button" data-dw-reset>Reset layout</button><span role="status" aria-live="polite" data-dw-status>Layout saved on this browser</span>';shell.append(toolbar);
+    const toolbar=document.createElement('div');toolbar.className='dw-toolbar';toolbar.innerHTML='<div><strong>Your advanced workspace</strong><p>Turn on Edit layout to drag cards, resize from their edges or corners, or choose a preset width. Turn it off to save.</p></div><button type="button" data-dw-edit aria-pressed="false">Edit layout</button><button type="button" data-dw-reset>Reset layout</button><span role="status" aria-live="polite" data-dw-status>Layout saved on this browser</span>';shell.append(toolbar);
     const board=document.createElement('div');board.className='dw-board';shell.append(board);
     const extras=extraCards(summary,esc),totals=extras.find(c=>c.id==='report-totals');
-    const personal=cards.filter(c=>['watch-news','dash-network-panel','dash-watch-empty'].includes(c.id));
+    const personal=cards.filter(c=>['watch-workspace','watch-news','dash-network-panel','dash-watch-empty'].includes(c.id));
     const all=[...personal,totals,...cards.filter(c=>!personal.includes(c)),...extras.filter(c=>c!==totals)];
-    for(const card of all){const panel=card.panel||document.createElement('section');panel.classList.add('dash-panel','dw-card');if(card.wide)panel.classList.add('dw-wide');if(card.two)panel.classList.add('dw-two');panel.dataset.cardId=card.id;if(!card.panel)panel.innerHTML=card.html;
-      const tools=document.createElement('div');tools.className='dw-card-tools';tools.innerHTML=`<button type="button" class="dw-handle" aria-label="Move ${esc(card.title)}" title="Drag to move, or use arrow keys">⠿ <span>Move</span></button><button type="button" data-dw-move="-1" aria-label="Move ${esc(card.title)} earlier">←</button><button type="button" data-dw-move="1" aria-label="Move ${esc(card.title)} later">→</button>`;panel.prepend(tools);board.append(panel);}
-    const ids=all.map(c=>c.id),byId=new Map([...board.children].map(card=>[card.dataset.cardId,card]));let storage;try{storage=window.localStorage;}catch{}
-    for(const id of loadOrder(storage,ids))board.append(byId.get(id));
-    const status=toolbar.querySelector('[data-dw-status]');function save(){status.textContent=saveOrder(storage,[...board.children].map(c=>c.dataset.cardId))?'Layout saved on this browser':'Layout changed; browser storage is unavailable.';}
-    function move(card,delta){const neighbor=delta<0?card.previousElementSibling:card.nextElementSibling;if(!neighbor)return;board.insertBefore(card,delta<0?neighbor:neighbor.nextElementSibling);save();}
-    toolbar.querySelector('[data-dw-reset]').onclick=()=>{for(const id of ids)board.append(byId.get(id));save();};
-    board.addEventListener('click',event=>{const button=event.target.closest('[data-dw-move]');if(button){event.stopPropagation();move(button.closest('[data-card-id]'),Number(button.dataset.dwMove));}});
-    let drag=null;
-    board.addEventListener('pointerdown',event=>{const handle=event.target.closest('.dw-handle');if(!handle||event.button!==0)return;const card=handle.closest('[data-card-id]');drag={card,handle,x:event.clientX,y:event.clientY,moved:false};handle.setPointerCapture(event.pointerId);});
-    board.addEventListener('pointermove',event=>{if(!drag)return;if(Math.hypot(event.clientX-drag.x,event.clientY-drag.y)<7&&!drag.moved)return;event.preventDefault();if(event.clientY<65)window.scrollBy(0,-18);else if(event.clientY>window.innerHeight-65)window.scrollBy(0,18);drag.moved=true;drag.card.classList.add('dw-dragging');const target=document.elementFromPoint(event.clientX,event.clientY)?.closest('[data-card-id]');if(!target||target===drag.card||target.parentElement!==board)return;const rect=target.getBoundingClientRect();board.insertBefore(drag.card,event.clientY<rect.top+rect.height/2?target:target.nextElementSibling);});
-    function finish(){if(!drag)return;drag.card.classList.remove('dw-dragging');if(drag.moved)save();drag=null;}
-    board.addEventListener('pointerup',finish);board.addEventListener('pointercancel',finish);
-    board.addEventListener('keydown',event=>{const handle=event.target.closest('.dw-handle');if(!handle||!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key))return;event.preventDefault();move(handle.closest('[data-card-id]'),['ArrowUp','ArrowLeft'].includes(event.key)?-1:1);handle.focus();});
+    const ids=all.map(c=>c.id),widths=new Map(all.map(c=>[c.id,c.wide?12:6]));let storage;try{storage=window.localStorage;}catch{}
+    const saved=new Map((editing&&draft?cleanLayout(draft,ids):loadLayout(storage,ids)).map(n=>[n.id,n]));
+    for(const card of all){
+      const item=document.createElement('div');item.className='grid-stack-item';item.dataset.cardId=card.id;
+      const node=saved.get(card.id);for(const [key,value]of Object.entries(node||{id:card.id,w:widths.get(card.id),h:20,autoPosition:true}))item.setAttribute('gs-'+key.replace(/[A-Z]/g,m=>'-'+m.toLowerCase()),String(value));
+      item.dataset.preferredWidth=String(node?.w||widths.get(card.id));item.dataset.manualSize=String(node?.sizeToContent===false);
+      const panel=card.panel||document.createElement('section');panel.classList.add('dash-panel','dw-card','grid-stack-item-content');if(!card.panel)panel.innerHTML=card.html;
+      const body=document.createElement('div');body.className='dw-card-body';while(panel.firstChild)body.append(panel.firstChild);
+      const tools=document.createElement('div');tools.className='dw-card-tools';tools.innerHTML=`<button type="button" class="dw-handle" aria-label="Move ${esc(card.title)}" title="Drag to move, or use arrow keys">⠿ <span>Move</span></button><div class="dw-widths" role="group" aria-label="${esc(card.title)} card width"><button type="button" data-dw-width="4" aria-label="${esc(card.title)} one third width">⅓</button><button type="button" data-dw-width="6" aria-label="${esc(card.title)} half width">½</button><button type="button" data-dw-width="12" aria-label="${esc(card.title)} full width">Full</button></div><button type="button" data-dw-move="-1" aria-label="Move ${esc(card.title)} earlier">←</button><button type="button" data-dw-move="1" aria-label="Move ${esc(card.title)} later">→</button>`;
+      body.prepend(tools);panel.append(body);item.append(panel);board.append(item);
+    }
+    const byId=new Map([...board.children].map(card=>[card.dataset.cardId,card]));for(const id of loadOrder(storage,ids))board.append(byId.get(id));
+    const status=toolbar.querySelector('[data-dw-status]');
+    if(!window.GridStack){status.textContent='Card layout could not load. Reload to enable rearranging.';return;}
+    board.classList.add('grid-stack');
+    const grid=window.GridStack.init({column:12,columnOpts:{columnMax:12,breakpoints:[{w:700,c:1}],layout:'compact'},cellHeight:8,margin:6,mode:'compact',sizeToContent:true,disableResize:!editing,disableDrag:!editing,alwaysShowResizeHandle:true,resizable:{handles:'all'},handle:'.dw-handle',animate:!window.matchMedia('(prefers-reduced-motion: reduce)').matches,draggable:{scroll:true}},board);
+    const sorted=()=>grid.engine.nodes.slice().sort((a,b)=>a.y-b.y||a.x-b.x);
+    function syncWidths(){for(const item of grid.getGridItems().filter(item=>item.gridstackNode))for(const button of item.querySelectorAll('[data-dw-width]'))button.setAttribute('aria-pressed',String(Number(button.dataset.dwWidth)===(grid.getColumn()===1?Number(item.dataset.preferredWidth):item.gridstackNode.w)));}
+    function geometry(){return grid.save(false,false,undefined,12).map(n=>({id:n.id,x:n.x,y:n.y,w:n.w,h:n.h,...(byId.get(n.id)?.dataset.manualSize==='true'?{sizeToContent:false}:{})}));}
+    function changed(){status.textContent='Editing layout · turn off Edit layout to save.';syncWidths();}
+    function save(){const ok=saveLayout(storage,geometry());saveOrder(storage,sorted().map(n=>n.id));status.textContent=ok?'Layout and sizes saved on this browser':'Layout changed; browser storage is unavailable.';syncWidths();}
+    const editButton=toolbar.querySelector('[data-dw-edit]'),resetButton=toolbar.querySelector('[data-dw-reset]');
+    function syncEditing(){board.classList.toggle('dw-editing',editing);editButton.setAttribute('aria-pressed',String(editing));editButton.textContent=editing?'Finish editing · Save':'Edit layout';resetButton.hidden=!editing;grid.enableMove(editing);grid.enableResize(editing);}
+    editButton.onclick=()=>{editing=!editing;syncEditing();for(const item of grid.getGridItems())if(item.gridstackNode&&item.dataset.manualSize!=='true')grid.resizeToContent(item);grid.compact();if(editing)changed();else{draft=null;save();}};
+    function move(item,delta){const nodes=sorted(),index=nodes.findIndex(n=>n.el===item),target=nodes[index+delta];if(!target)return;grid.update(item,{x:target.x,y:target.y});grid.compact();changed();}
+    resetButton.onclick=()=>{
+      if(!editing)return;
+      grid.batchUpdate();grid.removeAll(false);
+      for(const id of ids){const item=byId.get(id),w=widths.get(id);item.dataset.preferredWidth=String(w);item.dataset.manualSize='false';grid.makeWidget(item,{id,w:grid.getColumn()===1?1:w,h:20,autoPosition:true,sizeToContent:true});}
+      grid.batchUpdate(false);for(const item of grid.getGridItems())grid.resizeToContent(item);grid.compact();changed();
+    };
+    board.addEventListener('click',event=>{
+      const button=event.target.closest('[data-dw-move],[data-dw-width]');if(!button||!editing)return;event.stopPropagation();const item=button.closest('[data-card-id]');
+      if(button.dataset.dwWidth){if(grid.getColumn()===1)return;item.dataset.preferredWidth=button.dataset.dwWidth;grid.update(item,{w:Number(button.dataset.dwWidth)});if(item.dataset.manualSize!=='true')grid.resizeToContent(item);grid.compact();changed();}
+      else move(item,Number(button.dataset.dwMove));
+    });
+    board.addEventListener('keydown',event=>{const handle=event.target.closest('.dw-handle');if(!editing||!handle||!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key))return;event.preventDefault();move(handle.closest('[data-card-id]'),['ArrowUp','ArrowLeft'].includes(event.key)?-1:1);handle.focus();});
+    let frame=0,interacting=false;
+    grid.on('dragstart resizestart',(_event,item)=>{interacting=true;if(_event.type==='resizestart'){item.dataset.manualSize='true';item.classList.remove('size-to-content');grid.update(item,{sizeToContent:false});}});
+    grid.on('dragstop resizestop',()=>{interacting=false;changed();});
+    grid.on('change',syncWidths);
+    const observer=new ResizeObserver(entries=>{if(frame||interacting)return;frame=window.requestAnimationFrame(()=>{frame=0;if(!board.isConnected)return;for(const entry of entries){const item=entry.target.closest('.grid-stack-item');if(item?.gridstackNode&&item.dataset.manualSize!=='true')grid.resizeToContent(item);}grid.compact();});});
+    board.querySelectorAll('.dw-card-body').forEach(body=>observer.observe(body));syncEditing();syncWidths();if(editing)changed();
+    dispose=()=>{if(editing)draft=geometry();observer.disconnect();window.cancelAnimationFrame(frame);grid.destroy(false);};
   }
-  return {KEY,marketDay,ordered,loadOrder,saveOrder,analysis,extraCards,mount};
+  return {KEY,LAYOUT_KEY,marketDay,ordered,loadOrder,saveOrder,cleanLayout,loadLayout,saveLayout,analysis,extraCards,mount,destroy};
 });

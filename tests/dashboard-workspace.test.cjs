@@ -30,3 +30,30 @@ test('daily chart labels use the US report date rather than the UTC date',()=>{
   assert.equal(marketDay('2026-11-09T01:00:00Z'),'2026-11-08');
   assert.equal(marketDay('2026-11-09'),'2026-11-09');assert.equal(marketDay('bad'),'Unavailable');
 });
+
+test('legacy separate watchlist cards migrate to the combined card once',()=>{
+  assert.deepEqual(ordered(['watch-workspace','report-totals'],['dash-network-panel','watch-news','report-totals']),['watch-workspace','report-totals']);
+});
+test('grid layouts persist only valid known geometry and exclude content',()=>{
+  const {cleanLayout,loadLayout,saveLayout,LAYOUT_KEY}=require('../dashboard/workspace');
+  const good={id:'a',x:0,y:10,w:3,h:20,content:'<script>unsafe</script>'};
+  assert.deepEqual(cleanLayout([good,good,{id:'b',x:11,y:0,w:3,h:20},{id:'b',x:0,y:0,w:13,h:20},{id:'gone',x:0,y:0,w:6,h:20}],['a','b']),[{id:'a',x:0,y:10,w:3,h:20}]);
+  const data=new Map(),storage={getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v)};
+  assert(saveLayout(storage,[good]));assert(!data.get(LAYOUT_KEY).includes('content'));
+  assert.deepEqual(loadLayout(storage,['a']),[{id:'a',x:0,y:10,w:3,h:20}]);
+  storage.setItem(LAYOUT_KEY,'bad');assert.deepEqual(loadLayout(storage,['a']),[]);
+  assert(!saveLayout({setItem(){throw Error('blocked');}},[good]));
+});
+test('library is pinned locally and the custom pointer sorter has been removed',()=>{
+  const fs=require('node:fs'),path=require('node:path'),html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8'),source=fs.readFileSync(path.join(__dirname,'../dashboard/workspace.js'),'utf8');
+  assert(html.indexOf('vendor/gridstack-14.1.0/gridstack-all.js')<html.indexOf('dashboard/workspace.js'));
+  assert(fs.existsSync(path.join(__dirname,'../vendor/gridstack-14.1.0/LICENSE')));
+  assert(!source.includes("board.addEventListener('pointermove'"));
+  assert(source.includes("mode:'compact'"));assert(source.includes('columnMax:12'));
+});
+
+test('freeform sizes include non-preset widths and preserve manual height mode',()=>{
+  const {cleanLayout}=require('../dashboard/workspace');
+  assert.deepEqual(cleanLayout([{id:'a',x:6,y:4,w:5,h:34,sizeToContent:false}],['a']),[{id:'a',x:6,y:4,w:5,h:34,sizeToContent:false}]);
+  assert.deepEqual(cleanLayout([{id:'a',x:8,y:0,w:5,h:2}],['a']),[]);
+});

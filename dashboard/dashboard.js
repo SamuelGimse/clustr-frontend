@@ -275,6 +275,7 @@
   }
 
   function paint(root, summary) {
+    window.ClustrDashboardWorkspace?.destroy();
     const esc = window.ClustrUtil.escapeHtml;
     if (!summary) {
       root.innerHTML = `<div class="dash-shell"><header class="dash-header"><div><p class="dash-kicker">CLUSTR MARKET / OVERVIEW</p><h1>Overview</h1></div></header><div class="dash-empty">No approved ${esc(market)} publishes are available yet.</div></div>`;
