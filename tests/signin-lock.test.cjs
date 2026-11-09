@@ -4,12 +4,12 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('js/app.js','utf8');
 
-test('Every app route is account-only when signed out or resetting a password', () => {
+test('Every app route is login-only when signed out or resetting a password', () => {
   const start = source.indexOf('  function setNav(');
   const guard = source.slice(start, source.indexOf('    window.ClustrConnections?.hide();',start)) + 'return which; }';
   for (const state of [{user:null}, {user:{id:'user'},recovery:true}]) {
     const c = {authState:state}; vm.createContext(c); vm.runInContext(guard,c);
-    for (const route of ['account','events','dashboard','stocks','watchlist','connections','map','days','weekly','atlas','admin']) assert.equal(c.setNav(route),'account');
+    for (const route of ['login','account','events','dashboard','stocks','watchlist','connections','map','days','weekly','atlas','admin']) assert.equal(c.setNav(route),'login');
   }
   const c = {authState:{user:{id:'user'}}}; vm.createContext(c); vm.runInContext(guard,c);
   assert.equal(c.setNav('events'),'events');
@@ -19,18 +19,26 @@ test('Every app route is account-only when signed out or resetting a password', 
   assert.match(html, /id="accountTechnologyCredits"/);
   assert.match(html, /account-brand-logo/);
   const css = fs.readFileSync('footer.css','utf8');
-  assert.match(css, /body\.auth-locked #main > :not\(#accountView\).*display:none !important/);
+  assert.match(css, /body\.auth-locked #main > :not\(#loginView\).*display:none !important/);
+  const login=html.match(/<section id="loginView"[\s\S]*?<\/section>/)[0];
+  assert.doesNotMatch(login,/Appearance|account-appearance|themeMenu|accountTechnologyCredits|accountContent/);
+  assert.match(login,/id="loginContent"/);
   assert.match(source, /event.key === 'clustr-auth-session-v1' && !event.newValue/);
 });
 
 test('Account reuses the theme-aware footer logos without duplicating them on rerender', () => {
   let copies=0;
   const credits = {childElementCount:0,append(){copies++;this.childElementCount++;}};
-  const elements={accountTitle:{},accountMessage:{},accountContent:{},accountTechnologyCredits:credits};
+  const elements={accountTitle:{},accountMessage:{},accountContent:{innerHTML:'Account settings'},accountTechnologyCredits:credits,loginTitle:{},loginMessage:{},loginContent:{}};
   const c={getDisplayAccount:()=>({user:null}),accountMode:'signin',foundingStatus:null,
     document:{getElementById:id=>elements[id],querySelector:()=>({cloneNode:()=>({})})}};
   const start=source.indexOf('  function renderAccount(');
   vm.runInNewContext(source.slice(start,source.indexOf('  function renderAdmin(',start))+'renderAccount();renderAccount();',c);
   assert.equal(copies,1);
-  assert.match(elements.accountContent.innerHTML,/Continue with Google/);
+  assert.equal(elements.accountContent.innerHTML,'Account settings');
+  assert.match(elements.loginContent.innerHTML,/Continue with Google/);
+  assert.match(elements.loginContent.innerHTML,/provider-google[\s\S]*?icons\/auth\/google.svg/);
+  assert.match(elements.loginContent.innerHTML,/provider-facebook[\s\S]*?provider-icon/);
+  assert.doesNotMatch(elements.loginContent.innerHTML,/Appearance|themeMenu|Font|Surface style/);
+  for(const name of ['google','facebook']) assert.match(fs.readFileSync(`icons/auth/${name}.svg`,'utf8'),/<svg/);
 });

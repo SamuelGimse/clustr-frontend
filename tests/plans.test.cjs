@@ -10,7 +10,7 @@ function setup(role, signedIn = true) {
     classList: { add() {}, remove() {}, toggle() {} }, setAttribute(name, value) { this.attrs[name] = value; } });
   const elements = Object.fromEntries(['freePlanBanner', 'navWatchlist', 'navAtlas', 'navStocks', 'navWeekly'].map(id => [id, makeElement()]));
   const calls = [];
-  const context = { authState: { role, user: signedIn ? { id: 'user' } : null }, accountPreview: '',
+  const context = { loginView:null, authState: { role, user: signedIn ? { id: 'user' } : null }, accountPreview: '',
     document: { getElementById: id => elements[id] },
     window: { ClustrConnections: { hide() {} }, ClustrWatchlist: { setView() {}, mount() { calls.push('watchlist'); } },
       ClustrAtlas: { render() { calls.push('history'); } }, ClustrStocks: { leave() {}, mount() { calls.push('stocks'); } }, matchMedia: () => ({ matches: false }) },
@@ -60,7 +60,7 @@ test('Signed-out direct links ask users to sign in, never start checkout or moun
   context.renderPlanAccess();
   assert.equal(elements.freePlanBanner.hidden, true);
   context.setNav('watchlist');
-  assert.equal(context.view, 'account');
+  assert.equal(context.view, 'login');
   assert.equal(context.proFeatureView.innerHTML, '');
   assert.doesNotMatch(context.proFeatureView.innerHTML, /data-account-action="checkout"/);
   assert.deepEqual(calls, ['signin']);

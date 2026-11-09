@@ -89,6 +89,7 @@ const navigation = { view: 'events', currentGroups: [], authState: { role: 'pro'
 for (const name of ['navWatchlist', 'watchlistView', 'navDashboard', 'navEvents', 'navStocks', 'navMap', 'navDays', 'navSignal', 'navMind', 'navWeekly', 'navAtlas', 'navAccount', 'navAdmin', 'navPolymarket', 'polymarketView', 'eventsView', 'mapView', 'daysView', 'signalView', 'mindView', 'weeklyView', 'stocksView', 'atlasView', 'dashboardView', 'accountView', 'adminView']) navigation[name] = null;
 vm.createContext(navigation);
 navigation.proFeatureView = null;
+navigation.loginView = null;
 navigation.hasProAccess = () => true;
 navigation.getDisplayAccount = getDisplayAccount;
 vm.runInContext(app.slice(app.indexOf('  function setNav('), app.indexOf('  function weeklyScore(')), navigation);

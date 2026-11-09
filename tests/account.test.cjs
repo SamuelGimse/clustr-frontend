@@ -6,6 +6,7 @@ const source = process.argv.includes('--staged')
   ? require('node:child_process').execFileSync('git', ['show', ':js/app.js'], { encoding: 'utf8' })
   : fs.readFileSync(path.join(__dirname, '../js/app.js'), 'utf8');
 const elements = Object.fromEntries(['accountTitle', 'accountMessage', 'accountContent'].map(id => [id, {}]));
+for (const part of ['Title','Message','Content']) elements['login'+part]=elements['account'+part];
 const badges = [{}, {}];
 const compactBadge = { dataset: { proCompact: '' } };
 const context = { authState: {}, accountPreview: '', accountMode: 'signin', foundingStatus: null, document: { getElementById: id => elements[id], querySelectorAll: () => [...badges, compactBadge] }, window: { ClustrUtil: { escapeHtml: value => value } } };

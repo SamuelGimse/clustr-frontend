@@ -46,6 +46,7 @@
   const polymarketView = document.getElementById('polymarketView');
   const navPolymarket = document.getElementById('navPolymarket');
   const accountView = document.getElementById('accountView');
+  const loginView = document.getElementById('loginView');
   const adminView = document.getElementById('adminView');
 
   const navEvents = document.getElementById('navEvents');
@@ -145,7 +146,8 @@
   }
 
   function setNav(which, context = null) {
-    if (!authState.user || authState.recovery) which = 'account';
+    if (!authState.user || authState.recovery) which = 'login';
+    else if (which === 'login') which = 'account';
     window.ClustrConnections?.hide();
     if (which === 'admin' && authState.role !== 'admin') which = 'account';
     closeEventSortMenu();
@@ -174,6 +176,7 @@
     if (atlasView) atlasView.classList.add('hidden');
     if (dashboardView) dashboardView.classList.add('hidden');
     if (accountView) accountView.classList.add('hidden');
+    if (loginView) loginView.classList.add('hidden');
     if (adminView) adminView.classList.add('hidden');
     if (proFeatureView) proFeatureView.classList.add('hidden');
     if (which !== 'stocks') window.ClustrStocks?.leave();
@@ -290,12 +293,12 @@
       navAtlas?.setAttribute('aria-current', 'page');
       atlasView?.classList.remove('hidden');
       window.ClustrAtlas?.render(atlasView);
-    } else if (which === 'account') {
+    } else if (which === 'account' || which === 'login') {
       if (navAccount) {
         navAccount.classList.add('is-active');
         navAccount.setAttribute('aria-current', 'page');
       }
-      if (accountView) accountView.classList.remove('hidden');
+      (which === 'login' ? loginView : accountView)?.classList.remove('hidden');
       renderAccount();
     } else if (which === 'admin') {
       if (navAdmin) {
@@ -662,9 +665,10 @@
 
   function renderAccount(message = '') {
     const account = getDisplayAccount();
-    const title = document.getElementById('accountTitle');
-    const note = document.getElementById('accountMessage');
-    const content = document.getElementById('accountContent');
+    const prefix = !account.user || account.recovery ? 'login' : 'account';
+    const title = document.getElementById(prefix + 'Title');
+    const note = document.getElementById(prefix + 'Message');
+    const content = document.getElementById(prefix + 'Content');
     if (!title || !content) return;
     const credits = document.getElementById('accountTechnologyCredits');
     if (credits && !credits.childElementCount) {
@@ -676,7 +680,7 @@
       const places = foundingStatus?.remaining;
       title.textContent = accountMode === 'signup' ? (places > 0 ? 'Get Lifetime Pro' : 'Create your free account') : 'Sign in to Clustr Market';
       const offer = places > 0 ? `<section class="account-plan"><h2>Lifetime Pro · ${places} places left</h2><p>Free lifetime Pro access for the first 20 people who claim it. Create an account, confirm your email, then press Accept & claim Lifetime Pro here. Signing up alone does not reserve a place.</p></section>` : '';
-      content.innerHTML = offer + `<button class="account-secondary" type="button" data-account-action="google">Continue with Google</button><button class="account-secondary" type="button" data-account-action="facebook">Continue with Facebook</button><form id="accountForm" class="account-form"><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" minlength="8" autocomplete="${accountMode === 'signup' ? 'new-password' : 'current-password'}" required></label><button class="account-primary" type="submit">${accountMode === 'signup' ? 'Create free account' : 'Sign in'}</button></form><div class="account-actions"><button type="button" data-account-action="email-link">${accountMode === 'signup' ? 'Create account with email link' : 'Email me a sign-in link'}</button><button type="button" data-account-action="switch">${accountMode === 'signup' ? 'Already have an account? Sign in' : (places > 0 ? 'Get Lifetime Pro' : 'Create a free account')}</button>${accountMode === 'signin' ? '<button type="button" data-account-action="resend">Resend confirmation email</button><button type="button" data-account-action="reset">Reset password</button>' : ''}</div><p class="account-plan-note">Free includes older reports, excluding today and yesterday (US Eastern time). Pro unlocks the latest data, Watchlist and History.</p>`;
+      content.innerHTML = offer + `<button class="account-secondary provider-button provider-google" type="button" data-account-action="google"><img src="icons/auth/google.svg" width="40" height="40" alt="" aria-hidden="true"><span>Continue with Google</span></button><button class="account-secondary provider-button provider-facebook" type="button" data-account-action="facebook"><span class="provider-icon" aria-hidden="true"></span><span>Continue with Facebook</span></button><form id="accountForm" class="account-form"><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" minlength="8" autocomplete="${accountMode === 'signup' ? 'new-password' : 'current-password'}" required></label><button class="account-primary" type="submit">${accountMode === 'signup' ? 'Create free account' : 'Sign in'}</button></form><div class="account-actions"><button type="button" data-account-action="email-link">${accountMode === 'signup' ? 'Create account with email link' : 'Email me a sign-in link'}</button><button type="button" data-account-action="switch">${accountMode === 'signup' ? 'Already have an account? Sign in' : (places > 0 ? 'Get Lifetime Pro' : 'Create a free account')}</button>${accountMode === 'signin' ? '<button type="button" data-account-action="resend">Resend confirmation email</button><button type="button" data-account-action="reset">Reset password</button>' : ''}</div>`;
       return;
     }
     if (account.recovery) {

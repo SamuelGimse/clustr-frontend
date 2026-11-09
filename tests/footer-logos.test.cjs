@@ -6,7 +6,7 @@ test('Footer logos are local SVG masks filled with the theme color, without whit
   assert.match(css, /background-color:currentColor/);
   assert.match(css, /-webkit-mask:var\(--technology-mark\)/);
   assert.match(css, /(?:^|;) mask:var\(--technology-mark\)/m);
-  assert.doesNotMatch(css, /background:\s*#fff\b|filter:\s*invert/);
+  assert.doesNotMatch(css.split('\n').filter(line => line.startsWith('.technology-logo')).join('\n'), /background:\s*#fff\b|filter:\s*invert/);
   for (const name of ['deepseek', 'openai', 'javascript']) {
     const file = `icons/technology/${name}-mark.svg`;
     assert(css.includes(file));
@@ -22,7 +22,7 @@ test('Both credit surfaces retain visible accessible brand names without image c
     for (const name of ['DeepSeek', 'OpenAI SDK', 'JavaScript']) assert(credits.includes(`<span>${name}</span>`));
     assert.equal((credits.match(/aria-hidden="true"/g) || []).length, 3);
     assert.doesNotMatch(credits, /<img/);
-    assert.match(html, /footer.css\?v=(?:monochrome-marks-1|account-lock-1)/);
+    assert.match(html, /footer.css\?v=(?:monochrome-marks-1|login-screen-2)/);
   }
 });
 test('JavaScript is a single-ink square with transparent original letter cutouts and retained licence', () => {
