@@ -23,3 +23,9 @@
 - Removed visible duplicate heading/date range, search caption, result/link counts, US labels, relationship badges, link metadata and explanatory text from Simple Stocks.
 - Kept search accessible, moved Refresh beside it, and retained prices, watchlist buttons, connection filters, impact scores, summaries and source context. Advanced retains its metadata and restores Refresh to its header.
 - Verified browser mode switching, stock navigation/search, lazy TradingView loading and phone widths using sample data; production sign-in was not exercised.
+
+## 2026-11-09 — Independent News views
+- News now selects Connection desk or Full feed (the existing Advanced feed), with a separate saved preference from other tabs' detail level.
+- Connection desk opens directly; its old internal Briefing grid/Connection desk chooser is hidden in the app. Separate Simple/Advanced modes inside each News view remain deferred.
+- Scoped the mode-button selectors to buttons so the document root cannot receive button labels or switch-click handlers.
+- Verified actual app navigation with mocked authentication/data, both News choices, independent Stocks detail preference and Reports selection; all code checks pass.
