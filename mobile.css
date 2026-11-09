@@ -1,0 +1,167 @@
+.mobile-page-title { display:none; }
+@media(max-width:768px) {
+  html { scroll-padding-bottom:calc(100px + env(safe-area-inset-bottom)); }
+  html[data-theme] .main { padding:10px 10px calc(92px + env(safe-area-inset-bottom)); }
+  html[data-theme] .page-brand-bar { display:none; }
+  html[data-theme] .main :is(input,select,textarea) { font-size:16px; }
+  /* Desktop relies on its visible sidebar; phones need a visible page title. */
+  html[data-theme] #main h1 { font:650 24px/1.15 var(--font-sans)!important; position:static!important; width:auto!important; height:auto!important; margin:0 0 8px!important; padding:0!important; overflow:visible!important; clip-path:none!important; white-space:normal!important; }
+  .view-toolbar { margin-bottom:10px; }
+  .main:has(> :is(#accountView,#adminView,#watchlistView):not(.hidden)) .top-app-bar .publish-nav { display:none; }
+  .main:has(> :is(#accountView,#adminView,#watchlistView):not(.hidden)) .top-app-bar::after { flex:1; min-width:0; padding-right:84px; text-align:center; font-size:12px; color:var(--text-meta); }
+  .main:has(> #accountView:not(.hidden)) .top-app-bar::after { content:'Account'; }
+  .main:has(> #adminView:not(.hidden)) .top-app-bar::after { content:'Admin'; }
+  .main:has(> #watchlistView:not(.hidden)) .top-app-bar::after { content:'Watchlist'; }
+  .watch-scope-controls button { min-height:44px; font-size:11px; padding:8px 10px; }
+  .watchlist-scope { gap:8px; }
+  .watch-scope-context { font-size:10px; line-height:1.4; }
+  html[data-watchlist-filtered] :is(.chart-folder,#weeklyChart,.dash-trend-panel,.atlas-detail-panel:has(.atlas-line))::before,
+  html[data-watchlist-filtered] .cx-map-caption::after { display:none; }
+  .mobile-page-title { display:block; margin:8px 0 14px; font-size:24px; letter-spacing:-.035em; }
+  html[data-theme] :is(.dash-header,.atlas-head,.stocks-heading,.weekly-heading,.globe-heading,.cx-hero) { margin:4px 0 14px; padding-top:0; gap:10px; }
+  html[data-theme] :is(.dash-header,.atlas-head,.stocks-heading,.weekly-heading,.globe-heading,.cx-hero) h1,
+  html[data-theme] .account-shell > h1 { display:block; font:650 24px/1.15 var(--font-sans); letter-spacing:-.035em; margin:0 0 6px; }
+  :is(.dash-header,.atlas-head,.cx-hero,.globe-heading) > div > p:first-child,
+  .stocks-eyebrow,.weekly-eyebrow,.account-eyebrow { display:none; }
+  .atlas-head > div > p:last-child,.cx-hero > div > p:last-child,.globe-heading > div > p:last-child { display:none; }
+  .dash-header p:last-child,.stocks-heading p,.weekly-range { font-size:11px; line-height:1.5; }
+  .dash-shell { padding:0 0 16px; }
+  .dash-panel { padding:12px; border-radius:14px; }
+  .dash-panel-head { gap:8px; margin-bottom:12px; }
+  .dash-panel h2 { font-size:17px; line-height:1.3; }
+  .dash-kicker { font-size:9px; letter-spacing:.08em; margin-bottom:4px; }
+  .dash-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .dash-metric { min-height:82px; padding:12px; gap:6px; }
+  .dash-metric strong { font-size:26px; }
+  .dash-metric small { display:none; }
+  .dash-trend-layout { gap:12px; }
+  .dash-trend-readout { padding:12px; }
+  .dash-trend-controls { width:100%; min-width:0; gap:8px; }
+  .dash-trend-controls select { max-width:100%; width:100%; }
+  .dash-network-preview { padding:12px; }
+  .dash-network-watchlist { padding:10px 12px; }
+  .dash-network-svg { max-height:190px; }
+  .dash-network-preview > small { display:none; }
+  .dash-network-open { font-size:11px; }
+  html[data-theme] .cluster-card { padding:12px; margin-bottom:10px; border-radius:16px; }
+  .cluster-top { gap:8px; }
+  html[data-theme] .cluster-name { font-size:17px; line-height:1.3; }
+  .cluster-card:not(.is-expanded) .stance-mount { display:none; }
+  html[data-theme] .cluster-card.is-expanded .stance { padding:0; border:0; background:transparent; box-shadow:none; }
+  html[data-theme] .cluster-score { width:52px; min-width:52px; min-height:50px; padding:5px; }
+  .cluster-card:not(.is-expanded) .cluster-reason--preview { -webkit-line-clamp:2; font-size:13px; line-height:1.5; }
+  .cluster-overview-footer { gap:8px; }
+  .cluster-details { margin-top:10px; }
+  .stock-panel-head { grid-template-columns:minmax(0,1fr); gap:6px; }
+  .stock-panel-head .md-label { display:none; }
+  .stock-panel-head .stock-group-select { width:100%; }
+  .stock-analysis { gap:10px; }
+  .stock-sidebar .price-bar { padding:12px; gap:8px 12px; }
+  .stock-sidebar .price-cell,.stock-sidebar .technical-metrics > div { grid-template-rows:auto auto auto; gap:2px; }
+  .price-bar-title { font-size:13px; }
+  .price-sub { font-size:10px; line-height:1.4; }
+  .chart-folder { padding:0; }
+  .chart-folder-tabs { gap:4px; padding:6px; }
+  .chart-folder-tabs .chart-tab { min-height:44px; padding:6px 8px; font-size:10px; }
+  .stance-history-panel { padding:8px; }
+  .stance-history-title { font-size:10px; letter-spacing:.025em; }
+  .stance-chart-controls { gap:6px; }
+  .stance-chart-controls .dash-mode-toggle { font-size:10px; }
+  .stance-stat-grid { gap:4px; }
+  .stance-stat { padding:8px 4px; }
+  .stance-stat-k { font-size:9px; }
+  .stance-stat-h { font-size:8px; }
+  .stocks-search-tools { padding:12px; }
+  .stocks-grid { gap:6px; padding:8px; }
+  .stocks-tile-wrap .stocks-tile { min-height:120px; padding:10px 10px 44px; gap:5px; }
+  .stocks-company { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .stocks-tile-meta { font-size:10px; }
+  .stocks-cluster { padding:12px; border-radius:14px; }
+  .stocks-selection { padding-bottom:12px; gap:8px; }
+  .stocks-selection h2 { font-size:25px; }
+  .stocks-link-filter label > span { min-height:44px; font-size:11px; padding:6px; }
+  .cx-hero { align-items:center; flex-direction:row; padding-bottom:10px; }
+  .cx-counts { gap:12px; }
+  .cx-counts b { font:600 18px/1.3 var(--font-sans); }
+  .cx-counts span { font-size:9px; letter-spacing:0; }
+  .cx-tools { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:end; gap:8px; padding:8px 0; }
+  .cx-tools > label:first-child { grid-column:1/-1; width:100%; font-size:0; gap:0; }
+  .cx-tools > label:first-child input { font-size:16px; }
+  .cx-tools > div { grid-column:1/-1; display:flex; gap:6px; }
+  .cx-tools > div button:last-child { flex:1; }
+  .cx-tools label.cx-period { width:100%; font-size:11px; gap:4px; }
+  .cx-tools select { width:100%; min-width:0; font-size:12px; }
+  .cx-scroll { height:340px; }
+  .cx-map-caption { padding:8px 10px; font-size:9px; }
+  .cx-legend { gap:8px 12px; padding:10px; font-size:9px; letter-spacing:0; }
+  .cx-inspector-body { padding:12px; max-height:420px; }
+  .cx-inspector h2 { font:650 24px/1.2 var(--font-sans); margin:8px 0; }
+  .cx-inspector p { font-size:12px; line-height:1.5; }
+  .cx-detail-metrics { gap:6px; margin:12px 0; }
+  .cx-detail-metrics > div { padding:8px; }
+  .cx-detail-metrics strong { font-size:18px; }
+  .atlas-shell { padding:0; }
+  .atlas-head { align-items:stretch; gap:10px; }
+  .atlas-stats span { padding:8px; font-size:10px; }
+  .atlas-stats strong { font-size:20px; }
+  .atlas-toolbar { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .atlas-toolbar .atlas-switch { padding:3px; gap:2px; }
+  .atlas-switch button { min-height:44px; font-size:11px; padding:6px; }
+  .atlas-toolbar label { grid-column:1/-1; min-width:0; width:100%; margin:0; }
+  .atlas-toolbar input { font-size:16px; min-height:44px; }
+  .atlas-scope { font-size:10px; line-height:1.5; }
+  .atlas-legend { gap:6px 12px; font-size:10px; }
+  #atlasLegendText { flex-basis:100%; font-size:10px; }
+  .atlas-table th:first-child { min-width:100px; max-width:100px; }
+  .atlas-table tbody th { font-size:10px; padding:6px; }
+  .atlas-cell { min-width:76px; }
+  .atlas-detail-panel { padding:12px; }
+  .atlas-detail h2 { font-size:20px; }
+  .weekly-summary { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .weekly-summary > div { padding:10px; min-width:0; }
+  .weekly-summary span { font-size:10px; }
+  .weekly-cluster { padding:12px; }
+  .weekly-cluster h3 { font-size:15px; }
+  .weekly-cluster p { font-size:11px; line-height:1.5; }
+  .day-item { padding:12px; gap:10px; min-height:64px; }
+  .day-t { font-size:13px; line-height:1.4; }
+  .day-s { font-size:11px; }
+  .globe-heading { align-items:flex-start; }
+  .globe-count { font-size:10px; }
+  .globe-stage { min-height:280px; height:300px; }
+  .globe-hint { font-size:10px; }
+  .globe-sidebar { padding:12px; }
+  .globe-sidebar h2 { font-size:15px; }
+  .watchlist-heading h1 { font-size:24px; }
+  .watchlist-status { font-size:11px; min-height:0; margin:8px 0; }
+  .watchlist-stock { padding:10px 12px; gap:8px; }
+  .watchlist-stock small { font-size:11px; margin-top:3px; }
+  .watchlist-panel { margin-top:12px; padding:12px; }
+  .watchlist-panel h2 { font-size:16px; margin-bottom:12px; }
+  .watchlist-add-form label:first-child { grid-column:auto; min-width:0; }
+  .account-shell { padding:14px; }
+  .account-profile { flex-wrap:wrap; gap:8px; padding:10px 0; font-size:12px; }
+  .account-plan { padding:12px; margin-top:12px; }
+  .account-plan h2 { font-size:17px; }
+  .account-plan p { font-size:12px; line-height:1.6; }
+  .account-primary,.account-secondary { min-height:44px; font-size:13px; }
+  .appearance-options { grid-template-columns:1fr; gap:10px; }
+  .admin-publish-head { display:grid; grid-template-columns:minmax(0,1fr); gap:10px; }
+  .admin-publish-head > .account-primary { width:100%; }
+  .admin-monitor-grid { gap:10px; }
+  .admin-monitor-panel { min-width:0; }
+  #adminView:not(.hidden) { display:flex!important; flex-direction:column; gap:10px; }
+  #adminView > .mobile-panel-fold:has(> .admin-preview-controls) { order:2; }
+  .admin-plan { margin-top:0; padding:0; border:0; background:transparent; box-shadow:none; }
+  .mobile-panel-fold { width:100%; box-sizing:border-box; min-width:0; margin:12px 0; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--panel); }
+  .mobile-panel-fold > summary,.mobile-note-fold > summary { display:flex; align-items:center; justify-content:space-between; min-height:44px; cursor:pointer; list-style:none; font-size:12px; font-weight:600; color:var(--text); }
+  .mobile-panel-fold > summary::-webkit-details-marker,.mobile-note-fold > summary::-webkit-details-marker { display:none; }
+  .mobile-panel-fold > summary::after,.mobile-note-fold > summary::after { content:'+'; font-size:16px; font-weight:400; margin-left:10px; }
+  .mobile-panel-fold[open] > summary::after,.mobile-note-fold[open] > summary::after { content:'−'; }
+  .mobile-panel-fold > :not(summary) { padding:8px 0 0; margin:0; border:0; box-shadow:none; background:transparent; }
+  .mobile-panel-fold > :not(summary) > :is(h2,h3):first-child { display:none; }
+  .mobile-note-fold { margin:4px 0 8px; }
+  .mobile-note-fold > summary { color:var(--text-meta); font-size:11px; font-weight:400; }
+  .mobile-note-fold > p { margin:0 0 8px; font-size:11px; line-height:1.6; }
+  .mobile-panel-fold > summary:focus-visible,.mobile-note-fold > summary:focus-visible { outline:2px solid var(--text); outline-offset:3px; }
+}

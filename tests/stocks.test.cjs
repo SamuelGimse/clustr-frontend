@@ -7,8 +7,8 @@ const read = file => process.argv.includes('--staged') ? cp.execFileSync('git', 
 const context = { window: { addEventListener() {} }, URL, URLSearchParams, console, Date };
 vm.createContext(context);
 vm.runInContext(read('js/util.js'), context);
-vm.runInContext(read('js/stocks.js').replace('  window.ClustrStocks = {', '  window.audit = { buildStockIndex, buildScopedIndex, linksFor, loadWeek, safeLink, clusterHtml, usableStock };\n  window.ClustrStocks = {'), context);
-const { buildStockIndex, buildScopedIndex, linksFor, loadWeek, safeLink, clusterHtml, usableStock } = context.window.audit;
+vm.runInContext(read('js/stocks.js').replace('  window.ClustrStocks = {', '  window.audit = { buildStockIndex, buildScopedIndex, linksFor, loadWeek, safeLink, clusterHtml, usableStock, quoteHtml };\n  window.ClustrStocks = {'), context);
+const { buildStockIndex, buildScopedIndex, linksFor, loadWeek, safeLink, clusterHtml, usableStock, quoteHtml } = context.window.audit;
 const stock = { symbol: 'INTC', name: 'Intel' };
 const article = { title: '<Intel update>', link: 'https://example.com/intel', mentioned_companies: [stock] };
 const old = { publish: { id: 1, market: 'US', created_at: '2026-11-04T12:00:00Z' }, groups: [{ name: 'Semiconductors', articles: [{ ...article, rating: -4 }], mentioned_stocks: [stock], stocks: [stock], fixed_stocks: [stock] }] };
@@ -38,6 +38,11 @@ assert.match(clusterHtml(articleLink), /stocks-impact--cautious/);
 assert.match(clusterHtml(articleLink), /noopener noreferrer/);
 assert.match(clusterHtml({ ...articleLink, articles: new Map([['bad', { title: '<script>', link: 'javascript:alert(1)' }]]) }), /&lt;script&gt;/);
 assert(!clusterHtml({ ...articleLink, articles: new Map([['bad', { title: 'Bad', link: 'javascript:alert(1)' }]]) }).includes('href="javascript:'));
+assert.match(quoteHtml({ price: 123.45, changePercent: -1.2, asOf: '2026-11-06T21:00:00Z' }, false, true), /USD 123\.45/);
+assert.match(quoteHtml({ price: 123.45, changePercent: -1.2, asOf: '2026-11-06T21:00:00Z' }, false), /-1\.20% session/);
+assert.match(quoteHtml({ price: 123.45, asOf: '2026-11-06T21:00:00Z' }, false), /Last available price[\s\S]*As of Nov 6, 4:00 PM EST/);
+assert.match(quoteHtml({ price: 123.45, asOf: null }, false), /Price unavailable/);
+assert.match(quoteHtml(null, true), /Loading price/);
 
 (async () => {
   let running = 0, peak = 0;
@@ -55,20 +60,21 @@ assert(!clusterHtml({ ...articleLink, articles: new Map([['bad', { title: 'Bad',
   await assert.rejects(() => apiContext.window.ClustrApi.fetchPublishesInRange('2026-11-08', '2026-11-01'), /Invalid publish range/);
   const pending = [], painted = [], nodes = Object.fromEntries(['#stocksLoadStatus', '[data-stock-refresh]', '#stocksRange', '#stocksGrid', '#stocksDetail'].map(key => [key, {}]));
   const host = { dataset: {}, attributes: {}, setAttribute(key, value) { this.attributes[key] = value; }, querySelector: key => key === '[data-stock-account]' ? { addEventListener() {} } : nodes[key] };
-  const race = { generation: 0, active: true, root: host, items: [], reportData:[], selected: '', window: { ClustrApi: {} }, DAY: 86400000, Date, console, buildStockIndex, buildScopedIndex, loadWeek: () => new Promise(resolve => pending.push(resolve)), renderGrid: () => painted.push(race.items[0]?.links.values().next().value.publish.id), renderDetail() {}, filteredItems: () => race.items };
+  const race = { generation: 0, active: true, root: host, items: [], reportData:[], selected: '', window: { ClustrApi: {}, ClustrQuotes: { getLatestQuotes: async (symbols, market) => { assert.equal(market, 'US'); assert.equal(symbols[0], 'INTC'); return { INTC: { price: 123.45, asOf: '2026-11-06T21:00:00Z' } }; } } }, DAY: 86400000, Date, console, buildStockIndex, buildScopedIndex, loadWeek: () => new Promise(resolve => pending.push(resolve)), renderGrid: () => painted.push(race.items[0]?.links.values().next().value.publish.id), renderDetail() {}, filteredItems: () => race.items };
   vm.createContext(race);
   const source = read('js/stocks.js');
   vm.runInContext(source.slice(source.indexOf('  async function load()'), source.indexOf('  function mount(')), race);
   const first = vm.runInContext('load()', race), second = vm.runInContext('load()', race);
   pending[1]({ data: [recent], failures: [], total: 1 }); await second;
   pending[0]({ data: [old], failures: [], total: 1 }); await first;
-  assert.deepEqual(painted, [2], 'An older refresh must never overwrite newer data');
+  assert.deepEqual(painted, [2, 2], 'An older refresh must never overwrite newer data');
+  assert.equal(race.quotes.INTC.price, 123.45, 'The visible stocks use latest quotes');
   const revoked = vm.runInContext('load()', race);
   vm.runInContext(source.slice(source.indexOf('  function mount('), source.indexOf("  window.addEventListener('popstate'")), race);
   race.host = host; vm.runInContext("mount(host, 'free')", race);
   pending[2]({ data: [recent], failures: [], total: 1 }); await revoked;
   assert.equal(race.items.length, 0); assert.equal(host.attributes['aria-busy'], 'false');
   assert.match(host.innerHTML, /part of Pro/);
-  assert.deepEqual(painted, [2], 'A late Pro request must not restore history after access is revoked');
+  assert.deepEqual(painted, [2, 2], 'A late Pro request must not restore history after access is revoked');
   console.log('Stocks audit: market isolation, all relationship layers, deduplication, latest matching publish, URL escaping, 101-publish pagination, authenticated requests and partial failures passed.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

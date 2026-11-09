@@ -100,3 +100,5 @@
 .cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-tools { flex-shrink:0; flex-direction:row; align-items:flex-end; padding:8px 0; gap:8px; }
 .cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-tools label { flex:1 1 220px; width:auto; }
 .cx-explorer:is(:fullscreen,.cx-fullscreen) .cx-tools label.cx-period { flex:0 0 auto; width:auto; }
+
+.cx-motion { position:absolute; top:10px; right:12px; min-height:36px; padding:6px 10px; border:1px solid var(--border,#34414d); border-radius:8px; background:var(--panel,#101c24); color:inherit; font:12px system-ui; cursor:pointer; }

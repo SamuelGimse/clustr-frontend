@@ -2,6 +2,7 @@
 (function () {
   const U = () => window.ClustrUtil;
   const DAY = 86400000;
+  const quoteTime = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
   const LAYERS = {
     mentioned: ['mentioned_stocks'],
     close: ['close_stocks', 'direct_stocks'],
@@ -11,7 +12,7 @@
     linked: ['stocks']
   };
   const LABELS = { mentioned: 'Article mention', close: 'Close link', related: 'Related stock', defaults: 'Theme comparison basket', winner: 'Connected winner', loser: 'Connected loser', mover: 'Session mover', linked: 'Cluster link' };
-  let root, items = [], selected = '', mode = 'clusters', query = '';
+  let root, items = [], quotes = null, selected = '', mode = 'clusters', query = '';
   let generation = 0, active = false, listScroll = 0;
   let reportData=[];
 
@@ -128,10 +129,18 @@
     return items.filter(item => (window.ClustrWatchlist?.allows(item, item.market) ?? true) && item.market === 'US' && `${item.symbol} ${item.name}`.toLocaleLowerCase().includes(term));
   }
 
+  function quoteHtml(quote, loading, detail = false) {
+    const valid = quote && Number.isFinite(quote.price) && quote.price > 0 && Number.isFinite(Date.parse(quote.asOf));
+    const price = loading ? 'Loading price…' : valid ? `USD ${U().formatMoney(quote.price)}` : 'Price unavailable';
+    const change = valid && Number.isFinite(quote.changePercent) ? U().formatPct(quote.changePercent) : '';
+    const asOf = valid ? `As of ${quoteTime.format(new Date(quote.asOf))}` : '';
+    return `<span class="stocks-quote" title="${U().escapeHtml(asOf ? asOf + ' · may be delayed' : 'No latest quote available')}"><span>Last available price</span><strong>${U().escapeHtml(price)}</strong>${change ? `<small class="${U().toneClass(quote.changePercent)}">${change} session</small>` : ''}${asOf ? `<small>${U().escapeHtml(asOf)}${detail ? ' · may be delayed' : ''}</small>` : ''}</span>`;
+  }
+
   function renderGrid() {
     const results = filteredItems(), esc = U().escapeHtml;
     root.querySelector('#stocksResultCount').textContent = `${results.length} of ${items.length} stocks`;
-    root.querySelector('#stocksGrid').innerHTML = results.length ? results.map(stock => `<div class="stocks-tile-wrap"><button type="button" class="stocks-tile${stock.key === selected ? ' is-selected' : ''}" data-stock-key="${esc(stock.key)}" aria-pressed="${stock.key === selected}" aria-controls="stocksDetail"><span class="stocks-tile-top"><strong>${esc(stock.symbol)}</strong><small>${esc(stock.market)}</small></span><span class="stocks-company">${esc(stock.name)}</span>${U().redditBuzzHtml(stock.redditBuzz)}<span class="stocks-tile-meta">${stock.links.size} cluster${stock.links.size === 1 ? '' : 's'} · ${stock.articles.size} article${stock.articles.size === 1 ? '' : 's'}</span></button>${window.ClustrWatchlist?.button(stock, stock.market) || ''}</div>`).join('') : '<p class="stocks-empty">No stocks match your search. Try a ticker or company name.</p>';
+    root.querySelector('#stocksGrid').innerHTML = results.length ? results.map(stock => `<div class="stocks-tile-wrap"><button type="button" class="stocks-tile${stock.key === selected ? ' is-selected' : ''}" data-stock-key="${esc(stock.key)}" aria-pressed="${stock.key === selected}" aria-controls="stocksDetail"><span class="stocks-tile-top"><strong>${esc(stock.symbol)}</strong><small>${esc(stock.market)}</small></span><span class="stocks-company">${esc(stock.name)}</span>${quoteHtml(quotes?.[stock.symbol], quotes === null)}${U().redditBuzzHtml(stock.redditBuzz)}<span class="stocks-tile-meta">${stock.links.size} cluster${stock.links.size === 1 ? '' : 's'} · ${stock.articles.size} article${stock.articles.size === 1 ? '' : 's'}</span></button>${window.ClustrWatchlist?.button(stock, stock.market) || ''}</div>`).join('') : '<p class="stocks-empty">No stocks match your search. Try a ticker or company name.</p>';
   }
 
   function renderDetail() {
@@ -139,12 +148,12 @@
     if (!stock) { detail.innerHTML = '<div class="stocks-detail-empty"><h2>Select a stock</h2><p>Explore how its news and cluster relationships connect across the last seven days.</p></div>'; return; }
     const esc = U().escapeHtml, links = linksFor(stock, mode), articleLinks = linksFor(stock, 'articles');
     detail.innerHTML = `<button type="button" class="stocks-back" data-stock-back><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>Back to stocks</button>
-      <div class="stocks-selection"><div><span class="stocks-eyebrow">${esc(stock.market)} · STOCK CONNECTIONS</span><h2 id="stocksSelectedHeading" tabindex="-1">${esc(stock.symbol)}</h2><p>${esc(stock.name)}</p></div><span class="stocks-selection-count">${stock.links.size}<small>linked clusters</small></span></div>
+      <div class="stocks-selection"><div><span class="stocks-eyebrow">${esc(stock.market)} · STOCK CONNECTIONS</span><h2 id="stocksSelectedHeading" tabindex="-1">${esc(stock.symbol)}</h2><p>${esc(stock.name)}</p>${quoteHtml(quotes?.[stock.symbol], quotes === null, true)}</div><span class="stocks-selection-count">${stock.links.size}<small>linked clusters</small></span></div>
       ${U().redditBuzzHtml(stock.redditBuzz, true)}
-      <fieldset class="stocks-link-filter"><legend>Show connections</legend><label><input type="radio" name="stock-links" value="articles" ${mode === 'articles' ? 'checked' : ''}><span>Mentioned in articles <b>${articleLinks.length}</b></span></label><label><input type="radio" name="stock-links" value="clusters" ${mode === 'clusters' ? 'checked' : ''}><span>Mentioned in clusters <b>${stock.links.size}</b></span></label></fieldset>
+      <fieldset class="stocks-link-filter"><legend>Show connections</legend><label><input type="radio" name="stock-links" value="articles" ${mode === 'articles' ? 'checked' : ''}><span>Article mentions <b>${articleLinks.length}</b></span></label><label><input type="radio" name="stock-links" value="clusters" ${mode === 'clusters' ? 'checked' : ''}><span>All links <b>${stock.links.size}</b></span></label></fieldset>
       <p class="stocks-filter-note">${mode === 'articles' ? 'Explicit mentions recorded in source articles.' : 'All links: article mentions, close links, related stocks and theme comparison baskets.'} Impact scores describe clusters, not stock returns.</p>
       <p class="stocks-link-count" role="status">${links.length} linked cluster${links.length === 1 ? '' : 's'}</p>
-      <div class="stocks-clusters">${links.length ? links.map(clusterHtml).join('') : '<p class="stocks-empty">No explicit article mentions for this stock in the last seven days. Choose “Mentioned in clusters” to see its other links.</p>'}</div>`;
+      <div class="stocks-clusters">${links.length ? links.map(clusterHtml).join('') : '<p class="stocks-empty">No explicit article mentions for this stock in the last seven days. Choose “All links” to see its other links.</p>'}</div>`;
   }
 
   function compact() { return window.matchMedia('(max-width: 1000px)').matches; }
@@ -208,6 +217,7 @@
 
   async function load() {
     const request = ++generation, end = new Date(), start = new Date(end.getTime() - 7 * DAY);
+    quotes = null;
     const status = root.querySelector('#stocksLoadStatus'), refresh = root.querySelector('[data-stock-refresh]');
     root.setAttribute('aria-busy', 'true'); refresh.disabled = true;
     root.querySelector('#stocksRange').textContent = `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} · rolling 7 days`;
@@ -223,10 +233,17 @@
       root.querySelector('#stocksRange').textContent = `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} · rolling 7 days · ${result.data.length}/${result.total} publishes`;
       status.textContent = result.failures.length ? result.data.length ? `Some data could not load (${result.failures.length} publishes). Showing available links. Refresh to retry.` : 'No publish details could load. Refresh to retry.' : items.length ? '' : 'No stocks are available in publishes from the last seven days.';
       renderGrid(); renderDetail();
+      let latest = {};
+      try { latest = await window.ClustrQuotes?.getLatestQuotes?.(items.map(item => item.symbol), 'US') || {}; }
+      catch (error) { console.warn('Stock quotes:', error.message); }
+      if (request !== generation || !active) return;
+      quotes = latest;
+      renderGrid(); renderDetail();
     } catch (error) {
       if (request !== generation || !active) return;
       status.textContent = 'Could not load the weekly stocks. Check your connection and refresh to retry.';
       items = [];
+      quotes = {};
       renderGrid(); renderDetail();
       console.warn('Stock explorer:', error.message);
     } finally {
@@ -239,7 +256,7 @@
     if (!root) return;
     root.dataset.detailOpen = 'false';
     if (!['pro', 'admin'].includes(role)) {
-      ++generation; items = []; reportData=[]; selected = '';
+      ++generation; items = []; quotes = null; reportData=[]; selected = '';
       root.setAttribute('aria-busy', 'false');
       root.innerHTML = '<div class="stocks-heading"><div><h1>Stocks</h1><p>The last seven days of stock connections are part of Pro.</p></div></div><button type="button" class="stocks-refresh" data-stock-account>Open account</button>';
       root.querySelector('[data-stock-account]').addEventListener('click', () => window.ClustrApp?.showView('account'));
