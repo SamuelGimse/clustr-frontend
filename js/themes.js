@@ -24,6 +24,8 @@
   const wallpaperThemes = new Set(['grassy-hill', 'aqua-classic', 'aurora-glass']);
   let proAccess = false;
   let selectedTheme = DEFAULT_THEME;
+  // Public sign-in can retain a saved appearance without granting paid controls.
+  const publicAppearance = () => !!systemPreference && !!document.body?.classList?.contains('auth-locked');
 
   function setFont(value) {
     const font = ['sans', 'roboto', 'verdana', 'serif', 'cambria', 'mono', 'roboto-mono', 'fira'].includes(value) ? value : 'theme';
@@ -89,7 +91,7 @@
    */
   function applyTheme(name, persist = true) {
     const theme = (name || '').trim() || DEFAULT_THEME;
-    if (proThemes.has(theme) && !proAccess) return;
+    if (proThemes.has(theme) && !proAccess && !publicAppearance()) return;
     selectedTheme = theme;
     // Clustr is the renamed legacy dark design, kept byte-for-byte compatible.
     const appliedTheme = theme === 'clustr' ? 'dark' : theme === 'apple-light' ? 'apple' : theme === 'material-light' ? 'material' : theme;
@@ -147,7 +149,7 @@
     } catch (e) {
       /* ignore */
     }
-    applyTheme(proThemes.has(saved) ? DEFAULT_THEME : saved, false);
+    applyTheme(proThemes.has(saved) && !proAccess && !publicAppearance() ? DEFAULT_THEME : saved, false);
   }
 
   function setAccess(role) {
@@ -162,7 +164,7 @@
     let saved;
     try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) { /* ignore */ }
     if (proAccess && proThemes.has(saved)) applyTheme(saved, false);
-    if (!proAccess && proThemes.has(saved)) applyTheme(DEFAULT_THEME, false);
+    if (!proAccess && proThemes.has(saved) && !publicAppearance()) applyTheme(DEFAULT_THEME, false);
     let savedSurfaceStyle;
     try { savedSurfaceStyle = localStorage.getItem(SURFACE_STYLE_KEY); } catch (e) { /* ignore */ }
     const surfaceStyle = savedSurfaceStyle || (selectedTheme === 'apple' || selectedTheme === 'apple-light' ? 'glass' : 'original');
