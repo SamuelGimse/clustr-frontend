@@ -28,7 +28,8 @@
   const dataViews = new Set(['dashboard', 'events', 'stocks', 'connections', 'map', 'weekly', 'atlas', 'days', 'watchlist', 'technicals']);
   let viewMode = 'simple';
   try { if (localStorage.getItem('clustr-view-mode') === 'advanced') viewMode = 'advanced'; } catch {}
-  let newsView = 'desk';
+  // New sessions open the complete, advanced news feed. A user's saved choice still wins.
+  let newsView = 'feed';
   try { if (localStorage.getItem('clustr-news-view') === 'feed') newsView = 'feed'; } catch {}
   const newsModes = { desk: 'simple', feed: 'advanced' };
   try {
